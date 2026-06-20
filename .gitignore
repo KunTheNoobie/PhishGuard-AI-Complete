@@ -31,5 +31,5 @@ Thumbs.db
 # Environment variables
 .env
 
-# ML training checkpoints (not needed in production)
-phishguard_custom_model/checkpoint-*/
+# ML training checkpoints and custom model files (too large for git)
+phishguard_custom_model/

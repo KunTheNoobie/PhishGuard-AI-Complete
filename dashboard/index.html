@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="PhishGuard-AI Threat Intelligence Dashboard — real-time monitoring of phishing threats and mule account detections." />
+    <title>PhishGuard-AI | Threat Intelligence Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/dashboard/styles.css" />
+</head>
+<body>
+    <!-- ═══════════════════ HEADER ═══════════════════ -->
+    <header class="header">
+        <div class="header__brand">
+            <div class="header__logo" aria-hidden="true">
+                <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+                    <defs>
+                        <linearGradient id="shieldGrad" x1="0" y1="0" x2="36" y2="36">
+                            <stop offset="0%" stop-color="#6366f1"/>
+                            <stop offset="100%" stop-color="#06b6d4"/>
+                        </linearGradient>
+                    </defs>
+                    <path d="M18 2L4 9v9c0 8.3 6 16 14 18 8-2 14-9.7 14-18V9L18 2z" fill="url(#shieldGrad)" opacity="0.9"/>
+                    <path d="M16 18l-3-3 1.5-1.5L16 15l5-5 1.5 1.5L16 18z" fill="#fff"/>
+                </svg>
+            </div>
+            <div>
+                <h1 class="header__title">PhishGuard-AI</h1>
+                <p class="header__subtitle">Threat Intelligence Dashboard</p>
+            </div>
+        </div>
+        <div class="header__status">
+            <span class="status-dot" id="statusDot"></span>
+            <span class="status-text" id="statusText">Connecting…</span>
+            <span class="header__refresh" id="lastRefresh"></span>
+        </div>
+    </header>
+
+    <!-- ═══════════════════ MAIN ═══════════════════ -->
+    <main class="main">
+
+        <!-- ─── Stats Cards ─── -->
+        <section class="stats-grid" aria-label="Aggregate statistics">
+            <article class="stat-card stat-card--threats" id="cardThreats">
+                <div class="stat-card__icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                </div>
+                <div class="stat-card__body">
+                    <p class="stat-card__value" id="statThreats">—</p>
+                    <p class="stat-card__label">Threats Detected</p>
+                </div>
+            </article>
+
+            <article class="stat-card stat-card--confidence" id="cardConfidence">
+                <div class="stat-card__icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                </div>
+                <div class="stat-card__body">
+                    <p class="stat-card__value" id="statConfidence">—</p>
+                    <p class="stat-card__label">Avg BERT Confidence</p>
+                </div>
+            </article>
+
+            <article class="stat-card stat-card--mule" id="cardMule">
+                <div class="stat-card__icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                </div>
+                <div class="stat-card__body">
+                    <p class="stat-card__value" id="statMule">—</p>
+                    <p class="stat-card__label">Mule Accounts</p>
+                </div>
+            </article>
+
+            <article class="stat-card stat-card--reports" id="cardReports">
+                <div class="stat-card__icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                </div>
+                <div class="stat-card__body">
+                    <p class="stat-card__value" id="statReports">—</p>
+                    <p class="stat-card__label">Total Reports</p>
+                </div>
+            </article>
+        </section>
+
+        <!-- ─── Live Threat Feed ─── -->
+        <section class="panel" aria-label="Recent threat detections">
+            <div class="panel__header">
+                <h2 class="panel__title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 010 8.49m-8.48-.01a6 6 0 010-8.49m11.31-2.82a10 10 0 010 14.14m-14.14 0a10 10 0 010-14.14"/></svg>
+                    Live Threat Feed
+                </h2>
+                <span class="panel__badge" id="telemetryCount">0</span>
+            </div>
+            <div class="panel__body">
+                <div class="table-wrapper">
+                    <table class="data-table" id="telemetryTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Malicious URL</th>
+                                <th>BERT Score</th>
+                                <th>Timestamp</th>
+                            </tr>
+                        </thead>
+                        <tbody id="telemetryBody">
+                            <tr class="table-empty"><td colspan="4">Loading threat data…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ─── Mule Account Registry ─── -->
+        <section class="panel" aria-label="Mule account registry">
+            <div class="panel__header">
+                <h2 class="panel__title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                    Mule Account Registry
+                </h2>
+                <span class="panel__badge" id="muleCount">0</span>
+            </div>
+            <div class="panel__body">
+                <div class="table-wrapper">
+                    <table class="data-table" id="muleTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Account Number</th>
+                                <th>Bank</th>
+                                <th>Platform Flagged</th>
+                                <th>Reports</th>
+                                <th>Date Added</th>
+                            </tr>
+                        </thead>
+                        <tbody id="muleBody">
+                            <tr class="table-empty"><td colspan="6">Loading registry…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ═══════════════════ FOOTER ═══════════════════ -->
+    <footer class="footer">
+        <p>&copy; 2026 PhishGuard-AI — Semantic Threat Intelligence Engine v2.0</p>
+        <p class="footer__sub">Faculty of Computing &amp; Information Technology, TAR UMT</p>
+    </footer>
+
+    <script src="/dashboard/app.js"></script>
+</body>
+</html>

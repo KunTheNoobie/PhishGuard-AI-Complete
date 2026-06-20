@@ -37,12 +37,14 @@ import torch
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from slowapi import Limiter, _rate_limit_exceeded_handler  # type: ignore[import-untyped]
 from slowapi.errors import RateLimitExceeded  # type: ignore[import-untyped]
 from slowapi.util import get_remote_address  # type: ignore[import-untyped]
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from api.endpoints import router as analysis_router
+from api.dashboard_endpoints import router as dashboard_router
 from core.config import (
     APP_DESCRIPTION,
     APP_TITLE,
@@ -222,7 +224,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         elapsed_ms = round((time.perf_counter_ns() - start) / 1_000_000, 2)
         logger.info(
-            "%s %s → %d (%.2f ms)",
+            "%s %s -> %d (%.2f ms)",
             request.method,
             request.url.path,
             response.status_code,
@@ -234,8 +236,16 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 app.add_middleware(RequestLoggingMiddleware)
 
 
-# ── Mount the API router ──
+# ── Mount the API routers ──
 app.include_router(analysis_router)
+app.include_router(dashboard_router)
+
+# ── Serve the monitoring dashboard as static files ──
+app.mount(
+    "/dashboard",
+    StaticFiles(directory="dashboard", html=True),
+    name="dashboard",
+)
 
 
 # ==============================================================================

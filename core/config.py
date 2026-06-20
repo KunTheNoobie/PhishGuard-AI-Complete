@@ -72,8 +72,22 @@ MALICIOUS_THRESHOLD: Final[float] = float(
 # ==============================================================================
 # 6. MULE SCANNER
 # ==============================================================================
-# Regex pattern matching 10–14 digit Malaysian bank account numbers.
+# Generic fallback regex matching 10–14 digit Malaysian bank account numbers.
 MULE_ACCOUNT_REGEX: Final[str] = r"\b\d{10,14}\b"
+
+# Bank-specific regex patterns for major Malaysian financial institutions.
+# Each pattern is tuned to the account-number format issued by that bank,
+# significantly reducing false positives compared to the generic fallback.
+MULE_ACCOUNT_PATTERNS: Final[dict[str, str]] = {
+    "Maybank":          r"\b[15]\d{11}\b",      # 12 digits, starts with 1 or 5
+    "CIMB Bank":        r"\b7\d{13}\b",          # 14 digits, starts with 7
+    "Public Bank":      r"\b3\d{9}\b",           # 10 digits, starts with 3
+    "RHB Bank":         r"\b2\d{13}\b",          # 14 digits, starts with 2
+    "Hong Leong Bank":  r"\b[02]\d{9,11}\b",     # 10–12 digits, starts with 0 or 2
+    "AmBank":           r"\b8\d{12}\b",          # 13 digits, starts with 8
+    "Bank Islam":       r"\b1\d{13}\b",          # 14 digits, starts with 1
+    "Bank Rakyat":      r"\b[02]\d{11}\b",       # 12 digits, starts with 0 or 2
+}
 
 # ==============================================================================
 # 7. ORCHESTRATION VERDICTS

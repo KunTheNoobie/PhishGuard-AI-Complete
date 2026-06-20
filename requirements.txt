@@ -22,10 +22,18 @@ aiosqlite>=0.20.0,<1.0.0
 
 # --- HTML Sanitization ---
 beautifulsoup4>=4.12.0,<5.0.0
-lxml>=5.0.0,<6.0.0
+# lxml is optional — sanitizer.py falls back to html.parser if unavailable.
 
 # --- Rate Limiting ---
 slowapi>=0.1.9,<1.0.0
 
 # --- Utilities ---
 python-multipart>=0.0.9
+
+# --- Testing ---
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+httpx>=0.27.0
+
+# --- Load / Stress Testing ---
+locust>=2.29.0

@@ -75,9 +75,30 @@ CREATE INDEX IF NOT EXISTS idx_telemetry_malicious_url
 # Three fictitious mule accounts pre-loaded for development & integration
 # testing.  Real-world data would be ingested from PDRM / BNM feeds.
 _SEED_MULE_ACCOUNTS: Final[list[tuple[str, str, str, int]]] = [
-    ("1234567890",   "Maybank",       "Shopee",       14),
-    ("9876543210",   "CIMB Bank",     "WhatsApp",      7),
-    ("11223344556",  "Public Bank",   "Telegram",      3),
+    # Maybank (12-digit, starts with 1 or 5)
+    ("112233445566",  "Maybank",          "Shopee",              14),
+    ("564738291012",  "Maybank",          "Facebook Marketplace", 8),
+    # CIMB Bank (14-digit, starts with 7)
+    ("76001234567890", "CIMB Bank",       "WhatsApp",             7),
+    ("70009876543210", "CIMB Bank",       "Carousell",            5),
+    # Public Bank (10-digit, starts with 3)
+    ("3112233445",    "Public Bank",      "Telegram",             3),
+    ("3998877665",    "Public Bank",      "Lazada",              11),
+    # RHB Bank (14-digit, starts with 2)
+    ("21234567890123", "RHB Bank",        "Mudah.my",             6),
+    # Hong Leong Bank (10–12 digit, starts with 0 or 2)
+    ("012345678901",  "Hong Leong Bank",  "WhatsApp",             2),
+    ("234567890123",  "Hong Leong Bank",  "Facebook Marketplace", 9),
+    # AmBank (13-digit, starts with 8)
+    ("8123456789012", "AmBank",           "Shopee",               4),
+    # Bank Islam (14-digit, starts with 1)
+    ("14001234567890", "Bank Islam",      "Telegram",            10),
+    # Bank Rakyat (12-digit, starts with 0 or 2)
+    ("012345678912",  "Bank Rakyat",      "Lazada",               1),
+    ("212345678901",  "Bank Rakyat",      "Carousell",           13),
+    # Additional high-risk accounts
+    ("156789012345",  "Maybank",          "Mudah.my",            22),
+    ("3567891234",    "Public Bank",      "Shopee",              17),
 ]
 
 _INSERT_SEED: Final[str] = """
