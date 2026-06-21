@@ -69,6 +69,63 @@ MALICIOUS_THRESHOLD: Final[float] = float(
     os.getenv("PHISHGUARD_MALICIOUS_THRESHOLD", "0.75")
 )
 
+# ── Trusted Domain Whitelist ──
+# Known-legitimate Malaysian financial institution domains.  When the
+# incoming URL matches one of these domains (or a subdomain thereof),
+# BERT inference is bypassed and the result is forced to LEGITIMATE.
+# This eliminates false positives caused by legitimate banking pages
+# containing vocabulary that overlaps with phishing content.
+TRUSTED_DOMAINS: Final[frozenset[str]] = frozenset({
+    # Maybank
+    "maybank2u.com.my",
+    "maybank.com",
+    "maybank.com.my",
+    # Public Bank (PBe)
+    "pbebank.com",
+    "pbebank.com.my",
+    "publicbank.com.my",
+    # CIMB
+    "cimbclicks.com.my",
+    "cimb.com.my",
+    "cimbbank.com.my",
+    # Hong Leong Bank
+    "hlb.com.my",
+    "hongleongconnect.my",
+    # RHB Bank
+    "rhbgroup.com",
+    "rhbnow.com",
+    "rhbbank.com.my",
+    # AmBank
+    "ambankgroup.com",
+    "ambank.com.my",
+    # Bank Islam
+    "bankislam.com",
+    "bankislam.com.my",
+    # Bank Rakyat
+    "bankrakyat.com.my",
+    # BSN (Bank Simpanan Nasional)
+    "bsn.com.my",
+    # Affin Bank
+    "affinbank.com.my",
+    "affinonline.com",
+    # Alliance Bank
+    "alliancebank.com.my",
+    # International banks operating in Malaysia
+    "standardchartered.com.my",
+    "hsbc.com.my",
+    "uob.com.my",
+    "ocbc.com.my",
+    # Bank Muamalat
+    "bankmuamalat.com.my",
+    # Agrobank
+    "agrobank.com.my",
+})
+
+# Confidence score returned when a whitelisted domain is matched.
+TRUSTED_DOMAIN_CONFIDENCE: Final[float] = float(
+    os.getenv("PHISHGUARD_TRUSTED_CONFIDENCE", "0.99")
+)
+
 # ==============================================================================
 # 6. MULE SCANNER
 # ==============================================================================

@@ -25,12 +25,20 @@ import logging
 import time
 import uuid
 from typing import Any, Final
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Request
 from slowapi import Limiter  # type: ignore[import-untyped]
 from slowapi.util import get_remote_address  # type: ignore[import-untyped]
 
-from core.config import MALICIOUS_THRESHOLD, RATE_LIMIT, VERDICT_BLOCK, VERDICT_SAFE
+from core.config import (
+    MALICIOUS_THRESHOLD,
+    RATE_LIMIT,
+    TRUSTED_DOMAIN_CONFIDENCE,
+    TRUSTED_DOMAINS,
+    VERDICT_BLOCK,
+    VERDICT_SAFE,
+)
 from core.security import verify_api_key
 from schemas.payload import WebPayload
 from schemas.response import (
@@ -63,6 +71,41 @@ limiter: Final[Limiter] = Limiter(
 
 # Maximum characters of sanitized text included in the response preview.
 _PREVIEW_LENGTH: Final[int] = 200
+
+
+def _is_trusted_domain(url: str) -> bool:
+    """Check whether the given URL belongs to a trusted (whitelisted) domain.
+
+    Supports both exact matches and subdomain matches.  For example, if
+    ``maybank2u.com.my`` is in the whitelist, both ``maybank2u.com.my``
+    and ``www.maybank2u.com.my`` will match.
+
+    Parameters
+    ----------
+    url : str
+        Fully-qualified URL to check.
+
+    Returns
+    -------
+    bool
+        ``True`` if the domain (or a parent domain) is whitelisted.
+    """
+    try:
+        hostname: str = urlparse(str(url)).hostname or ""
+        hostname = hostname.lower().strip(".")
+    except Exception:
+        return False
+
+    # Exact match
+    if hostname in TRUSTED_DOMAINS:
+        return True
+
+    # Subdomain match: e.g., "www.maybank2u.com.my" → "maybank2u.com.my"
+    for trusted in TRUSTED_DOMAINS:
+        if hostname.endswith("." + trusted):
+            return True
+
+    return False
 
 
 # ==============================================================================
@@ -152,32 +195,58 @@ async def analyse_semantics(
     mule_scanner = request.app.state.mule_scanner
     db = request.app.state.db
 
-    # ── 4. Parallel Execution via asyncio.gather() ──
+    # ── 4. Trusted Domain Whitelist Check ──
     #
-    #   Both tasks are I/O-safe:
-    #     • SemanticEngine.predict() delegates to asyncio.to_thread()
-    #     • MuleScanner.scan_and_verify() uses async aiosqlite queries
+    #   If the URL belongs to a known-legitimate financial institution,
+    #   bypass BERT inference entirely to prevent false positives.  The
+    #   DOM text of real bank sites contains keywords ("login", "transfer",
+    #   "account") that the phishing-trained model misclassifies.
     #
+    url_str: str = str(payload.url)
+    is_trusted: bool = _is_trusted_domain(url_str)
+
     start_ns: int = time.perf_counter_ns()
 
     bert_result: dict[str, Any]
     mule_result: dict[str, Any]
 
-    bert_result, mule_result = await asyncio.gather(
-        semantic_engine.predict(sanitized_text),
-        mule_scanner.scan_and_verify(sanitized_text, db),
-    )
+    if is_trusted:
+        # ── Whitelisted domain: skip BERT, force LEGITIMATE ──
+        logger.info(
+            "[%s] URL '%s' matches trusted domain whitelist — "
+            "bypassing BERT inference.",
+            transaction_id,
+            url_str,
+        )
+        bert_result = {
+            "label": "LEGITIMATE",
+            "confidence": TRUSTED_DOMAIN_CONFIDENCE,
+            "is_malicious": False,
+        }
+        # Still run mule scan (defence-in-depth)
+        mule_result = await mule_scanner.scan_and_verify(sanitized_text, db)
+    else:
+        # ── Non-whitelisted: inject URL context into model input ──
+        #   Prepending the URL gives the BERT model domain-level signal
+        #   alongside the page content, improving classification accuracy.
+        model_input: str = f"URL: {url_str} | {sanitized_text}"
+
+        bert_result, mule_result = await asyncio.gather(
+            semantic_engine.predict(model_input),
+            mule_scanner.scan_and_verify(sanitized_text, db),
+        )
 
     elapsed_ms: float = round(
         (time.perf_counter_ns() - start_ns) / 1_000_000, 2
     )
 
     logger.info(
-        "[%s] Pipeline completed in %.2f ms — BERT=%s, Mule=%s",
+        "[%s] Pipeline completed in %.2f ms — BERT=%s, Mule=%s, trusted=%s",
         transaction_id,
         elapsed_ms,
         bert_result["label"],
         mule_result["mule_detected"],
+        is_trusted,
     )
 
     # ── 5. Orchestration Verdict ──

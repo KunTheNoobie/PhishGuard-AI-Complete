@@ -203,6 +203,124 @@ class TestBlockVerdict:
 
 
 # ==============================================================================
+# Trusted Domain Whitelist (False Positive Prevention)
+# ==============================================================================
+
+class TestWhitelistedDomains:
+    """Verify that known-legitimate bank domains bypass BERT and return SAFE.
+
+    Uses the ``phishing_client`` fixture (which forces PHISHING verdict)
+    to prove that the whitelist override takes priority over the model.
+    """
+
+    @pytest.mark.asyncio
+    async def test_whitelisted_maybank_returns_safe(self, phishing_client: AsyncClient) -> None:
+        """maybank2u.com.my should return SAFE even when BERT would say PHISHING."""
+        resp = await phishing_client.post(
+            "/api/v1/analyse/semantics",
+            json={
+                "url": "https://www.maybank2u.com.my/login",
+                "dom_content": "<html><body><h1>Welcome to Maybank</h1><p>Internet Banking Login</p></body></html>",
+            },
+            headers=AUTH_HEADERS,
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+
+        assert data["data"]["semantic_analysis"]["label"] == "LEGITIMATE"
+        assert data["data"]["semantic_analysis"]["is_malicious"] is False
+        assert data["orchestration"] == "SAFE"
+
+    @pytest.mark.asyncio
+    async def test_whitelisted_pbebank_returns_safe(self, phishing_client: AsyncClient) -> None:
+        """pbebank.com (Public Bank) should return SAFE."""
+        resp = await phishing_client.post(
+            "/api/v1/analyse/semantics",
+            json={
+                "url": "https://www.pbebank.com/personal-banking",
+                "dom_content": "<html><body><h1>Public Bank</h1><p>Login to your account</p></body></html>",
+            },
+            headers=AUTH_HEADERS,
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+
+        assert data["data"]["semantic_analysis"]["label"] == "LEGITIMATE"
+        assert data["data"]["semantic_analysis"]["is_malicious"] is False
+        assert data["orchestration"] == "SAFE"
+
+    @pytest.mark.asyncio
+    async def test_whitelisted_cimb_returns_safe(self, phishing_client: AsyncClient) -> None:
+        """cimbclicks.com.my should return SAFE."""
+        resp = await phishing_client.post(
+            "/api/v1/analyse/semantics",
+            json={
+                "url": "https://www.cimbclicks.com.my/",
+                "dom_content": "<html><body><h1>CIMB Clicks</h1><p>Secure Online Banking</p></body></html>",
+            },
+            headers=AUTH_HEADERS,
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+
+        assert data["data"]["semantic_analysis"]["label"] == "LEGITIMATE"
+        assert data["orchestration"] == "SAFE"
+
+    @pytest.mark.asyncio
+    async def test_subdomain_of_whitelisted_returns_safe(self, phishing_client: AsyncClient) -> None:
+        """Subdomains like online.maybank.com.my should also be whitelisted."""
+        resp = await phishing_client.post(
+            "/api/v1/analyse/semantics",
+            json={
+                "url": "https://online.maybank.com.my/banking",
+                "dom_content": "<html><body><h1>Maybank Online</h1><p>Transfer funds securely</p></body></html>",
+            },
+            headers=AUTH_HEADERS,
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+
+        assert data["data"]["semantic_analysis"]["label"] == "LEGITIMATE"
+        assert data["orchestration"] == "SAFE"
+
+    @pytest.mark.asyncio
+    async def test_phishing_clone_still_blocked(self, phishing_client: AsyncClient) -> None:
+        """A phishing clone (rnaybank.com) must NOT be whitelisted."""
+        resp = await phishing_client.post(
+            "/api/v1/analyse/semantics",
+            json={
+                "url": "https://rnaybank.com/login",
+                "dom_content": "<html><body><h1>Maybank Login</h1><p>Enter your password</p></body></html>",
+            },
+            headers=AUTH_HEADERS,
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+
+        assert data["data"]["semantic_analysis"]["label"] == "PHISHING"
+        assert data["data"]["semantic_analysis"]["is_malicious"] is True
+        assert data["orchestration"] == "BLOCK_RENDER"
+
+    @pytest.mark.asyncio
+    async def test_non_whitelisted_domain_uses_bert(self, phishing_client: AsyncClient) -> None:
+        """An unknown domain should go through normal BERT inference."""
+        resp = await phishing_client.post(
+            "/api/v1/analyse/semantics",
+            json={
+                "url": "https://suspicious-site.com/login",
+                "dom_content": "<html><body><h1>Login</h1><p>Enter credentials</p></body></html>",
+            },
+            headers=AUTH_HEADERS,
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+
+        # phishing_client uses mock that returns PHISHING
+        assert data["data"]["semantic_analysis"]["label"] == "PHISHING"
+        assert data["orchestration"] == "BLOCK_RENDER"
+
+
+# ==============================================================================
 # Mule Account Detection in DOM
 # ==============================================================================
 
