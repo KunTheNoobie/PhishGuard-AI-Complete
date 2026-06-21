@@ -128,11 +128,16 @@ async def test_client(
     but with mocked ML engine and in-memory database."""
     from main import app
     from services.mule_scanner import MuleScanner
+    from api.endpoints import limiter as endpoint_limiter
 
     # Inject test singletons into app.state
     app.state.db = test_db
     app.state.semantic_engine = mock_semantic_engine
     app.state.mule_scanner = MuleScanner()
+
+    # Reset both rate limiters to prevent 429 collisions across test classes
+    app.state.limiter._storage.reset()
+    endpoint_limiter._storage.reset()
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -147,10 +152,15 @@ async def phishing_client(
     """Test client where the engine always returns PHISHING."""
     from main import app
     from services.mule_scanner import MuleScanner
+    from api.endpoints import limiter as endpoint_limiter
 
     app.state.db = test_db
     app.state.semantic_engine = mock_phishing_engine
     app.state.mule_scanner = MuleScanner()
+
+    # Reset both rate limiters to prevent 429 collisions across test classes
+    app.state.limiter._storage.reset()
+    endpoint_limiter._storage.reset()
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
