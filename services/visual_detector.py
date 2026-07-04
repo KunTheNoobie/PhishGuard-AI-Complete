@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any, Final
 from urllib.parse import urlparse
 
-from core.config import VISUAL_CONFIDENCE_THRESHOLD, VISUAL_MODEL_PATH
+from core.config import VISUAL_CONFIDENCE_THRESHOLD, VISUAL_MODEL_PATH, GLOBAL_SAFE_DOMAINS
 from schemas.visual import BoundingBox, DetectedLogo, VisualAnalyzeResponse
 
 logger: Final[logging.Logger] = logging.getLogger("phishguard.visual_detector")
@@ -216,6 +216,19 @@ def evaluate_logo_domain(
         )
 
     host = _hostname(current_url)
+    
+    # ── Global Safe Domain Check ──
+    # If the user is on a massively popular platform (e.g. WhatsApp, Instagram, Google),
+    # bypass the visual checks. YOLOv8 can hallucinate logos in random user content,
+    # and these major platforms are definitively not phishing hosting sites.
+    for safe_domain in GLOBAL_SAFE_DOMAINS:
+        if host == safe_domain or host.endswith(f".{safe_domain}"):
+            return VisualAnalyzeResponse(
+                detected_logos=detections,
+                risk_level="safe",
+                reason=f"Platform '{safe_domain}' is a globally trusted domain. Any logo detections are treated as user-generated content or model noise.",
+            )
+
     official_brand = _official_brand_for_host(host)
 
     if official_brand:

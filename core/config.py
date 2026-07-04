@@ -123,63 +123,29 @@ TRUSTED_DOMAIN_CONFIDENCE: Final[float] = float(
 # TRUSTED_DOMAINS; a match on either set bypasses BERT inference.
 GLOBAL_SAFE_DOMAINS: Final[frozenset[str]] = frozenset({
     # Google
-    "google.com",
-    "google.com.my",
-    "googleapis.com",
-    "accounts.google.com",
-    "mail.google.com",
+    "google.com", "google.com.my", "googleapis.com", "accounts.google.com", "mail.google.com", "drive.google.com", "docs.google.com", "play.google.com",
     # YouTube
-    "youtube.com",
-    "youtu.be",
-    # WhatsApp
-    "whatsapp.com",
-    "web.whatsapp.com",
-    # Facebook / Meta
-    "facebook.com",
-    "messenger.com",
-    "instagram.com",
-    "threads.net",
-    # Microsoft
-    "microsoft.com",
-    "live.com",
-    "outlook.com",
-    "office.com",
-    "office365.com",
-    "microsoftonline.com",
-    "bing.com",
-    "linkedin.com",
-    "github.com",
+    "youtube.com", "youtu.be",
+    # WhatsApp & Meta
+    "whatsapp.com", "web.whatsapp.com", "facebook.com", "messenger.com", "instagram.com", "threads.net", "meta.com", "business.facebook.com",
+    # Microsoft & LinkedIn
+    "microsoft.com", "live.com", "outlook.com", "office.com", "office365.com", "microsoftonline.com", "bing.com", "linkedin.com", "github.com", "skype.com", "teams.microsoft.com",
     # Apple
-    "apple.com",
-    "icloud.com",
+    "apple.com", "icloud.com", "itunes.apple.com",
     # Amazon
-    "amazon.com",
-    "amazon.com.my",
-    "aws.amazon.com",
+    "amazon.com", "amazon.com.my", "aws.amazon.com", "primevideo.com", "twitch.tv",
     # Twitter / X
-    "twitter.com",
-    "x.com",
-    # Other major platforms
-    "reddit.com",
-    "wikipedia.org",
-    "spotify.com",
-    "netflix.com",
-    "twitch.tv",
-    "discord.com",
-    "telegram.org",
-    "web.telegram.org",
-    "zoom.us",
-    "dropbox.com",
-    "paypal.com",
-    "shopee.com.my",
-    "lazada.com.my",
-    "grab.com",
+    "twitter.com", "x.com", "t.co",
+    # Social & Media & Entertainment
+    "reddit.com", "wikipedia.org", "spotify.com", "netflix.com", "discord.com", "discordapp.com", "telegram.org", "web.telegram.org", "tiktok.com", "pinterest.com", "tumblr.com", "vimeo.com", "hulu.com", "disneyplus.com", "hbomax.com", "patreon.com", "soundcloud.com", "pixiv.net", "deviantart.com", "weibo.com",
+    # Utilities & Tools
+    "zoom.us", "dropbox.com", "paypal.com", "canva.com", "slack.com", "notion.so", "trello.com", "atlassian.com", "jira.com", "salesforce.com", "adobe.com", "wordpress.com", "medium.com", "stackoverflow.com", "quora.com", "yahoo.com", "mail.yahoo.com",
+    # E-commerce (MY & Global)
+    "shopee.com.my", "shopee.sg", "lazada.com.my", "lazada.sg", "grab.com", "foodpanda.com", "foodpanda.my", "alibaba.com", "aliexpress.com", "ebay.com", "mudah.my", "carousell.com.my", "carousell.sg",
+    # News & Information
+    "cnn.com", "bbc.com", "nytimes.com", "theguardian.com", "thestar.com.my", "malaysiakini.com", "freemalaysiatoday.com", "nst.com.my", "bharian.com.my",
     # Malaysian government / education
-    "gov.my",
-    "edu.my",
-    "tarc.edu.my",
-    # User added safe domains
-    "pixiv.net",
+    "gov.my", "edu.my", "tarc.edu.my", "hasil.gov.my", "epf.gov.my", "kwsp.gov.my", "myeg.com.my",
 })
 
 # ==============================================================================
