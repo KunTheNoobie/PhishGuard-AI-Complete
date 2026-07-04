@@ -90,7 +90,7 @@ limiter: Final[Limiter] = Limiter(
 # Live Threat Simulator
 # ==============================================================================
 
-async def simulate_live_threats(db) -> None:
+async def simulate_live_threats(state) -> None:
     """Continuously generates live threat intel for demonstration purposes."""
     banks = ["Maybank", "CIMB Bank", "Public Bank", "RHB Bank", "Hong Leong Bank", "AmBank", "Bank Islam"]
     platforms = ["Shopee", "Facebook Marketplace", "WhatsApp", "Telegram", "Mudah.my", "Carousell", "Lazada"]
@@ -99,11 +99,15 @@ async def simulate_live_threats(db) -> None:
     logger.info("Live Threat Simulator started.")
     while True:
         await asyncio.sleep(random.randint(5, 12))
+        
+        if not getattr(state, "simulator_running", False):
+            continue
+            
         try:
             # 1. Always inject a telemetry log (malicious URL detection)
             malicious_url = f"http://{random.choice(domains)}/auth/login?token={random.randint(1000, 9999)}"
             score = round(random.uniform(0.75, 0.99), 3)
-            await db.execute(
+            await state.db.execute(
                 "INSERT INTO threat_telemetry (malicious_url, bert_score) VALUES (?, ?)",
                 (malicious_url, score)
             )
@@ -117,7 +121,7 @@ async def simulate_live_threats(db) -> None:
                 
                 # Check if it exists to just increment report_count, though randomly generated it's unlikely
                 # but let's just insert
-                await db.execute(
+                await state.db.execute(
                     """
                     INSERT INTO mule_registry (account_number, bank_name, platform_flagged, report_count) 
                     VALUES (?, ?, ?, ?)
@@ -125,7 +129,7 @@ async def simulate_live_threats(db) -> None:
                     (account_num, bank, plat, reports)
                 )
 
-            await db.commit()
+            await state.db.commit()
             logger.debug("Live Threat Simulator: Injected new threat intel.")
         except Exception as e:
             logger.error("Live Threat Simulator Error: %s", e)
@@ -188,9 +192,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     # 5. Start Live Threat Simulator background task
     logger.info("[5/5] Starting Live Threat Simulator …")
-    # The Live Simulator is intentionally disabled based on your request
-    # so that the dashboard only shows REAL data from the extension.
-    # simulator_task = asyncio.create_task(simulate_live_threats(app.state.db))
+    app.state.simulator_running = False
+    simulator_task = asyncio.create_task(simulate_live_threats(app.state))
 
     logger.info("=" * 60)
     logger.info("  PhishGuard-AI Backend — Ready to Serve")

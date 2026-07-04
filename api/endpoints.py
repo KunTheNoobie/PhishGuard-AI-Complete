@@ -258,17 +258,18 @@ async def analyse_semantics(
     verdict: str = VERDICT_BLOCK if is_threat else VERDICT_SAFE
 
     # ── 6. Background Telemetry (fire-and-forget) ──
-    if bert_result["is_malicious"]:
-        background_tasks.add_task(
-            log_threat_telemetry,
-            url=str(payload.url),
-            score=bert_result["confidence"],
-            db=db,
-        )
-        logger.info(
-            "[%s] Telemetry write scheduled (background).",
-            transaction_id,
-        )
+    # Based on user request, we now log ALL scans to the telemetry feed
+    # so they can see their live activity in the dashboard, even if it's safe.
+    background_tasks.add_task(
+        log_threat_telemetry,
+        url=str(payload.url),
+        score=bert_result["confidence"],
+        db=db,
+    )
+    logger.info(
+        "[%s] Telemetry write scheduled (background).",
+        transaction_id,
+    )
 
     # ── 7. Assemble Response ──
     response = AnalysisResponse(

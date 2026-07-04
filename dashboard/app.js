@@ -40,6 +40,7 @@ const $telemetryCount   = document.getElementById("telemetryCount");
 const $muleBody         = document.getElementById("muleBody");
 const $muleCount        = document.getElementById("muleCount");
 
+const $simToggleBtn     = document.getElementById("simToggleBtn");
 const $statusDot        = document.getElementById("statusDot");
 const $statusText       = document.getElementById("statusText");
 const $lastRefresh      = document.getElementById("lastRefresh");
@@ -293,11 +294,37 @@ function handleSortClick(e) {
  */
 async function refreshAll() {
     try {
-        await Promise.all([
-            refreshStats(),
-            refreshTelemetry(),
-            refreshMuleRegistry(),
+        const [stats, telemetry, mule, simStatus] = await Promise.all([
+            apiFetch("/stats"),
+            apiFetch("/telemetry"),
+            apiFetch("/mule-registry"),
+            apiFetch("/simulator/status").catch(() => ({ simulator_running: false })),
         ]);
+
+        // Process stats
+        setStatAnimated($statThreats,    stats.total_threats.toLocaleString());
+        setStatAnimated($statConfidence, (stats.avg_confidence * 100).toFixed(1) + "%");
+        setStatAnimated($statMule,       stats.total_mule_accounts.toLocaleString());
+        setStatAnimated($statReports,    stats.total_reports.toLocaleString());
+
+        // Process telemetry
+        $telemetryCount.textContent = telemetry.count;
+        telemetryData = telemetry.entries;
+        renderTelemetry();
+
+        // Process mule registry
+        $muleCount.textContent = mule.count;
+        muleData = mule.accounts;
+        renderMuleRegistry();
+        
+        // Update Simulator Button
+        if (simStatus.simulator_running) {
+            $simToggleBtn.classList.replace("off", "on");
+            $simToggleBtn.textContent = "Simulation: ON";
+        } else {
+            $simToggleBtn.classList.replace("on", "off");
+            $simToggleBtn.textContent = "Simulation: OFF";
+        }
 
         // ── Update status indicator ──
         $statusDot.className = "status-dot live";
@@ -310,6 +337,25 @@ async function refreshAll() {
     }
 }
 
+async function handleSimToggle() {
+    $simToggleBtn.disabled = true;
+    try {
+        const res = await fetch(`${API_BASE}/simulator/toggle`, { method: "POST" });
+        const data = await res.json();
+        if (data.simulator_running) {
+            $simToggleBtn.classList.replace("off", "on");
+            $simToggleBtn.textContent = "Simulation: ON";
+        } else {
+            $simToggleBtn.classList.replace("on", "off");
+            $simToggleBtn.textContent = "Simulation: OFF";
+        }
+    } catch (err) {
+        console.error("Failed to toggle simulator:", err);
+    } finally {
+        $simToggleBtn.disabled = false;
+    }
+}
+
 
 // ═══════════════════════════════════════════════════════════════════
 // BOOTSTRAP
@@ -319,6 +365,8 @@ async function refreshAll() {
 document.querySelectorAll('th.sortable').forEach(th => {
     th.addEventListener('click', handleSortClick);
 });
+
+$simToggleBtn.addEventListener("click", handleSimToggle);
 
 // Initial load
 refreshAll();

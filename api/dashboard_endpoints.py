@@ -147,3 +147,27 @@ async def get_mule_registry(request: Request) -> dict[str, Any]:
     ]
 
     return {"count": len(accounts), "accounts": accounts}
+
+
+# ==============================================================================
+# SIMULATOR TOGGLE
+# ==============================================================================
+
+@router.post(
+    "/simulator/toggle",
+    summary="Toggle live threat simulator",
+)
+async def toggle_simulator(request: Request) -> dict[str, Any]:
+    """Toggle the background simulator on/off."""
+    current = getattr(request.app.state, "simulator_running", False)
+    request.app.state.simulator_running = not current
+    return {"simulator_running": not current}
+
+
+@router.get(
+    "/simulator/status",
+    summary="Get simulator status",
+)
+async def simulator_status(request: Request) -> dict[str, Any]:
+    """Check if the simulator is currently running."""
+    return {"simulator_running": getattr(request.app.state, "simulator_running", False)}

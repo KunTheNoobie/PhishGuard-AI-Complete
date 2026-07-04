@@ -75,21 +75,10 @@ CREATE INDEX IF NOT EXISTS idx_telemetry_malicious_url
 # Initial mock mule accounts loaded for development & integration
 # testing. In production, this syncs with PDRM / BNM threat feeds.
 _SEED_MULE_ACCOUNTS: Final[list[tuple[str, str, str, int]]] = [
-    ("112233445566",  "Maybank",          "Shopee",              14),
-    ("564738291012",  "Maybank",          "Facebook Marketplace", 8),
-    ("76001234567890", "CIMB Bank",       "WhatsApp",             7),
-    ("70009876543210", "CIMB Bank",       "Carousell",            5),
-    ("3112233445",    "Public Bank",      "Telegram",             3),
-    ("3998877665",    "Public Bank",      "Lazada",              11),
-    ("21234567890123", "RHB Bank",        "Mudah.my",             6),
-    ("012345678901",  "Hong Leong Bank",  "WhatsApp",             2),
-    ("234567890123",  "Hong Leong Bank",  "Facebook Marketplace", 9),
-    ("8123456789012", "AmBank",           "Shopee",               4),
-    ("14001234567890", "Bank Islam",      "Telegram",            10),
-    ("012345678912",  "Bank Rakyat",      "Lazada",               1),
-    ("212345678901",  "Bank Rakyat",      "Carousell",           13),
-    ("156789012345",  "Maybank",          "Mudah.my",            22),
-    ("3567891234",    "Public Bank",      "Shopee",              17),
+    ("156789012345",  "Maybank",          "Mudah.my",            12),
+    ("3567891234",    "Public Bank",      "Facebook Marketplace", 8),
+    ("76001234567890", "CIMB Bank",       "WhatsApp",             5),
+    ("212345678901",  "Bank Rakyat",      "Telegram",             3),
 ]
 
 _INSERT_SEED: Final[str] = """

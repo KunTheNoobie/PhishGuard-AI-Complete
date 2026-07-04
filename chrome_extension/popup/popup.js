@@ -62,6 +62,11 @@ function hostFromUrl(url) {
   }
 }
 
+function toTitleCase(str) {
+  if (!str) return "";
+  return str.toLowerCase().replace(/\b\w/g, s => s.toUpperCase());
+}
+
 function formatTime(value) {
   if (!value) {
     return "Not scanned";
@@ -192,7 +197,7 @@ function renderResult(result) {
   if (semanticAnalysis) {
     setBadge(
       semanticStatus,
-      `${semanticAnalysis.label} ${Math.round(semanticAnalysis.confidence * 100)}%`,
+      `${toTitleCase(semanticAnalysis.label)} ${Math.round(semanticAnalysis.confidence * 100)}%`,
       riskForSemantic(semanticAnalysis)
     );
   } else {
