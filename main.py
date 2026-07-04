@@ -188,7 +188,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     # 5. Start Live Threat Simulator background task
     logger.info("[5/5] Starting Live Threat Simulator …")
-    simulator_task = asyncio.create_task(simulate_live_threats(app.state.db))
+    # The Live Simulator is intentionally disabled based on your request
+    # so that the dashboard only shows REAL data from the extension.
+    # simulator_task = asyncio.create_task(simulate_live_threats(app.state.db))
 
     logger.info("=" * 60)
     logger.info("  PhishGuard-AI Backend — Ready to Serve")

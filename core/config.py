@@ -178,6 +178,8 @@ GLOBAL_SAFE_DOMAINS: Final[frozenset[str]] = frozenset({
     "gov.my",
     "edu.my",
     "tarc.edu.my",
+    # User added safe domains
+    "pixiv.net",
 })
 
 # ==============================================================================
@@ -189,7 +191,7 @@ VISUAL_MODEL_PATH: Final[str] = os.getenv(
 )
 
 VISUAL_CONFIDENCE_THRESHOLD: Final[float] = float(
-    os.getenv("PHISHGUARD_VISUAL_CONFIDENCE", "0.70")
+    os.getenv("PHISHGUARD_VISUAL_CONFIDENCE", "0.85")
 )
 
 # ==============================================================================
