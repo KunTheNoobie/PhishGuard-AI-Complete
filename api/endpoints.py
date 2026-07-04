@@ -32,6 +32,7 @@ from slowapi import Limiter  # type: ignore[import-untyped]
 from slowapi.util import get_remote_address  # type: ignore[import-untyped]
 
 from core.config import (
+    GLOBAL_SAFE_DOMAINS,
     MALICIOUS_THRESHOLD,
     RATE_LIMIT,
     TRUSTED_DOMAIN_CONFIDENCE,
@@ -76,9 +77,9 @@ _PREVIEW_LENGTH: Final[int] = 200
 def _is_trusted_domain(url: str) -> bool:
     """Check whether the given URL belongs to a trusted (whitelisted) domain.
 
-    Supports both exact matches and subdomain matches.  For example, if
-    ``maybank2u.com.my`` is in the whitelist, both ``maybank2u.com.my``
-    and ``www.maybank2u.com.my`` will match.
+    Checks both the Malaysian bank ``TRUSTED_DOMAINS`` and the
+    ``GLOBAL_SAFE_DOMAINS`` set (Google, YouTube, WhatsApp, etc.).
+    Supports exact matches and subdomain matches.
 
     Parameters
     ----------
@@ -96,12 +97,15 @@ def _is_trusted_domain(url: str) -> bool:
     except Exception:
         return False
 
+    # Combined whitelist: bank domains + global safe platforms
+    all_trusted = TRUSTED_DOMAINS | GLOBAL_SAFE_DOMAINS
+
     # Exact match
-    if hostname in TRUSTED_DOMAINS:
+    if hostname in all_trusted:
         return True
 
-    # Subdomain match: e.g., "www.maybank2u.com.my" → "maybank2u.com.my"
-    for trusted in TRUSTED_DOMAINS:
+    # Subdomain match: e.g., "www.google.com" → "google.com"
+    for trusted in all_trusted:
         if hostname.endswith("." + trusted):
             return True
 

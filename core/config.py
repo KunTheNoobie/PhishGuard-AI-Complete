@@ -116,6 +116,71 @@ TRUSTED_DOMAIN_CONFIDENCE: Final[float] = float(
 )
 
 # ==============================================================================
+# 5b. GLOBAL SAFE DOMAINS (well-known legitimate platforms)
+# ==============================================================================
+# Major global platforms that the BERT model frequently misclassifies as
+# phishing due to login-related vocabulary.  These are checked alongside
+# TRUSTED_DOMAINS; a match on either set bypasses BERT inference.
+GLOBAL_SAFE_DOMAINS: Final[frozenset[str]] = frozenset({
+    # Google
+    "google.com",
+    "google.com.my",
+    "googleapis.com",
+    "accounts.google.com",
+    "mail.google.com",
+    # YouTube
+    "youtube.com",
+    "youtu.be",
+    # WhatsApp
+    "whatsapp.com",
+    "web.whatsapp.com",
+    # Facebook / Meta
+    "facebook.com",
+    "messenger.com",
+    "instagram.com",
+    "threads.net",
+    # Microsoft
+    "microsoft.com",
+    "live.com",
+    "outlook.com",
+    "office.com",
+    "office365.com",
+    "microsoftonline.com",
+    "bing.com",
+    "linkedin.com",
+    "github.com",
+    # Apple
+    "apple.com",
+    "icloud.com",
+    # Amazon
+    "amazon.com",
+    "amazon.com.my",
+    "aws.amazon.com",
+    # Twitter / X
+    "twitter.com",
+    "x.com",
+    # Other major platforms
+    "reddit.com",
+    "wikipedia.org",
+    "spotify.com",
+    "netflix.com",
+    "twitch.tv",
+    "discord.com",
+    "telegram.org",
+    "web.telegram.org",
+    "zoom.us",
+    "dropbox.com",
+    "paypal.com",
+    "shopee.com.my",
+    "lazada.com.my",
+    "grab.com",
+    # Malaysian government / education
+    "gov.my",
+    "edu.my",
+    "tarc.edu.my",
+})
+
+# ==============================================================================
 # 6. VISUAL IDENTITY ENGINE
 # ==============================================================================
 VISUAL_MODEL_PATH: Final[str] = os.getenv(

@@ -1,8 +1,14 @@
 {
   "manifest_version": 3,
-  "name": "PhishGuard-AI Visual Shield",
-  "version": "1.0.0",
-  "description": "Visual logo-domain phishing warning module for Cheon Jie Han's FYP scope.",
+  "name": "PhishGuard-AI",
+  "version": "2.0.0",
+  "description": "Enterprise-grade real-time Anti-Phishing Browser Security Suite with BERT semantic analysis, visual logo detection, and mule-account scanning.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
   "permissions": ["activeTab", "storage"],
   "host_permissions": [
     "http://localhost:8000/*",
@@ -20,6 +26,12 @@
   ],
   "action": {
     "default_title": "PhishGuard-AI",
-    "default_popup": "popup/popup.html"
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
   }
 }
