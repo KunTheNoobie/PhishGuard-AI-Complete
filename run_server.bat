@@ -8,5 +8,5 @@ echo Activating Virtual Environment...
 call .\venv\Scripts\activate.bat
 
 echo Starting FastAPI Server...
-python -m uvicorn main:app --host 127.0.0.1 --port 8000
+.\venv\Scripts\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000
 pause
