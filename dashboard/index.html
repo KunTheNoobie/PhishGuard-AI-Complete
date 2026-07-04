@@ -99,10 +99,10 @@
                     <table class="data-table" id="telemetryTable">
                         <thead>
                             <tr>
-                                <th>ID</th>
-                                <th>Malicious URL</th>
-                                <th>BERT Score</th>
-                                <th>Timestamp</th>
+                                <th class="sortable" data-sort-key="log_id">ID <span class="sort-icon"></span></th>
+                                <th class="sortable" data-sort-key="malicious_url">Malicious URL <span class="sort-icon"></span></th>
+                                <th class="sortable" data-sort-key="bert_score">BERT Score <span class="sort-icon"></span></th>
+                                <th class="sortable" data-sort-key="timestamp">Timestamp <span class="sort-icon"></span></th>
                             </tr>
                         </thead>
                         <tbody id="telemetryBody">
@@ -127,12 +127,12 @@
                     <table class="data-table" id="muleTable">
                         <thead>
                             <tr>
-                                <th>#</th>
-                                <th>Account Number</th>
-                                <th>Bank</th>
-                                <th>Platform Flagged</th>
-                                <th>Reports</th>
-                                <th>Date Added</th>
+                                <th class="sortable" data-sort-key="id"># <span class="sort-icon"></span></th>
+                                <th class="sortable" data-sort-key="account_number">Account Number <span class="sort-icon"></span></th>
+                                <th class="sortable" data-sort-key="bank_name">Bank <span class="sort-icon"></span></th>
+                                <th class="sortable" data-sort-key="platform_flagged">Platform Flagged <span class="sort-icon"></span></th>
+                                <th class="sortable" data-sort-key="report_count">Reports <span class="sort-icon"></span></th>
+                                <th class="sortable" data-sort-key="date_added">Date Added <span class="sort-icon"></span></th>
                             </tr>
                         </thead>
                         <tbody id="muleBody">

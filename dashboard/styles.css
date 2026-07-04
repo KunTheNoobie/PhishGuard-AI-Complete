@@ -354,6 +354,39 @@ body {
     white-space: nowrap;
 }
 
+.data-table th.sortable {
+    cursor: pointer;
+    user-select: none;
+    transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.data-table th.sortable:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.sort-icon {
+    display: inline-block;
+    margin-left: 0.25rem;
+    width: 1em;
+    text-align: center;
+    opacity: 0.3;
+    font-size: 0.9em;
+}
+.sort-icon::after { content: "⇕"; }
+
+.data-table th.sortable.sort-asc .sort-icon {
+    opacity: 1;
+    color: var(--accent-cyan);
+}
+.data-table th.sortable.sort-asc .sort-icon::after { content: "↑"; }
+
+.data-table th.sortable.sort-desc .sort-icon {
+    opacity: 1;
+    color: var(--accent-purple);
+}
+.data-table th.sortable.sort-desc .sort-icon::after { content: "↓"; }
+
 .data-table tbody tr {
     border-bottom: 1px solid var(--border-subtle);
     transition: background var(--transition-fast), transform var(--transition-fast);

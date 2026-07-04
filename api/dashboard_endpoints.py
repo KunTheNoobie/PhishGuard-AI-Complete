@@ -130,7 +130,7 @@ async def get_mule_registry(request: Request) -> dict[str, Any]:
         "SELECT id, account_number, bank_name, platform_flagged, "
         "       report_count, date_added "
         "FROM mule_registry "
-        "ORDER BY report_count DESC;"
+        "ORDER BY id DESC;"
     )
     rows = await cursor.fetchall()
 

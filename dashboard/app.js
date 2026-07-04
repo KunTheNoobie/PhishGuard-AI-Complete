@@ -18,6 +18,14 @@ const API_BASE      = "/api/v1/dashboard";
 const REFRESH_MS    = 3_000;   // 3 seconds for live threat simulator
 
 // ═══════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════
+
+let telemetryData = [];
+let muleData = [];
+let currentSort = { table: null, key: null, asc: null };
+
+// ═══════════════════════════════════════════════════════════════════
 // DOM REFERENCES
 // ═══════════════════════════════════════════════════════════════════
 
@@ -109,6 +117,27 @@ function setStatAnimated(el, value) {
     });
 }
 
+/**
+ * Generic sorting function for arrays of objects.
+ * @param {Array} data 
+ * @param {string|null} key 
+ * @param {boolean|null} asc 
+ * @returns {Array}
+ */
+function sortData(data, key, asc) {
+    if (!key) return data; // Default mode (no client sorting, uses real-time API order)
+    return [...data].sort((a, b) => {
+        let valA = a[key];
+        let valB = b[key];
+        if (typeof valA === "string") valA = valA.toLowerCase();
+        if (typeof valB === "string") valB = valB.toLowerCase();
+        
+        if (valA < valB) return asc ? -1 : 1;
+        if (valA > valB) return asc ? 1 : -1;
+        return 0;
+    });
+}
+
 
 // ═══════════════════════════════════════════════════════════════════
 // DATA FETCHING & RENDERING
@@ -127,19 +156,32 @@ async function refreshStats() {
 }
 
 /**
- * Fetch and render the most recent threat telemetry entries.
+ * Fetch the most recent threat telemetry entries.
  */
 async function refreshTelemetry() {
     const data = await apiFetch("/telemetry");
     $telemetryCount.textContent = data.count;
+    telemetryData = data.entries;
+    renderTelemetry();
+}
 
-    if (data.entries.length === 0) {
+/**
+ * Render telemetry entries to DOM.
+ */
+function renderTelemetry() {
+    if (telemetryData.length === 0) {
         $telemetryBody.innerHTML =
             '<tr class="table-empty"><td colspan="4">No threats detected yet — system is secure.</td></tr>';
         return;
     }
 
-    $telemetryBody.innerHTML = data.entries
+    const displayData = sortData(
+        telemetryData, 
+        currentSort.table === 'telemetry' ? currentSort.key : null, 
+        currentSort.asc
+    );
+
+    $telemetryBody.innerHTML = displayData
         .map(
             (e) => `
             <tr>
@@ -153,19 +195,32 @@ async function refreshTelemetry() {
 }
 
 /**
- * Fetch and render the full mule account registry.
+ * Fetch the full mule account registry.
  */
 async function refreshMuleRegistry() {
     const data = await apiFetch("/mule-registry");
     $muleCount.textContent = data.count;
+    muleData = data.accounts;
+    renderMuleRegistry();
+}
 
-    if (data.accounts.length === 0) {
+/**
+ * Render mule accounts to DOM.
+ */
+function renderMuleRegistry() {
+    if (muleData.length === 0) {
         $muleBody.innerHTML =
             '<tr class="table-empty"><td colspan="6">Registry is empty.</td></tr>';
         return;
     }
 
-    $muleBody.innerHTML = data.accounts
+    const displayData = sortData(
+        muleData, 
+        currentSort.table === 'mule' ? currentSort.key : null, 
+        currentSort.asc
+    );
+
+    $muleBody.innerHTML = displayData
         .map(
             (a) => `
             <tr>
@@ -189,6 +244,42 @@ function escapeHtml(str) {
     const div = document.createElement("div");
     div.appendChild(document.createTextNode(str));
     return div.innerHTML;
+}
+
+/**
+ * Handle clicks on sortable table headers.
+ */
+function handleSortClick(e) {
+    const th = e.currentTarget;
+    const tableId = th.closest('table').id; // 'telemetryTable' or 'muleTable'
+    const tableKey = tableId === 'telemetryTable' ? 'telemetry' : 'mule';
+    const sortKey = th.getAttribute('data-sort-key');
+    
+    // 1. If clicking a different column, sort ascending
+    if (currentSort.table !== tableKey || currentSort.key !== sortKey) {
+        currentSort = { table: tableKey, key: sortKey, asc: true };
+    } 
+    // 2. If already ascending, switch to descending
+    else if (currentSort.asc === true) {
+        currentSort.asc = false;
+    } 
+    // 3. If already descending, reset to default mode
+    else {
+        currentSort = { table: null, key: null, asc: null };
+    }
+    
+    // Update header classes for UI arrows
+    document.querySelectorAll('th.sortable').forEach(el => {
+        el.classList.remove('sort-asc', 'sort-desc');
+    });
+    
+    if (currentSort.key) {
+        th.classList.add(currentSort.asc ? 'sort-asc' : 'sort-desc');
+    }
+    
+    // Re-render the affected table
+    if (tableKey === 'telemetry') renderTelemetry();
+    if (tableKey === 'mule') renderMuleRegistry();
 }
 
 
@@ -224,8 +315,13 @@ async function refreshAll() {
 // BOOTSTRAP
 // ═══════════════════════════════════════════════════════════════════
 
+// Attach sorting event listeners
+document.querySelectorAll('th.sortable').forEach(th => {
+    th.addEventListener('click', handleSortClick);
+});
+
 // Initial load
 refreshAll();
 
-// Auto-refresh every 10 seconds
+// Auto-refresh every 3 seconds
 setInterval(refreshAll, REFRESH_MS);
