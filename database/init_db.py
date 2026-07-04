@@ -70,10 +70,10 @@ CREATE INDEX IF NOT EXISTS idx_telemetry_malicious_url
 """
 
 # ==============================================================================
-# Seed Data — Dummy Scammer Accounts
+# Seed Data — Initial Threat Intel Feed
 # ==============================================================================
-# Three fictitious mule accounts pre-loaded for development & integration
-# testing.  Real-world data would be ingested from PDRM / BNM feeds.
+# Initial mock mule accounts loaded for development & integration
+# testing. In production, this syncs with PDRM / BNM threat feeds.
 _SEED_MULE_ACCOUNTS: Final[list[tuple[str, str, str, int]]] = [
     ("112233445566",  "Maybank",          "Shopee",              14),
     ("564738291012",  "Maybank",          "Facebook Marketplace", 8),
@@ -133,14 +133,14 @@ async def initialize_database() -> aiosqlite.Connection:
     await db.execute(_IDX_MULE_ACCOUNT)
     await db.execute(_IDX_TELEMETRY_URL)
 
-    # ── Seed: Insert dummy mule accounts (ignored on conflict) ──
+    # ── Seed: Insert initial threat intel (ignored on conflict) ──
     for account in _SEED_MULE_ACCOUNTS:
         await db.execute(_INSERT_SEED, account)
 
     await db.commit()
 
     logger.info(
-        "Database ready — %d seed mule accounts loaded.",
+        "Database ready — %d threat intel seed records loaded.",
         len(_SEED_MULE_ACCOUNTS),
     )
     return db

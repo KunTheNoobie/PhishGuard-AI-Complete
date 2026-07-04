@@ -15,7 +15,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 const API_BASE      = "/api/v1/dashboard";
-const REFRESH_MS    = 10_000;   // 10 seconds
+const REFRESH_MS    = 3_000;   // 3 seconds for live threat simulator
 
 // ═══════════════════════════════════════════════════════════════════
 // DOM REFERENCES

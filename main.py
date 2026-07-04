@@ -27,7 +27,9 @@ Thesis Reference   : §6.2 — Application Bootstrap & Lifespan Management
 
 from __future__ import annotations
 
+import asyncio
 import logging
+import random
 import sys
 import time
 from contextlib import asynccontextmanager
@@ -85,6 +87,52 @@ limiter: Final[Limiter] = Limiter(
 
 
 # ==============================================================================
+# Live Threat Simulator
+# ==============================================================================
+
+async def simulate_live_threats(db) -> None:
+    """Continuously generates live threat intel for demonstration purposes."""
+    banks = ["Maybank", "CIMB Bank", "Public Bank", "RHB Bank", "Hong Leong Bank", "AmBank", "Bank Islam"]
+    platforms = ["Shopee", "Facebook Marketplace", "WhatsApp", "Telegram", "Mudah.my", "Carousell", "Lazada"]
+    domains = ["secure-login-cimb.com", "maybznk2u.com.my", "shopee-free-gifts.net", "lhdn-refunds.org", "pnm-gov.my-login.com", "cimb-clicks-secure.com", "pbb-update-info.net"]
+
+    logger.info("Live Threat Simulator started.")
+    while True:
+        await asyncio.sleep(random.randint(5, 12))
+        try:
+            # 1. Always inject a telemetry log (malicious URL detection)
+            malicious_url = f"http://{random.choice(domains)}/auth/login?token={random.randint(1000, 9999)}"
+            score = round(random.uniform(0.75, 0.99), 3)
+            await db.execute(
+                "INSERT INTO threat_telemetry (malicious_url, bert_score) VALUES (?, ?)",
+                (malicious_url, score)
+            )
+
+            # 2. 40% chance to report a new mule account or increment an existing one
+            if random.random() < 0.4:
+                account_num = str(random.randint(1000000000, 99999999999999))
+                bank = random.choice(banks)
+                plat = random.choice(platforms)
+                reports = random.randint(1, 3)
+                
+                # Check if it exists to just increment report_count, though randomly generated it's unlikely
+                # but let's just insert
+                await db.execute(
+                    """
+                    INSERT INTO mule_registry (account_number, bank_name, platform_flagged, report_count) 
+                    VALUES (?, ?, ?, ?)
+                    """,
+                    (account_num, bank, plat, reports)
+                )
+
+            await db.commit()
+            logger.debug("Live Threat Simulator: Injected new threat intel.")
+        except Exception as e:
+            logger.error("Live Threat Simulator Error: %s", e)
+            await asyncio.sleep(5)
+
+
+# ==============================================================================
 # Lifespan Context Manager (PEP 3143-style)
 # ==============================================================================
 
@@ -135,8 +183,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.semantic_engine = None
 
     # 4. Mule Scanner
-    logger.info("[4/4] Initialising Mule Scanner …")
+    logger.info("[4/5] Initialising Mule Scanner …")
     app.state.mule_scanner = MuleScanner()
+
+    # 5. Start Live Threat Simulator background task
+    logger.info("[5/5] Starting Live Threat Simulator …")
+    simulator_task = asyncio.create_task(simulate_live_threats(app.state.db))
 
     logger.info("=" * 60)
     logger.info("  PhishGuard-AI Backend — Ready to Serve")
@@ -152,6 +204,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # Release ML resources
     if app.state.semantic_engine is not None:
         app.state.semantic_engine.shutdown()
+
+    # Cancel background tasks
+    if not simulator_task.done():
+        simulator_task.cancel()
+        try:
+            await simulator_task
+        except asyncio.CancelledError:
+            pass
 
     # Close database connection
     await app.state.db.close()

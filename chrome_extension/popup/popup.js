@@ -100,7 +100,7 @@ function setPanelState(risk) {
   const normalized = risk || "neutral";
   statusPill.className = `status-pill ${normalized}`;
   resultPanel.className = `result-panel ${normalized}`;
-  statusPill.textContent = normalized === "neutral" ? "WAITING" : normalized.toUpperCase();
+  statusPill.textContent = normalized === "neutral" ? "Waiting" : normalized.charAt(0).toUpperCase() + normalized.slice(1);
 }
 
 function setBadge(element, text, status) {
@@ -187,7 +187,7 @@ function renderResult(result) {
   const visualRisk = visualResult && visualResult.risk_level
     ? visualResult.risk_level
     : "unavailable";
-  setBadge(visualStatus, visualRisk.toUpperCase(), visualRisk);
+  setBadge(visualStatus, visualRisk.charAt(0).toUpperCase() + visualRisk.slice(1), visualRisk);
 
   if (semanticAnalysis) {
     setBadge(
@@ -212,7 +212,7 @@ function renderResult(result) {
 
   setBadge(
     finalVerdict,
-    result.final_verdict || (risk === "dangerous" ? "BLOCK_RENDER" : "SAFE"),
+    result.final_verdict === "BLOCK_RENDER" ? "Dangerous" : (result.final_verdict === "REVIEW" ? "Suspicious" : (result.final_verdict || (risk === "dangerous" ? "Dangerous" : "Safe"))),
     riskForVerdict(result)
   );
 
@@ -269,7 +269,7 @@ async function scanActivePage() {
     });
   } finally {
     scanButton.disabled = false;
-    scanButton.textContent = "Scan page";
+    scanButton.textContent = "Scan Page";
   }
 }
 
