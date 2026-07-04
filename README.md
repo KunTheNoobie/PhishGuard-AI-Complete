@@ -1,16 +1,20 @@
----
-title: PhishGuard-AI Backend
-emoji: 🛡️
-colorFrom: green
-colorTo: blue
-sdk: docker
-pinned: false
----
-
-# PhishGuard-AI Backend
+# PhishGuard-AI Complete
 
 Enterprise-grade, real-time Anti-Phishing Browser Security Suite. Performs semantic NLP analysis and mule-account scanning on raw DOM payloads.
 
-## Deploying to Hugging Face Spaces
+## Running Locally
 
-This repository is configured to build as a Docker Space on Hugging Face. The metadata at the top of this file informs Hugging Face to read the `Dockerfile` in the root directory.
+1. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. Start the backend server:
+   ```bash
+   uvicorn main:app --reload
+   ```
+
+3. Load the Chrome Extension:
+   - Go to `chrome://extensions/`
+   - Enable **Developer Mode**
+   - Click **Load unpacked** and select the `chrome_extension` folder.
