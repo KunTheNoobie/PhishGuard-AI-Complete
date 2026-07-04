@@ -11,7 +11,7 @@
 ## 📖 Project Abstract (Final Year Project)
 
 PhishGuard-AI is designed as an end-to-end security solution protecting users from Malaysian financial scams. Unlike traditional blacklist-based blockers, PhishGuard utilizes a **multi-modal AI approach**:
-1. **Semantic NLP Engine (FinBERT):** Analyzes the raw DOM structure and text semantics of a webpage to identify social engineering patterns typical in phishing.
+1. **Semantic NLP Engine (Custom Fine-Tuned BERT):** Analyzes the raw DOM structure and text semantics of a webpage to identify social engineering patterns typical in phishing.
 2. **Visual Identity Engine (YOLOv8):** Scans the viewport for the unauthorized use of major Malaysian financial logos (e.g., Maybank, CIMB, Public Bank) hosted on suspicious domains.
 3. **Mule Account Registry (Regex + DB):** Extracts bank account numbers directly from the webpage and cross-references them against an actively maintained SQLite registry of known scam/money-mule accounts.
 
