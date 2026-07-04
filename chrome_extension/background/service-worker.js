@@ -288,7 +288,7 @@ function combineResults(visualResult, semanticResult, errors, pageUrl) {
   } else if (riskLevel === "suspicious") {
     finalVerdict = "REVIEW";
   } else if (riskLevel === "unavailable") {
-    finalVerdict = "UNAVAILABLE";
+    finalVerdict = "Unavailable";
   }
 
   return {
