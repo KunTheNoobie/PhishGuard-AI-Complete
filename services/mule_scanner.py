@@ -3,16 +3,12 @@ PhishGuard-AI — Mule Account Scanner Service.
 ===============================================
 
 Detects Malaysian bank account numbers embedded in web-page text using
-**bank-specific** pre-compiled regular expressions, then cross-references
+bank-specific pre-compiled regular expressions, then cross-references
 any matches against the ``mule_registry`` table via the repository layer.
 
-Each major Malaysian bank has a distinct account-number format (digit
-count and leading-digit convention).  By compiling a targeted pattern per
-bank at startup, the scanner significantly reduces false-positive matches
-compared to a single generic ``\\d{10,14}`` expression.
-
-A generic fallback pattern (``\\b\\d{10,14}\\b``) is still applied last to
-catch account formats from unlisted financial institutions.
+Each major Malaysian bank has a distinct account-number format. Targeted
+patterns reduce false positives, while the generic ``\\b\\d{10,14}\\b``
+fallback still catches formats from unlisted financial institutions.
 
 Architecture Layer : Service / Detection
 Thesis Reference   : §4.4 — Mule Account Pattern Matching & Registry Lookup
@@ -36,23 +32,17 @@ class MuleScanner:
     """Pre-compiled bank-specific regex scanner + mule-registry cross-referencer.
 
     Instantiated **once** during the FastAPI ``lifespan`` and stored in
-    ``app.state``.  All compiled patterns are reused across requests
+    ``app.state``.  The compiled patterns are reused across all requests
     (zero recompilation overhead).
     """
 
     def __init__(self) -> None:
         """Compile bank-specific and generic account-number regex patterns."""
-        # ── Bank-specific compiled patterns ──
         self._bank_patterns: Final[dict[str, re.Pattern[str]]] = {
             bank: re.compile(pattern)
             for bank, pattern in MULE_ACCOUNT_PATTERNS.items()
         }
-
-        # ── Generic fallback pattern ──
-        self._generic_pattern: Final[re.Pattern[str]] = re.compile(
-            MULE_ACCOUNT_REGEX
-        )
-
+        self._generic_pattern: Final[re.Pattern[str]] = re.compile(MULE_ACCOUNT_REGEX)
         logger.info(
             "MuleScanner initialised — %d bank-specific patterns + 1 generic fallback.",
             len(self._bank_patterns),
@@ -67,11 +57,8 @@ class MuleScanner:
 
         Pipeline
         --------
-        1. Iterate through all bank-specific compiled regex patterns and
-           extract candidate account numbers, tagging each with the
-           suspected bank name.
-        2. Apply the generic fallback pattern to capture any remaining
-           10–14 digit sequences not already matched.
+        1. Apply bank-specific compiled regex patterns.
+        2. Apply the generic fallback pattern for remaining 10–14 digit numbers.
         3. Deduplicate the combined matches.
         4. Delegate to ``repository.check_mule_accounts()`` for DB lookup.
         5. Return a structured result dict consumed by the response schema.

@@ -63,91 +63,91 @@ BERT_MODEL_NAME: Final[str] = os.getenv(
     "./phishguard_custom_model",
 )
 
+# Set PHISHGUARD_ENABLE_SEMANTIC=false for Cheon's visual-only demo when
+# the BERT model file has not been pulled from Git LFS yet.
+ENABLE_SEMANTIC_ENGINE: Final[bool] = os.getenv(
+    "PHISHGUARD_ENABLE_SEMANTIC",
+    "true",
+).lower() not in {"0", "false", "no"}
+
 # Confidence threshold above which a DOM payload is flagged as malicious.
 # label 1 = "PHISHING" at or above this threshold triggers BLOCK_RENDER.
 MALICIOUS_THRESHOLD: Final[float] = float(
     os.getenv("PHISHGUARD_MALICIOUS_THRESHOLD", "0.75")
 )
 
-# ── Trusted Domain Whitelist ──
-# Known-legitimate Malaysian financial institution domains.  When the
-# incoming URL matches one of these domains (or a subdomain thereof),
-# BERT inference is bypassed and the result is forced to LEGITIMATE.
-# This eliminates false positives caused by legitimate banking pages
-# containing vocabulary that overlaps with phishing content.
+# Known-legitimate Malaysian financial institution domains. When the incoming
+# URL matches one of these domains or its subdomains, the semantic endpoint can
+# bypass BERT to prevent official banking pages from being false positives.
 TRUSTED_DOMAINS: Final[frozenset[str]] = frozenset({
-    # Maybank
     "maybank2u.com.my",
     "maybank.com",
     "maybank.com.my",
-    # Public Bank (PBe)
     "pbebank.com",
     "pbebank.com.my",
     "publicbank.com.my",
-    # CIMB
     "cimbclicks.com.my",
     "cimb.com.my",
     "cimbbank.com.my",
-    # Hong Leong Bank
     "hlb.com.my",
     "hongleongconnect.my",
-    # RHB Bank
     "rhbgroup.com",
     "rhbnow.com",
     "rhbbank.com.my",
-    # AmBank
     "ambankgroup.com",
     "ambank.com.my",
-    # Bank Islam
     "bankislam.com",
     "bankislam.com.my",
-    # Bank Rakyat
     "bankrakyat.com.my",
-    # BSN (Bank Simpanan Nasional)
     "bsn.com.my",
-    # Affin Bank
     "affinbank.com.my",
     "affinonline.com",
-    # Alliance Bank
     "alliancebank.com.my",
-    # International banks operating in Malaysia
     "standardchartered.com.my",
     "hsbc.com.my",
     "uob.com.my",
     "ocbc.com.my",
-    # Bank Muamalat
     "bankmuamalat.com.my",
-    # Agrobank
     "agrobank.com.my",
 })
 
-# Confidence score returned when a whitelisted domain is matched.
 TRUSTED_DOMAIN_CONFIDENCE: Final[float] = float(
     os.getenv("PHISHGUARD_TRUSTED_CONFIDENCE", "0.99")
 )
 
 # ==============================================================================
-# 6. MULE SCANNER
+# 6. VISUAL IDENTITY ENGINE
 # ==============================================================================
-# Generic fallback regex matching 10–14 digit Malaysian bank account numbers.
+VISUAL_MODEL_PATH: Final[str] = os.getenv(
+    "PHISHGUARD_VISUAL_MODEL",
+    "visual_identity/models/best.pt",
+)
+
+VISUAL_CONFIDENCE_THRESHOLD: Final[float] = float(
+    os.getenv("PHISHGUARD_VISUAL_CONFIDENCE", "0.70")
+)
+
+# ==============================================================================
+# 7. MULE SCANNER
+# ==============================================================================
+# Regex pattern matching 10–14 digit Malaysian bank account numbers.
 MULE_ACCOUNT_REGEX: Final[str] = r"\b\d{10,14}\b"
 
 # Bank-specific regex patterns for major Malaysian financial institutions.
-# Each pattern is tuned to the account-number format issued by that bank,
-# significantly reducing false positives compared to the generic fallback.
+# The generic fallback above is still applied after these targeted patterns.
 MULE_ACCOUNT_PATTERNS: Final[dict[str, str]] = {
-    "Maybank":          r"\b[15]\d{11}\b",      # 12 digits, starts with 1 or 5
-    "CIMB Bank":        r"\b7\d{13}\b",          # 14 digits, starts with 7
-    "Public Bank":      r"\b3\d{9}\b",           # 10 digits, starts with 3
-    "RHB Bank":         r"\b2\d{13}\b",          # 14 digits, starts with 2
-    "Hong Leong Bank":  r"\b[02]\d{9,11}\b",     # 10–12 digits, starts with 0 or 2
-    "AmBank":           r"\b8\d{12}\b",          # 13 digits, starts with 8
-    "Bank Islam":       r"\b1\d{13}\b",          # 14 digits, starts with 1
-    "Bank Rakyat":      r"\b[02]\d{11}\b",       # 12 digits, starts with 0 or 2
+    "Maybank": r"\b[15]\d{11}\b",
+    "CIMB Bank": r"\b7\d{13}\b",
+    "Public Bank": r"\b3\d{9}\b",
+    "RHB Bank": r"\b2\d{13}\b",
+    "Hong Leong Bank": r"\b[02]\d{9,11}\b",
+    "AmBank": r"\b8\d{12}\b",
+    "Bank Islam": r"\b1\d{13}\b",
+    "Bank Rakyat": r"\b[02]\d{11}\b",
 }
 
 # ==============================================================================
-# 7. ORCHESTRATION VERDICTS
+# 8. ORCHESTRATION VERDICTS
 # ==============================================================================
 VERDICT_BLOCK: Final[str] = "BLOCK_RENDER"
 VERDICT_SAFE: Final[str] = "SAFE"

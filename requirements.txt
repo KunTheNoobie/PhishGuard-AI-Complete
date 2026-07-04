@@ -17,12 +17,16 @@ pydantic[email]>=2.7.0,<3.0.0
 torch>=2.3.0
 transformers>=4.41.0,<5.0.0
 
+# --- Visual Identity / YOLOv8 Logo Detection ---
+ultralytics>=8.2.0,<9.0.0
+Pillow>=10.0.0,<12.0.0
+
 # --- Async Database ---
 aiosqlite>=0.20.0,<1.0.0
 
 # --- HTML Sanitization ---
 beautifulsoup4>=4.12.0,<5.0.0
-# lxml is optional — sanitizer.py falls back to html.parser if unavailable.
+lxml>=5.0.0,<6.0.0
 
 # --- Rate Limiting ---
 slowapi>=0.1.9,<1.0.0

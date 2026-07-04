@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "PhishGuard-AI Visual Shield",
+  "version": "1.0.0",
+  "description": "Visual logo-domain phishing warning module for Cheon Jie Han's FYP scope.",
+  "permissions": ["activeTab", "storage"],
+  "host_permissions": [
+    "http://localhost:8000/*",
+    "http://127.0.0.1:8000/*"
+  ],
+  "background": {
+    "service_worker": "background/service-worker.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content/content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "PhishGuard-AI",
+    "default_popup": "popup/popup.html"
+  }
+}

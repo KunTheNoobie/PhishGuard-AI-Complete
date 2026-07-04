@@ -45,10 +45,12 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from api.endpoints import router as analysis_router
 from api.dashboard_endpoints import router as dashboard_router
+from api.visual import router as visual_router
 from core.config import (
     APP_DESCRIPTION,
     APP_TITLE,
     APP_VERSION,
+    ENABLE_SEMANTIC_ENGINE,
     RATE_LIMIT,
 )
 from database.init_db import initialize_database
@@ -118,13 +120,19 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.db = await initialize_database()
 
     # 2. BERT Semantic Engine (Singleton)
-    logger.info("[2/4] Loading BERT Semantic Engine …")
-    engine = SemanticEngine()
-    app.state.semantic_engine = engine
+    if ENABLE_SEMANTIC_ENGINE:
+        logger.info("[2/4] Loading BERT Semantic Engine …")
+        engine = SemanticEngine()
+        app.state.semantic_engine = engine
 
-    # 3. Warm-up pass
-    logger.info("[3/4] Running BERT warm-up inference …")
-    engine.warm_up()
+        # 3. Warm-up pass
+        logger.info("[3/4] Running BERT warm-up inference …")
+        engine.warm_up()
+    else:
+        logger.warning(
+            "[2/4] BERT Semantic Engine disabled by PHISHGUARD_ENABLE_SEMANTIC=false."
+        )
+        app.state.semantic_engine = None
 
     # 4. Mule Scanner
     logger.info("[4/4] Initialising Mule Scanner …")
@@ -142,7 +150,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.info("=" * 60)
 
     # Release ML resources
-    app.state.semantic_engine.shutdown()
+    if app.state.semantic_engine is not None:
+        app.state.semantic_engine.shutdown()
 
     # Close database connection
     await app.state.db.close()
@@ -236,11 +245,11 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 app.add_middleware(RequestLoggingMiddleware)
 
 
-# ── Mount the API routers ──
+# ── Mount the API router ──
 app.include_router(analysis_router)
+app.include_router(visual_router)
 app.include_router(dashboard_router)
 
-# ── Serve the monitoring dashboard as static files ──
 app.mount(
     "/dashboard",
     StaticFiles(directory="dashboard", html=True),

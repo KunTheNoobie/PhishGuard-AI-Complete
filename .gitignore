@@ -31,5 +31,22 @@ Thumbs.db
 # Environment variables
 .env
 
-# ML training checkpoints and custom model files (too large for git)
+# ML training checkpoints (not needed in production)
+phishguard_custom_model/checkpoint-*/
+
+# Large local model folder should be transferred with Git LFS or manually.
 phishguard_custom_model/
+
+# Visual identity training data and run artifacts (local only)
+visual_identity/data/
+visual_identity/runs/
+visual_identity/.ultralytics/
+
+# Convenience batch scripts (user-local)
+SETUP_WINDOWS.bat
+START_BACKEND.bat
+RUN_TESTS.bat
+setup_windows.ps1
+SEND_THIS_TO_YOUR_FRIEND.txt
+PACKAGE_CHECKSUMS.txt
+

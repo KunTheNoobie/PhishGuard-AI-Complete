@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PhishGuard-AI</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="popup-shell">
+      <header class="topbar">
+        <div>
+          <h1>PhishGuard-AI</h1>
+          <p>Multi-Modal Check</p>
+        </div>
+        <span id="statusPill" class="status-pill neutral">Waiting</span>
+      </header>
+
+      <section id="resultPanel" class="result-panel neutral">
+        <div class="scan-meta">
+          <span id="currentDomain">No domain</span>
+          <span id="scanTime">Not scanned</span>
+        </div>
+        <div id="statusTitle" class="status-title">No page result yet</div>
+        <p id="reasonText" class="reason">Open an HTTP or HTTPS page and scan it.</p>
+        <ul id="logoList" class="logo-list"></ul>
+      </section>
+
+      <section class="module-panel" aria-label="Analysis modules">
+        <div class="module-row">
+          <span>Visual</span>
+          <strong id="visualStatus" class="module-value neutral">Waiting</strong>
+        </div>
+        <div class="module-row">
+          <span>BERT Semantic</span>
+          <strong id="semanticStatus" class="module-value neutral">Waiting</strong>
+        </div>
+        <div class="module-row">
+          <span>Mule Account</span>
+          <strong id="muleStatus" class="module-value neutral">Waiting</strong>
+        </div>
+        <div class="module-row">
+          <span>Final Verdict</span>
+          <strong id="finalVerdict" class="module-value neutral">Waiting</strong>
+        </div>
+      </section>
+
+      <button id="scanButton" class="primary-button" type="button">Scan page</button>
+
+      <details class="settings">
+        <summary>Backend settings</summary>
+        <label>
+          API URL
+          <input id="apiBaseUrl" type="text" autocomplete="off">
+        </label>
+        <label>
+          API token
+          <input id="apiToken" type="password" autocomplete="off">
+        </label>
+        <button id="saveSettingsButton" class="secondary-button" type="button">Save</button>
+      </details>
+    </main>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
