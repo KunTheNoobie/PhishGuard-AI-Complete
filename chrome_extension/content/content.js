@@ -87,7 +87,7 @@ function showWarningBanner(result) {
     padding: "10px 16px",
     background: isDangerous ? "#b91c1c" : "#f59e0b",
     color: isDangerous ? "#ffffff" : "#111827",
-    fontFamily: "Arial, sans-serif",
+    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
     fontSize: "15px",
     fontWeight: "700",
     lineHeight: "1.4",
