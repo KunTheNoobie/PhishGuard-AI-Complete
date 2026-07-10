@@ -95,7 +95,8 @@ async def get_telemetry(request: Request) -> dict[str, Any]:
     cursor = await db.execute(
         "SELECT log_id, malicious_url, bert_score, timestamp "
         "FROM threat_telemetry "
-        "ORDER BY log_id DESC;"
+        "ORDER BY log_id DESC "
+        "LIMIT 50;"
     )
     rows = await cursor.fetchall()
 

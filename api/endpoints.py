@@ -2,7 +2,7 @@
 PhishGuard-AI — API Endpoint Router.
 ======================================
 
-Defines the ``/api/v1/analyse/semantics`` endpoint — the primary
+Defines the ``/api/v1/analyze/semantics`` endpoint — the primary
 ingestion point for the browser extension.  The handler orchestrates
 the full analysis pipeline:
 
@@ -113,11 +113,11 @@ def _is_trusted_domain(url: str) -> bool:
 
 
 # ==============================================================================
-# POST /api/v1/analyse/semantics
+# POST /api/v1/analyze/semantics
 # ==============================================================================
 
 @router.post(
-    "/analyse/semantics",
+    "/analyze/semantics",
     response_model=AnalysisResponse,
     summary="Analyse a web page for phishing threats",
     description=(
@@ -233,12 +233,28 @@ async def analyse_semantics(
         # ── Non-whitelisted: inject URL context into model input ──
         #   Prepending the URL gives the BERT model domain-level signal
         #   alongside the page content, improving classification accuracy.
-        model_input: str = f"URL: {url_str} | {sanitized_text}"
+        if semantic_engine is None:
+            # Engine disabled — fall back to a neutral classification
+            # and still run the mule scan for defence-in-depth.
+            logger.warning(
+                "[%s] Semantic engine is disabled — returning neutral "
+                "classification for non-whitelisted URL '%s'.",
+                transaction_id,
+                url_str,
+            )
+            bert_result = {
+                "label": "LEGITIMATE",
+                "confidence": 0.0,
+                "is_malicious": False,
+            }
+            mule_result = await mule_scanner.scan_and_verify(sanitized_text, db)
+        else:
+            model_input: str = f"URL: {url_str} | {sanitized_text}"
 
-        bert_result, mule_result = await asyncio.gather(
-            semantic_engine.predict(model_input),
-            mule_scanner.scan_and_verify(sanitized_text, db),
-        )
+            bert_result, mule_result = await asyncio.gather(
+                semantic_engine.predict(model_input),
+                mule_scanner.scan_and_verify(sanitized_text, db),
+            )
 
     elapsed_ms: float = round(
         (time.perf_counter_ns() - start_ns) / 1_000_000, 2
@@ -258,18 +274,19 @@ async def analyse_semantics(
     verdict: str = VERDICT_BLOCK if is_threat else VERDICT_SAFE
 
     # ── 6. Background Telemetry (fire-and-forget) ──
-    # Based on user request, we now log ALL scans to the telemetry feed
-    # so they can see their live activity in the dashboard, even if it's safe.
-    background_tasks.add_task(
-        log_threat_telemetry,
-        url=str(payload.url),
-        score=bert_result["confidence"],
-        db=db,
-    )
-    logger.info(
-        "[%s] Telemetry write scheduled (background).",
-        transaction_id,
-    )
+    # Only persist entries for detected threats to keep the telemetry
+    # table focused on actionable intelligence (§5.2).
+    if is_threat:
+        background_tasks.add_task(
+            log_threat_telemetry,
+            url=str(payload.url),
+            score=bert_result["confidence"],
+            db=db,
+        )
+        logger.info(
+            "[%s] Telemetry write scheduled (background).",
+            transaction_id,
+        )
 
     # ── 7. Assemble Response ──
     response = AnalysisResponse(

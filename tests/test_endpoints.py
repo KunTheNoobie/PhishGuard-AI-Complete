@@ -2,7 +2,7 @@
 PhishGuard-AI — API Endpoint Integration Tests.
 =================================================
 
-Full integration tests exercising the ``/api/v1/analyse/semantics``
+Full integration tests exercising the ``/api/v1/analyze/semantics``
 endpoint through the FastAPI test client.  Uses mocked BERT engine
 and in-memory database from ``conftest.py``.
 """
@@ -39,7 +39,7 @@ class TestAuthentication:
     @pytest.mark.asyncio
     async def test_missing_auth_returns_401(self, test_client: AsyncClient) -> None:
         resp = await test_client.post(
-            "/api/v1/analyse/semantics",
+            "/api/v1/analyze/semantics",
             json={
                 "url": "https://example.com",
                 "dom_content": "<html><body>Hello</body></html>",
@@ -50,7 +50,7 @@ class TestAuthentication:
     @pytest.mark.asyncio
     async def test_invalid_token_returns_401(self, test_client: AsyncClient) -> None:
         resp = await test_client.post(
-            "/api/v1/analyse/semantics",
+            "/api/v1/analyze/semantics",
             json={
                 "url": "https://example.com",
                 "dom_content": "<html><body>Hello</body></html>",
@@ -62,7 +62,7 @@ class TestAuthentication:
     @pytest.mark.asyncio
     async def test_valid_token_passes(self, test_client: AsyncClient) -> None:
         resp = await test_client.post(
-            "/api/v1/analyse/semantics",
+            "/api/v1/analyze/semantics",
             json={
                 "url": "https://example.com",
                 "dom_content": "<html><body>Hello</body></html>",
@@ -81,7 +81,7 @@ class TestPayloadValidation:
     @pytest.mark.asyncio
     async def test_missing_url_returns_422(self, test_client: AsyncClient) -> None:
         resp = await test_client.post(
-            "/api/v1/analyse/semantics",
+            "/api/v1/analyze/semantics",
             json={"dom_content": "<html><body>Hello</body></html>"},
             headers=AUTH_HEADERS,
         )
@@ -90,7 +90,7 @@ class TestPayloadValidation:
     @pytest.mark.asyncio
     async def test_missing_dom_content_returns_422(self, test_client: AsyncClient) -> None:
         resp = await test_client.post(
-            "/api/v1/analyse/semantics",
+            "/api/v1/analyze/semantics",
             json={"url": "https://example.com"},
             headers=AUTH_HEADERS,
         )
@@ -99,7 +99,7 @@ class TestPayloadValidation:
     @pytest.mark.asyncio
     async def test_invalid_url_format_returns_422(self, test_client: AsyncClient) -> None:
         resp = await test_client.post(
-            "/api/v1/analyse/semantics",
+            "/api/v1/analyze/semantics",
             json={
                 "url": "not-a-valid-url",
                 "dom_content": "<html><body>Hello</body></html>",
@@ -111,7 +111,7 @@ class TestPayloadValidation:
     @pytest.mark.asyncio
     async def test_empty_dom_content_returns_422(self, test_client: AsyncClient) -> None:
         resp = await test_client.post(
-            "/api/v1/analyse/semantics",
+            "/api/v1/analyze/semantics",
             json={
                 "url": "https://example.com",
                 "dom_content": "",
@@ -130,7 +130,7 @@ class TestSafeVerdict:
     @pytest.mark.asyncio
     async def test_legitimate_page_returns_safe(self, test_client: AsyncClient) -> None:
         resp = await test_client.post(
-            "/api/v1/analyse/semantics",
+            "/api/v1/analyze/semantics",
             json={
                 "url": "https://www.maybank2u.com.my",
                 "dom_content": "<html><body><h1>Welcome to Maybank</h1><p>Internet Banking</p></body></html>",
@@ -163,7 +163,7 @@ class TestSafeVerdict:
     @pytest.mark.asyncio
     async def test_response_includes_mule_scan(self, test_client: AsyncClient) -> None:
         resp = await test_client.post(
-            "/api/v1/analyse/semantics",
+            "/api/v1/analyze/semantics",
             json={
                 "url": "https://example.com",
                 "dom_content": "<html><body>No accounts here</body></html>",
@@ -187,7 +187,7 @@ class TestBlockVerdict:
     @pytest.mark.asyncio
     async def test_phishing_page_returns_block(self, phishing_client: AsyncClient) -> None:
         resp = await phishing_client.post(
-            "/api/v1/analyse/semantics",
+            "/api/v1/analyze/semantics",
             json={
                 "url": "https://rnaybank.com/login",
                 "dom_content": "<html><body><h1>URGENT: Account suspended!</h1><p>Transfer RM500 now</p></body></html>",
@@ -217,7 +217,7 @@ class TestWhitelistedDomains:
     async def test_whitelisted_maybank_returns_safe(self, phishing_client: AsyncClient) -> None:
         """maybank2u.com.my should return SAFE even when BERT would say PHISHING."""
         resp = await phishing_client.post(
-            "/api/v1/analyse/semantics",
+            "/api/v1/analyze/semantics",
             json={
                 "url": "https://www.maybank2u.com.my/login",
                 "dom_content": "<html><body><h1>Welcome to Maybank</h1><p>Internet Banking Login</p></body></html>",
@@ -235,7 +235,7 @@ class TestWhitelistedDomains:
     async def test_whitelisted_pbebank_returns_safe(self, phishing_client: AsyncClient) -> None:
         """pbebank.com (Public Bank) should return SAFE."""
         resp = await phishing_client.post(
-            "/api/v1/analyse/semantics",
+            "/api/v1/analyze/semantics",
             json={
                 "url": "https://www.pbebank.com/personal-banking",
                 "dom_content": "<html><body><h1>Public Bank</h1><p>Login to your account</p></body></html>",
@@ -253,7 +253,7 @@ class TestWhitelistedDomains:
     async def test_whitelisted_cimb_returns_safe(self, phishing_client: AsyncClient) -> None:
         """cimbclicks.com.my should return SAFE."""
         resp = await phishing_client.post(
-            "/api/v1/analyse/semantics",
+            "/api/v1/analyze/semantics",
             json={
                 "url": "https://www.cimbclicks.com.my/",
                 "dom_content": "<html><body><h1>CIMB Clicks</h1><p>Secure Online Banking</p></body></html>",
@@ -270,7 +270,7 @@ class TestWhitelistedDomains:
     async def test_subdomain_of_whitelisted_returns_safe(self, phishing_client: AsyncClient) -> None:
         """Subdomains like online.maybank.com.my should also be whitelisted."""
         resp = await phishing_client.post(
-            "/api/v1/analyse/semantics",
+            "/api/v1/analyze/semantics",
             json={
                 "url": "https://online.maybank.com.my/banking",
                 "dom_content": "<html><body><h1>Maybank Online</h1><p>Transfer funds securely</p></body></html>",
@@ -287,7 +287,7 @@ class TestWhitelistedDomains:
     async def test_phishing_clone_still_blocked(self, phishing_client: AsyncClient) -> None:
         """A phishing clone (rnaybank.com) must NOT be whitelisted."""
         resp = await phishing_client.post(
-            "/api/v1/analyse/semantics",
+            "/api/v1/analyze/semantics",
             json={
                 "url": "https://rnaybank.com/login",
                 "dom_content": "<html><body><h1>Maybank Login</h1><p>Enter your password</p></body></html>",
@@ -305,7 +305,7 @@ class TestWhitelistedDomains:
     async def test_non_whitelisted_domain_uses_bert(self, phishing_client: AsyncClient) -> None:
         """An unknown domain should go through normal BERT inference."""
         resp = await phishing_client.post(
-            "/api/v1/analyse/semantics",
+            "/api/v1/analyze/semantics",
             json={
                 "url": "https://suspicious-site.com/login",
                 "dom_content": "<html><body><h1>Login</h1><p>Enter credentials</p></body></html>",
@@ -330,7 +330,7 @@ class TestMuleDetectionInEndpoint:
     async def test_mule_account_in_dom_triggers_block(self, phishing_client: AsyncClient) -> None:
         """When DOM contains a known mule account number, it should be flagged."""
         resp = await phishing_client.post(
-            "/api/v1/analyse/semantics",
+            "/api/v1/analyze/semantics",
             json={
                 "url": "https://suspicious-shop.com/pay",
                 "dom_content": (
@@ -352,7 +352,7 @@ class TestMuleDetectionInEndpoint:
     async def test_mule_account_alone_triggers_block(self, test_client: AsyncClient) -> None:
         """Even with a LEGITIMATE BERT verdict, a mule account should trigger BLOCK."""
         resp = await test_client.post(
-            "/api/v1/analyse/semantics",
+            "/api/v1/analyze/semantics",
             json={
                 "url": "https://normal-looking-site.com",
                 "dom_content": (

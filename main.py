@@ -168,21 +168,21 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.info("=" * 60)
 
     # 1. Database
-    logger.info("[1/4] Initialising database …")
+    logger.info("[1/5] Initialising database …")
     app.state.db = await initialize_database()
 
     # 2. BERT Semantic Engine (Singleton)
     if ENABLE_SEMANTIC_ENGINE:
-        logger.info("[2/4] Loading BERT Semantic Engine …")
+        logger.info("[2/5] Loading BERT Semantic Engine …")
         engine = SemanticEngine()
         app.state.semantic_engine = engine
 
         # 3. Warm-up pass
-        logger.info("[3/4] Running BERT warm-up inference …")
+        logger.info("[3/5] Running BERT warm-up inference …")
         engine.warm_up()
     else:
         logger.warning(
-            "[2/4] BERT Semantic Engine disabled by PHISHGUARD_ENABLE_SEMANTIC=false."
+            "[2/5] BERT Semantic Engine disabled by PHISHGUARD_ENABLE_SEMANTIC=false."
         )
         app.state.semantic_engine = None
 

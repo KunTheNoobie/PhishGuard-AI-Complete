@@ -108,7 +108,6 @@ TRUSTED_DOMAINS: Final[frozenset[str]] = frozenset({
     "uob.com.my",
     "ocbc.com.my",
     "bankmuamalat.com.my",
-    "agrobank.com.my",
 })
 
 TRUSTED_DOMAIN_CONFIDENCE: Final[float] = float(

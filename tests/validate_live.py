@@ -2,7 +2,7 @@
 import httpx
 import json
 
-BASE = "http://127.0.0.1:8001"
+BASE = "http://127.0.0.1:8000"
 HEADERS = {
     "Authorization": "Bearer phishguard_secret_key_2026",
     "Content-Type": "application/json",
@@ -10,7 +10,7 @@ HEADERS = {
 
 # ── Test 1: Phishing page with mule account ──
 print("=== TEST 1: Phishing + Mule Account ===")
-r = httpx.post(f"{BASE}/api/v1/analyse/semantics", headers=HEADERS, json={
+r = httpx.post(f"{BASE}/api/v1/analyze/semantics", headers=HEADERS, json={
     "url": "https://rnaybank-secure.com/verify",
     "dom_content": (
         "<html><body>"
@@ -33,7 +33,7 @@ print()
 
 # ── Test 2: Legitimate page ──
 print("=== TEST 2: Legitimate Page ===")
-r = httpx.post(f"{BASE}/api/v1/analyse/semantics", headers=HEADERS, json={
+r = httpx.post(f"{BASE}/api/v1/analyze/semantics", headers=HEADERS, json={
     "url": "https://www.maybank2u.com.my",
     "dom_content": (
         "<html><body>"

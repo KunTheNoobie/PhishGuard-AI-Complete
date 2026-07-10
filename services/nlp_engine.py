@@ -126,7 +126,7 @@ class SemanticEngine:
             text,
             return_tensors="pt",
             truncation=True,
-            max_length=512,
+            max_length=128,
             padding="max_length",
         ).to(self._device)
 

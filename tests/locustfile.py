@@ -3,7 +3,7 @@ PhishGuard-AI — Locust Load / Stress Test.
 ============================================
 
 Simulates concurrent browser extension clients sending analysis requests
-to the ``/api/v1/analyse/semantics`` endpoint.
+to the ``/api/v1/analyze/semantics`` endpoint.
 
 Usage
 -----
@@ -112,30 +112,30 @@ class PhishGuardUser(HttpUser):
     def analyse_legitimate_page(self) -> None:
         """Simulate analysing a legitimate banking page (most common)."""
         self.client.post(
-            "/api/v1/analyse/semantics",
+            "/api/v1/analyze/semantics",
             json=LEGITIMATE_PAYLOAD,
             headers=self.headers,
-            name="/analyse/semantics [LEGITIMATE]",
+            name="/analyze/semantics [LEGITIMATE]",
         )
 
     @task(1)
     def analyse_phishing_page(self) -> None:
         """Simulate analysing a phishing page."""
         self.client.post(
-            "/api/v1/analyse/semantics",
+            "/api/v1/analyze/semantics",
             json=PHISHING_PAYLOAD,
             headers=self.headers,
-            name="/analyse/semantics [PHISHING]",
+            name="/analyze/semantics [PHISHING]",
         )
 
     @task(1)
     def analyse_mule_page(self) -> None:
         """Simulate analysing a page with a mule account."""
         self.client.post(
-            "/api/v1/analyse/semantics",
+            "/api/v1/analyze/semantics",
             json=MULE_PAYLOAD,
             headers=self.headers,
-            name="/analyse/semantics [MULE]",
+            name="/analyze/semantics [MULE]",
         )
 
     @task(2)
