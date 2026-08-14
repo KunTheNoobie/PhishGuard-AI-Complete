@@ -258,6 +258,84 @@ class TestDashboardEnhancements:
         res = await dispatch_threat_webhook("test_threat", {"url": "http://scam.test", "score": 0.95})
         assert res is False
 
+    @pytest.mark.asyncio
+    async def test_domain_quarantine_and_whitelist(self, test_client: AsyncClient) -> None:
+        # 1. Quarantine domain
+        q_resp = await test_client.post(
+            "/api/v1/dashboard/domains/quarantine",
+            json={"domain": "scam-maybank-urgent.top", "reason": "Automated Testing Quarantine"}
+        )
+        assert q_resp.status_code == 200
+        assert q_resp.json()["action"] == "QUARANTINED"
+
+        # 2. Whitelist domain
+        w_resp = await test_client.post(
+            "/api/v1/dashboard/domains/whitelist",
+            json={"domain": "partner-portal.com", "reason": "Verified Partner", "ttl_hours": 12}
+        )
+        assert w_resp.status_code == 200
+        assert w_resp.json()["action"] == "WHITELISTED"
+
+        # 3. Check Policy list
+        pol_resp = await test_client.get("/api/v1/dashboard/domains/policy")
+        assert pol_resp.status_code == 200
+        pol = pol_resp.json()
+        assert pol["quarantined_count"] >= 1
+        assert any(d["domain"] == "scam-maybank-urgent.top" for d in pol["quarantined_domains"])
+        assert pol["whitelisted_count"] >= 1
+        assert any(d["domain"] == "partner-portal.com" for d in pol["whitelisted_domains"])
+
+    @pytest.mark.asyncio
+    async def test_takedown_notice_generator(self, test_client: AsyncClient) -> None:
+        # Seed a threat telemetry entry first if needed
+        await test_client.post(
+            "/api/v1/dashboard/quick-scan",
+            json={"url": "http://maybank2u-verify.top/login", "text_content": "login"}
+        )
+        # Fetch latest telemetry to get log_id
+        t_resp = await test_client.get("/api/v1/dashboard/telemetry?limit=1")
+        assert t_resp.status_code == 200
+        entries = t_resp.json()["entries"]
+        assert len(entries) > 0
+        log_id = entries[0]["log_id"]
+
+        # Generate takedown notice
+        resp = await test_client.get(f"/api/v1/dashboard/telemetry/{log_id}/takedown-notice")
+        assert resp.status_code == 200
+        notice = resp.json()
+        assert "incident_id" in notice
+        assert "abuse_email" in notice
+        assert "subject" in notice
+        assert "body" in notice
+        assert "URGENT ABUSE TAKEDOWN" in notice["subject"]
+
+    @pytest.mark.asyncio
+    async def test_bulk_mule_import_csv(self, test_client: AsyncClient) -> None:
+        csv_payload = (
+            "Account, Bank, Platform, Reports\n"
+            "991188223344, Maybank, WhatsApp, 5\n"
+            "772233445566, CIMB Bank, Telegram, 12\n"
+            "334455667788, Public Bank, Facebook, 2\n"
+        )
+        resp = await test_client.post(
+            "/api/v1/dashboard/mule-registry/bulk",
+            json={"raw_csv": csv_payload}
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["success"] is True
+        assert data["imported_count"] == 3
+
+    @pytest.mark.asyncio
+    async def test_distributions_includes_infrastructure(self, test_client: AsyncClient) -> None:
+        resp = await test_client.get("/api/v1/dashboard/distributions")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "infrastructure" in data
+        assert len(data["infrastructure"]) > 0
+        assert any("Cloudflare" in item["provider"] or "Namecheap" in item["provider"] for item in data["infrastructure"])
+
+
 
 
 

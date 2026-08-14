@@ -416,6 +416,79 @@ function combineResults(visualResult, semanticResult, errors, pageUrl, pageText)
   };
 }
 
+function evaluateOfflineHeuristics(pagePayload) {
+  const host = hostFromUrl(pagePayload.url);
+  const cleanHost = host.replace(/^www\./, "").toLowerCase();
+  const text = (pagePayload.visibleText || "").toLowerCase();
+  const isOfficial = isOfficialBankDomain(host);
+  const typosquat = detectTypoSquatting(host);
+
+  const scamKeywords = [
+    "tac", "otp", "password", "kata laluan", "nric", "no kad pengenalan",
+    "bantuan tunai", "kemaskini akaun", "akaun disekat", "saman pdrm",
+    "duitnow", "pinjaman segera", "tuntutan", "security alert"
+  ];
+  const matchedKeywords = scamKeywords.filter(k => text.includes(k));
+
+  if (isOfficial) {
+    return {
+      risk_level: "safe",
+      final_verdict: "SAFE",
+      reason: `Offline Protection Active: Verified Official Domain (${host})`,
+      detected_logos: [],
+      visual: { risk_level: "safe", detected_logos: [] },
+      semantic: null,
+      semantic_analysis: null,
+      mule_scan: null,
+      official_visual_match: true,
+      errors: ["Backend offline (Autonomous Heuristics Active)"]
+    };
+  }
+
+  if (typosquat) {
+    return {
+      risk_level: "dangerous",
+      final_verdict: "BLOCK_RENDER",
+      reason: `Offline Emergency Alert: ${typosquat.reason}`,
+      detected_logos: [{ brand: typosquat.brand, confidence: 0.95, bounding_box: [] }],
+      visual: { risk_level: "dangerous", detected_logos: [] },
+      semantic: null,
+      semantic_analysis: { is_malicious: true, confidence: 0.95, label: "PHISHING" },
+      mule_scan: null,
+      official_visual_match: false,
+      errors: ["Backend offline (Autonomous Heuristics Active)"]
+    };
+  }
+
+  if (matchedKeywords.length >= 2 && (cleanHost.includes(".top") || cleanHost.includes(".xyz") || cleanHost.includes("-") || cleanHost.includes("auth") || cleanHost.includes("login") || cleanHost.includes("verify"))) {
+    return {
+      risk_level: "dangerous",
+      final_verdict: "BLOCK_RENDER",
+      reason: `Offline Emergency Alert: Credential harvesting vector detected targeting Malaysian banking (${matchedKeywords.slice(0, 3).join(", ")})`,
+      detected_logos: [],
+      visual: { risk_level: "dangerous", detected_logos: [] },
+      semantic: null,
+      semantic_analysis: { is_malicious: true, confidence: 0.88, label: "PHISHING" },
+      mule_scan: null,
+      official_visual_match: false,
+      errors: ["Backend offline (Autonomous Heuristics Active)"]
+    };
+  }
+
+  return {
+    risk_level: "neutral",
+    final_verdict: "SAFE",
+    reason: "Offline Protection Active: Standard web domain. Backend AI offline.",
+    detected_logos: [],
+    visual: null,
+    semantic: null,
+    semantic_analysis: null,
+    mule_scan: null,
+    official_visual_match: false,
+    errors: ["Backend offline (Autonomous Heuristics Active)"]
+  };
+}
+
 async function analyzePage(tab, pagePayload) {
   if (!tab || typeof tab.id !== "number") {
     throw new Error("Missing active tab information.");
@@ -462,7 +535,14 @@ async function analyzePage(tab, pagePayload) {
     errors.push(`Semantic: ${semantic.error}`);
   }
 
-  const result = combineResults(visual.data, semantic.data, errors, pagePayload.url, pagePayload.visibleText);
+  let result;
+  if (visual.error && semantic.error) {
+    // Both endpoints offline — engage Autonomous Offline Heuristic Engine
+    result = evaluateOfflineHeuristics(pagePayload);
+  } else {
+    result = combineResults(visual.data, semantic.data, errors, pagePayload.url, pagePayload.visibleText);
+  }
+
   result.page_url = pagePayload.url;
   result.page_title = pagePayload.title || "";
   result.page_host = hostFromUrl(pagePayload.url);
@@ -478,6 +558,7 @@ async function analyzePage(tab, pagePayload) {
 
   return saved;
 }
+
 
 async function saveError(tabId, error) {
   return saveResult(tabId, {

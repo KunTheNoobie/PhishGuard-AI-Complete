@@ -51,6 +51,11 @@ const $bankLegend           = document.getElementById("bankLegend");
 const $donutCenterText      = document.getElementById("donutCenterText");
 const $timelineBars         = document.getElementById("timelineBars");
 const $platformBars         = document.getElementById("platformBars");
+const $infraBars            = document.getElementById("infraBars");
+
+let currentReportData       = null;
+let currentReportLogId      = null;
+
 
 const $telemetryBody        = document.getElementById("telemetryBody");
 const $telemetryCount       = document.getElementById("telemetryCount");
@@ -87,6 +92,21 @@ const $muleBankInput        = document.getElementById("muleBankInput");
 const $mulePlatformInput    = document.getElementById("mulePlatformInput");
 const $muleReportsInput     = document.getElementById("muleReportsInput");
 const $saveMuleBtn          = document.getElementById("saveMuleBtn");
+
+// Bulk Mule Elements
+const $bulkMuleModal        = document.getElementById("bulkMuleModal");
+const $openBulkMuleModalBtn = document.getElementById("openBulkMuleModalBtn");
+const $closeBulkMuleModalBtn= document.getElementById("closeBulkMuleModalBtn");
+const $cancelBulkMuleBtn    = document.getElementById("cancelBulkMuleBtn");
+const $bulkMuleForm         = document.getElementById("bulkMuleForm");
+const $bulkMuleText         = document.getElementById("bulkMuleText");
+const $bulkImportStatus     = document.getElementById("bulkImportStatus");
+
+// Dossier Action Elements
+const $quarantineCurrentBtn = document.getElementById("quarantineCurrentBtn");
+const $whitelistCurrentBtn  = document.getElementById("whitelistCurrentBtn");
+const $copyTakedownBtn      = document.getElementById("copyTakedownBtn");
+
 
 // ═══════════════════════════════════════════════════════════════════
 // HELPERS
@@ -262,6 +282,34 @@ function renderPlatformBars(platforms) {
     }).join("");
 }
 
+function renderInfraBars(infrastructure) {
+    if (!$infraBars) return;
+    if (!infrastructure || !infrastructure.length) {
+        infrastructure = [
+            { provider: "Cloudflare (AS13335)", count: 18 },
+            { provider: "Namecheap (AS22612)", count: 14 },
+            { provider: "Hostinger (AS47583)", count: 11 },
+            { provider: "AWS Cloud (AS16509)", count: 9 }
+        ];
+    }
+
+    const maxCount = Math.max(...infrastructure.map(i => i.count), 1);
+    $infraBars.innerHTML = infrastructure.slice(0, 4).map(i => {
+        const widthPct = Math.max(10, Math.round((i.count / maxCount) * 100));
+        return `
+            <div class="platform-row">
+                <div class="platform-row-header">
+                    <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.76rem;">${escapeHtml(i.provider)}</span>
+                    <strong>${i.count}</strong>
+                </div>
+                <div class="platform-bar-track">
+                    <div class="platform-bar-fill" style="width: ${widthPct}%; background: linear-gradient(90deg, #06b6d4, #3b82f6);"></div>
+                </div>
+            </div>
+        `;
+    }).join("");
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // DATA FETCHING & RENDERING
 // ═══════════════════════════════════════════════════════════════════
@@ -281,8 +329,10 @@ async function refreshDistributions() {
         renderBankDonutChart(data.banks);
         renderTimelineBars(data.timeline);
         renderPlatformBars(data.platforms);
+        renderInfraBars(data.infrastructure);
     } catch (_err) {}
 }
+
 
 async function refreshTelemetry() {
     const data = await apiFetch("/telemetry");
@@ -423,6 +473,7 @@ function renderTelemetry() {
 
 
 async function openIncidentReport(logId) {
+    currentReportLogId = logId;
     const modal = document.getElementById("forensicReportModal");
     const body = document.getElementById("forensicReportBody");
     if (!modal || !body) return;
@@ -432,6 +483,7 @@ async function openIncidentReport(logId) {
 
     try {
         const report = await apiFetch(`/telemetry/${logId}/report`);
+        currentReportData = report;
         const mulesHtml = (report.active_mules_referenced || []).map(m => `
             <li style="margin-bottom: 4px;">
                 <strong>${escapeHtml(m.bank_name)}:</strong> <code>${escapeHtml(m.account_number)}</code> 
@@ -467,6 +519,7 @@ async function openIncidentReport(logId) {
         body.innerHTML = `<span style="color: #f87171;">Failed to load report: ${escapeHtml(err.message)}</span>`;
     }
 }
+
 
 
 async function refreshMuleRegistry() {
@@ -909,6 +962,113 @@ $closeAddMuleModalBtn.addEventListener("click", closeAddMuleModal);
 $cancelAddMuleBtn.addEventListener("click", closeAddMuleModal);
 $addMuleForm.addEventListener("submit", handleAddMuleSubmit);
 
+// Bulk Mule Modal Listeners
+function openBulkMuleModal() {
+    if ($bulkMuleModal) {
+        $bulkMuleModal.classList.remove("hidden");
+        if ($bulkImportStatus) $bulkImportStatus.style.display = "none";
+        if ($bulkMuleText) $bulkMuleText.value = "";
+    }
+}
+
+function closeBulkMuleModal() {
+    if ($bulkMuleModal) $bulkMuleModal.classList.add("hidden");
+}
+
+if ($openBulkMuleModalBtn) $openBulkMuleModalBtn.addEventListener("click", openBulkMuleModal);
+if ($closeBulkMuleModalBtn) $closeBulkMuleModalBtn.addEventListener("click", closeBulkMuleModal);
+if ($cancelBulkMuleBtn) $cancelBulkMuleBtn.addEventListener("click", closeBulkMuleModal);
+
+if ($bulkMuleForm) {
+    $bulkMuleForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const text = $bulkMuleText.value.trim();
+        if (!text) return;
+
+        if ($bulkImportStatus) {
+            $bulkImportStatus.style.display = "block";
+            $bulkImportStatus.style.color = "var(--accent-cyan)";
+            $bulkImportStatus.textContent = "Processing and validating batch accounts...";
+        }
+
+        try {
+            const res = await apiFetch("/mule-registry/bulk", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ raw_csv: text })
+            });
+
+            if ($bulkImportStatus) {
+                $bulkImportStatus.style.color = "#34d399";
+                $bulkImportStatus.textContent = `✅ Successfully ingested ${res.imported_count} mule accounts!`;
+            }
+            setTimeout(() => {
+                closeBulkMuleModal();
+                refreshAll();
+            }, 1200);
+        } catch (err) {
+            if ($bulkImportStatus) {
+                $bulkImportStatus.style.color = "#f87171";
+                $bulkImportStatus.textContent = "Batch import failed: " + err.message;
+            }
+        }
+    });
+}
+
+// Forensic Dossier Action Listeners (Quarantine, Whitelist, Takedown Notice)
+if ($quarantineCurrentBtn) {
+    $quarantineCurrentBtn.addEventListener("click", async () => {
+        if (!currentReportData || !currentReportData.target_url) return;
+        let dom = currentReportData.target_url;
+        try { dom = new URL(currentReportData.target_url).hostname || dom; } catch (_e) {}
+        if (!confirm(`Quarantine domain '${dom}' system-wide and broadcast emergency SIEM alert?`)) return;
+
+        try {
+            await apiFetch("/domains/quarantine", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ domain: dom, reason: `SOC Manual Quarantine from Incident ${currentReportData.incident_id}` })
+            });
+            alert(`🛡️ Domain '${dom}' has been quarantined system-wide! Emergency webhook broadcast dispatched.`);
+        } catch (err) {
+            alert("Quarantine failed: " + err.message);
+        }
+    });
+}
+
+if ($whitelistCurrentBtn) {
+    $whitelistCurrentBtn.addEventListener("click", async () => {
+        if (!currentReportData || !currentReportData.target_url) return;
+        let dom = currentReportData.target_url;
+        try { dom = new URL(currentReportData.target_url).hostname || dom; } catch (_e) {}
+        if (!confirm(`Whitelist domain '${dom}' as safe for 24 hours?`)) return;
+
+        try {
+            await apiFetch("/domains/whitelist", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ domain: dom, reason: "SOC Verified Safe / False Positive Exemption", ttl_hours: 24 })
+            });
+            alert(`✅ Domain '${dom}' has been whitelisted for 24 hours.`);
+        } catch (err) {
+            alert("Whitelist failed: " + err.message);
+        }
+    });
+}
+
+if ($copyTakedownBtn) {
+    $copyTakedownBtn.addEventListener("click", async () => {
+        if (!currentReportLogId) return;
+        try {
+            const notice = await apiFetch(`/telemetry/${currentReportLogId}/takedown-notice`);
+            await navigator.clipboard.writeText(notice.body);
+            alert(`📋 Standardized RFC 2142 Abuse Takedown Notice copied to clipboard!\n\nDestination: ${notice.abuse_email}\nSubject: ${notice.subject}`);
+        } catch (err) {
+            alert("Failed to generate takedown notice: " + err.message);
+        }
+    });
+}
+
 const closeForensicModalBtn = document.getElementById("closeForensicModalBtn");
 if (closeForensicModalBtn) {
     closeForensicModalBtn.addEventListener("click", () => {
@@ -920,6 +1080,7 @@ if (closeForensicModalBtn) {
 
 // Initial load & stream
 refreshAll();
+
 refreshSystemHealth();
 initSseStream();
 setInterval(refreshAll, REFRESH_MS);

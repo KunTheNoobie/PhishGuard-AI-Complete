@@ -520,6 +520,20 @@
                     <div class="platform-bars" id="platformBars"></div>
                 </div>
             </article>
+
+            <!-- Hosting Infrastructure & ASN Breakdown -->
+            <article class="chart-card">
+                <div class="chart-card__header">
+                    <h3 class="chart-card__title">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+                        Hosting Infrastructure & ASNs
+                    </h3>
+                    <span class="chart-tag">Cloud & Registrars</span>
+                </div>
+                <div class="chart-container" id="infraChartContainer">
+                    <div class="platform-bars" id="infraBars"></div>
+                </div>
+            </article>
         </section>
 
         <!-- ─── Live Threat Feed ─── -->
@@ -598,6 +612,9 @@
                 </div>
                 <div class="panel__actions">
                     <input type="text" id="muleSearch" class="search-input" placeholder="Search account / bank / platform…" />
+                    <button id="openBulkMuleModalBtn" class="action-btn" type="button" title="Bulk Import Multiple Mule Accounts">
+                        📥 Bulk Import
+                    </button>
                     <button id="openAddMuleModalBtn" class="action-btn action-btn--primary" type="button">
                         + Add Mule
                     </button>
@@ -607,6 +624,7 @@
                     </button>
                 </div>
             </div>
+
             <div class="panel__body">
                 <div class="table-wrapper">
                     <table class="data-table" id="muleTable">
@@ -692,9 +710,32 @@
             </div>
         </div>
 
+        <!-- ─── Bulk Import Mule Modal Dialog ─── -->
+        <div id="bulkMuleModal" class="modal-overlay hidden" aria-hidden="true">
+            <div class="modal-card" style="max-width: 560px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">📥 Bulk Import Mule Accounts</h3>
+                    <button id="closeBulkMuleModalBtn" class="modal-close-btn" type="button">&times;</button>
+                </div>
+                <form id="bulkMuleForm" class="modal-form">
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                        Paste CSV lines below in format: <code>Account, Bank, Platform, Reports</code> (one per line) or drop a <code>.csv</code> file:
+                    </p>
+                    <div class="form-group">
+                        <textarea id="bulkMuleText" rows="6" style="width: 100%; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: #fff; padding: 0.75rem; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; resize: vertical;" placeholder="112233445566, Maybank, WhatsApp, 3&#10;558844887979, CIMB Bank, Telegram, 8&#10;988812259332, Hong Leong Bank, Shopee, 2"></textarea>
+                    </div>
+                    <div id="bulkImportStatus" style="font-size: 0.8rem; margin-bottom: 0.5rem; display: none;"></div>
+                    <div class="modal-actions">
+                        <button type="button" id="cancelBulkMuleBtn" class="action-btn">Cancel</button>
+                        <button type="submit" id="submitBulkMuleBtn" class="action-btn action-btn--primary">Batch Ingest Accounts</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <!-- ─── Forensic Incident Report Modal Dialog ─── -->
         <div id="forensicReportModal" class="modal-overlay hidden" aria-hidden="true">
-            <div class="modal-card" style="max-width: 600px;">
+            <div class="modal-card" style="max-width: 680px;">
                 <div class="modal-header">
                     <h3 class="modal-title">📄 Threat Forensic Incident Report</h3>
                     <button id="closeForensicModalBtn" class="modal-close-btn" type="button">&times;</button>
@@ -702,16 +743,30 @@
                 <div id="forensicReportBody" style="font-size: 0.85rem; line-height: 1.6; color: var(--text-secondary);">
                     Loading forensic dossier...
                 </div>
-                <div class="modal-actions">
-                    <button type="button" id="printReportBtn" class="action-btn action-btn--primary" onclick="window.print()">
-                        🖨️ Print / Save PDF
-                    </button>
-                    <button type="button" id="dismissForensicBtn" class="action-btn" onclick="document.getElementById('forensicReportModal').classList.add('hidden')">
-                        Close
-                    </button>
+                <div class="modal-actions" style="justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+                    <div style="display: flex; gap: 0.4rem;">
+                        <button type="button" id="quarantineCurrentBtn" class="action-btn action-btn--delete" style="font-size: 0.78rem;" title="Quarantine this domain system-wide">
+                            🛡️ Quarantine
+                        </button>
+                        <button type="button" id="whitelistCurrentBtn" class="action-btn" style="font-size: 0.78rem;" title="Whitelist this domain for 24h">
+                            ✅ Whitelist
+                        </button>
+                        <button type="button" id="copyTakedownBtn" class="action-btn action-btn--primary" style="font-size: 0.78rem;" title="Generate and copy RFC abuse desk takedown email">
+                            📋 Takedown Notice
+                        </button>
+                    </div>
+                    <div style="display: flex; gap: 0.4rem;">
+                        <button type="button" id="printReportBtn" class="action-btn action-btn--primary" onclick="window.print()">
+                            🖨️ Print / PDF
+                        </button>
+                        <button type="button" id="dismissForensicBtn" class="action-btn" onclick="document.getElementById('forensicReportModal').classList.add('hidden')">
+                            Close
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
+
 
     </main>
 
