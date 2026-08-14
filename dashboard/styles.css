@@ -815,6 +815,96 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   TABLE PAGINATION & CONTROLS
+   ═══════════════════════════════════════════════════════════════════ */
+.pagination-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.85rem 1.25rem;
+    background: rgba(15, 23, 42, 0.75);
+    border-top: 1px solid var(--border-subtle);
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.pagination-info {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.page-size-control {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-right: 0.75rem;
+}
+
+.page-size-select {
+    background: var(--bg-input);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    color: #fff;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.8rem;
+    outline: none;
+    cursor: pointer;
+}
+
+.page-btn {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-subtle);
+    color: #e2e8f0;
+    border-radius: 6px;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+}
+
+.page-btn:hover:not(:disabled) {
+    background: rgba(99, 102, 241, 0.25);
+    border-color: var(--accent-indigo);
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+.page-btn.active {
+    background: linear-gradient(135deg, var(--accent-indigo), var(--accent-cyan));
+    border-color: transparent;
+    color: #ffffff;
+    font-weight: 800;
+    box-shadow: 0 0 12px rgba(99, 102, 241, 0.4);
+}
+
+.page-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.page-ellipsis {
+    color: var(--text-muted);
+    padding: 0 0.25rem;
+    font-size: 0.8rem;
+    user-select: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    MODAL DIALOG
    ═══════════════════════════════════════════════════════════════════ */
 .modal-overlay {

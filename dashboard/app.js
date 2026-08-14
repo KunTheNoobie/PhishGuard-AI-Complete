@@ -29,9 +29,13 @@ let telemetryScoreFilter = "all";
 let muleFilterText = "";
 let sseSource = null;
 
+let telemetryPagination = { page: 1, pageSize: "10" };
+let mulePagination = { page: 1, pageSize: "10" };
+
 const BANK_COLORS = [
     "#f59e0b", "#ef4444", "#3b82f6", "#10b981", "#8b5cf6", "#ec4899", "#06b6d4", "#64748b"
 ];
+
 
 // ═══════════════════════════════════════════════════════════════════
 // DOM REFERENCES
@@ -54,12 +58,19 @@ const $telemetrySearch      = document.getElementById("telemetrySearch");
 const $telemetryScoreFilter = document.getElementById("telemetryScoreFilter");
 const $exportTelemetryCsvBtn= document.getElementById("exportTelemetryCsvBtn");
 const $exportTelemetryJsonBtn= document.getElementById("exportTelemetryJsonBtn");
+const $telemetryPageInfo    = document.getElementById("telemetryPageInfo");
+const $telemetryPageSize    = document.getElementById("telemetryPageSize");
+const $telemetryPageButtons = document.getElementById("telemetryPageButtons");
 
 const $muleBody             = document.getElementById("muleBody");
 const $muleCount            = document.getElementById("muleCount");
 const $muleSearch           = document.getElementById("muleSearch");
 const $exportMuleCsvBtn     = document.getElementById("exportMuleCsvBtn");
 const $openAddMuleModalBtn  = document.getElementById("openAddMuleModalBtn");
+const $mulePageInfo         = document.getElementById("mulePageInfo");
+const $mulePageSize         = document.getElementById("mulePageSize");
+const $mulePageButtons      = document.getElementById("mulePageButtons");
+
 
 const $simToggleBtn         = document.getElementById("simToggleBtn");
 const $statusDot            = document.getElementById("statusDot");
@@ -279,6 +290,63 @@ async function refreshTelemetry() {
     renderTelemetry();
 }
 
+function renderPaginationControls(container, infoEl, totalItems, currentPage, pageSize, onPageChange) {
+    if (!container || !infoEl) return;
+    if (pageSize === "all" || totalItems <= 0) {
+        infoEl.textContent = totalItems > 0 ? `Showing all ${totalItems} entries` : "Showing 0 entries";
+        container.innerHTML = "";
+        return;
+    }
+
+    const numPageSize = parseInt(pageSize, 10);
+    const totalPages = Math.ceil(totalItems / numPageSize) || 1;
+    const validPage = Math.max(1, Math.min(currentPage, totalPages));
+
+    const start = (validPage - 1) * numPageSize + 1;
+    const end = Math.min(validPage * numPageSize, totalItems);
+    infoEl.textContent = `Showing ${start} to ${end} of ${totalItems} entries`;
+
+    let html = "";
+    
+    // First & Prev buttons
+    html += `<button class="page-btn" ${validPage === 1 ? "disabled" : ""} data-page="1" title="First Page">⏮</button>`;
+    html += `<button class="page-btn" ${validPage === 1 ? "disabled" : ""} data-page="${validPage - 1}" title="Previous Page">◀</button>`;
+
+    // Page Number Windows with Ellipsis
+    const windowSize = 2;
+    let startPage = Math.max(1, validPage - windowSize);
+    let endPage = Math.min(totalPages, validPage + windowSize);
+
+    if (startPage > 1) {
+        html += `<button class="page-btn" data-page="1">1</button>`;
+        if (startPage > 2) html += `<span class="page-ellipsis">…</span>`;
+    }
+
+    for (let p = startPage; p <= endPage; p++) {
+        html += `<button class="page-btn ${p === validPage ? "active" : ""}" data-page="${p}">${p}</button>`;
+    }
+
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) html += `<span class="page-ellipsis">…</span>`;
+        html += `<button class="page-btn" data-page="${totalPages}">${totalPages}</button>`;
+    }
+
+    // Next & Last buttons
+    html += `<button class="page-btn" ${validPage === totalPages ? "disabled" : ""} data-page="${validPage + 1}" title="Next Page">▶</button>`;
+    html += `<button class="page-btn" ${validPage === totalPages ? "disabled" : ""} data-page="${totalPages}" title="Last Page">⏭</button>`;
+
+    container.innerHTML = html;
+
+    container.querySelectorAll(".page-btn[data-page]").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const newPage = parseInt(btn.getAttribute("data-page"), 10);
+            if (!isNaN(newPage) && newPage !== currentPage) {
+                onPageChange(newPage);
+            }
+        });
+    });
+}
+
 function renderTelemetry() {
     let filtered = telemetryData;
 
@@ -303,6 +371,7 @@ function renderTelemetry() {
     if (filtered.length === 0) {
         $telemetryBody.innerHTML =
             '<tr class="table-empty"><td colspan="5">No threats match current filter criteria.</td></tr>';
+        renderPaginationControls($telemetryPageButtons, $telemetryPageInfo, 0, 1, telemetryPagination.pageSize, () => {});
         return;
     }
 
@@ -312,7 +381,17 @@ function renderTelemetry() {
         currentSort.asc
     );
 
-    $telemetryBody.innerHTML = displayData
+    // Calculate pagination slice
+    let pageData = displayData;
+    if (telemetryPagination.pageSize !== "all") {
+        const numSize = parseInt(telemetryPagination.pageSize, 10);
+        const totalPages = Math.ceil(displayData.length / numSize) || 1;
+        if (telemetryPagination.page > totalPages) telemetryPagination.page = totalPages;
+        const start = (telemetryPagination.page - 1) * numSize;
+        pageData = displayData.slice(start, start + numSize);
+    }
+
+    $telemetryBody.innerHTML = pageData
         .map(
             (e) => `
             <tr>
@@ -328,7 +407,20 @@ function renderTelemetry() {
             </tr>`
         )
         .join("");
+
+    renderPaginationControls(
+        $telemetryPageButtons,
+        $telemetryPageInfo,
+        displayData.length,
+        telemetryPagination.page,
+        telemetryPagination.pageSize,
+        (newPage) => {
+            telemetryPagination.page = newPage;
+            renderTelemetry();
+        }
+    );
 }
+
 
 async function openIncidentReport(logId) {
     const modal = document.getElementById("forensicReportModal");
@@ -401,6 +493,7 @@ function renderMuleRegistry() {
     if (filtered.length === 0) {
         $muleBody.innerHTML =
             '<tr class="table-empty"><td colspan="7">No mule accounts match current filter.</td></tr>';
+        renderPaginationControls($mulePageButtons, $mulePageInfo, 0, 1, mulePagination.pageSize, () => {});
         return;
     }
 
@@ -410,7 +503,17 @@ function renderMuleRegistry() {
         currentSort.asc
     );
 
-    $muleBody.innerHTML = displayData
+    // Calculate pagination slice
+    let pageData = displayData;
+    if (mulePagination.pageSize !== "all") {
+        const numSize = parseInt(mulePagination.pageSize, 10);
+        const totalPages = Math.ceil(displayData.length / numSize) || 1;
+        if (mulePagination.page > totalPages) mulePagination.page = totalPages;
+        const start = (mulePagination.page - 1) * numSize;
+        pageData = displayData.slice(start, start + numSize);
+    }
+
+    $muleBody.innerHTML = pageData
         .map(
             (a) => `
             <tr>
@@ -428,7 +531,20 @@ function renderMuleRegistry() {
             </tr>`
         )
         .join("");
+
+    renderPaginationControls(
+        $mulePageButtons,
+        $mulePageInfo,
+        displayData.length,
+        mulePagination.page,
+        mulePagination.pageSize,
+        (newPage) => {
+            mulePagination.page = newPage;
+            renderMuleRegistry();
+        }
+    );
 }
+
 
 window.handleDeleteMule = async function(muleId) {
     if (!confirm(`Are you sure you want to remove mule account #${muleId}?`)) return;
@@ -746,18 +862,38 @@ $simToggleBtn.addEventListener("click", handleSimToggle);
 // Search and Filter Listeners
 $telemetrySearch.addEventListener("input", (e) => {
     telemetryFilterText = e.target.value;
+    telemetryPagination.page = 1;
     renderTelemetry();
 });
 
 $telemetryScoreFilter.addEventListener("change", (e) => {
     telemetryScoreFilter = e.target.value;
+    telemetryPagination.page = 1;
     renderTelemetry();
 });
 
+if ($telemetryPageSize) {
+    $telemetryPageSize.addEventListener("change", (e) => {
+        telemetryPagination.pageSize = e.target.value;
+        telemetryPagination.page = 1;
+        renderTelemetry();
+    });
+}
+
 $muleSearch.addEventListener("input", (e) => {
     muleFilterText = e.target.value;
+    mulePagination.page = 1;
     renderMuleRegistry();
 });
+
+if ($mulePageSize) {
+    $mulePageSize.addEventListener("change", (e) => {
+        mulePagination.pageSize = e.target.value;
+        mulePagination.page = 1;
+        renderMuleRegistry();
+    });
+}
+
 
 // Export Listeners
 $exportTelemetryCsvBtn.addEventListener("click", exportTelemetryCsv);

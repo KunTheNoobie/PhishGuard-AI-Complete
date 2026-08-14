@@ -566,6 +566,23 @@
                         </tbody>
                     </table>
                 </div>
+                <!-- Telemetry Pagination Toolbar -->
+                <div class="pagination-wrapper" id="telemetryPaginationWrapper">
+                    <div class="pagination-info" id="telemetryPageInfo">Showing 0 to 0 of 0 entries</div>
+                    <div class="pagination-controls">
+                        <div class="page-size-control">
+                            <label for="telemetryPageSize">Rows:</label>
+                            <select id="telemetryPageSize" class="page-size-select">
+                                <option value="10" selected>10 / page</option>
+                                <option value="25">25 / page</option>
+                                <option value="50">50 / page</option>
+                                <option value="100">100 / page</option>
+                                <option value="all">View All</option>
+                            </select>
+                        </div>
+                        <div id="telemetryPageButtons" class="pagination-controls"></div>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -609,8 +626,26 @@
                         </tbody>
                     </table>
                 </div>
+                <!-- Mule Registry Pagination Toolbar -->
+                <div class="pagination-wrapper" id="mulePaginationWrapper">
+                    <div class="pagination-info" id="mulePageInfo">Showing 0 to 0 of 0 entries</div>
+                    <div class="pagination-controls">
+                        <div class="page-size-control">
+                            <label for="mulePageSize">Rows:</label>
+                            <select id="mulePageSize" class="page-size-select">
+                                <option value="10" selected>10 / page</option>
+                                <option value="25">25 / page</option>
+                                <option value="50">50 / page</option>
+                                <option value="100">100 / page</option>
+                                <option value="all">View All</option>
+                            </select>
+                        </div>
+                        <div id="mulePageButtons" class="pagination-controls"></div>
+                    </div>
+                </div>
             </div>
         </section>
+
 
         <!-- ─── Add Mule Modal Dialog ─── -->
         <div id="addMuleModal" class="modal-overlay hidden" aria-hidden="true">

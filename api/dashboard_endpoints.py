@@ -256,16 +256,17 @@ async def quick_scan_url(request: Request, payload: QuickScanRequest) -> dict[st
     summary="Recent threat telemetry entries",
     response_description="List of recent malicious URL detections.",
 )
-async def get_telemetry(request: Request) -> dict[str, Any]:
-    """Return the 50 most recent threat telemetry entries (newest first)."""
+async def get_telemetry(request: Request, limit: int = 0) -> dict[str, Any]:
+    """Return threat telemetry entries (newest first). If limit <= 0, returns all."""
     db = request.app.state.db
 
-    cursor = await db.execute(
-        "SELECT log_id, malicious_url, bert_score, timestamp "
-        "FROM threat_telemetry "
-        "ORDER BY log_id DESC "
-        "LIMIT 50;"
-    )
+    query = "SELECT log_id, malicious_url, bert_score, timestamp FROM threat_telemetry ORDER BY log_id DESC"
+    if limit > 0:
+        query += f" LIMIT {limit};"
+    else:
+        query += ";"
+
+    cursor = await db.execute(query)
     rows = await cursor.fetchall()
 
     entries: list[dict[str, Any]] = [
@@ -279,6 +280,7 @@ async def get_telemetry(request: Request) -> dict[str, Any]:
     ]
 
     return {"count": len(entries), "entries": entries}
+
 
 
 @router.get(
