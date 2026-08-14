@@ -188,34 +188,71 @@ function hostFromUrl(url) {
   }
 }
 
-function domainMatches(host, domains) {
-  return domains.some((domain) => host === domain || host.endsWith(`.${domain}`));
-}
+function levenshteinDistance(a, b) {
+  const matrix = Array.from({ length: b.length + 1 }, (_, i) => [i]);
+  for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
 
-function officialBankForHost(host) {
-  return Object.entries(OFFICIAL_BANK_DOMAINS).find(([_brand, domains]) => {
-    return domainMatches(host, domains);
-  });
-}
-
-function hasOfficialVisualMatch(visualResult, pageUrl) {
-  const host = hostFromUrl(pageUrl);
-  const officialDomain = officialBankForHost(host);
-  if (officialDomain && visualResult && visualResult.risk_level === "safe") {
-    return true;
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j] + 1
+        );
+      }
+    }
   }
-
-  const logos = visualResult && Array.isArray(visualResult.detected_logos)
-    ? visualResult.detected_logos
-    : [];
-
-  return logos.some((logo) => {
-    const domains = OFFICIAL_BANK_DOMAINS[logo.brand] || [];
-    return domainMatches(host, domains);
-  });
+  return matrix[b.length][a.length];
 }
 
-function combineResults(visualResult, semanticResult, errors, pageUrl) {
+function detectTypoSquatting(host) {
+  if (!host) return null;
+  const cleanHost = host.replace(/^www\./, "").toLowerCase();
+
+  for (const [brand, domains] of Object.entries(OFFICIAL_BANK_DOMAINS)) {
+    for (const official of domains) {
+      if (cleanHost === official || cleanHost.endsWith(`.${official}`)) {
+        return null; // Official domain
+      }
+
+      // Check distance
+      const baseOfficial = official.split(".")[0];
+      const baseHost = cleanHost.split(".")[0];
+
+      const dist = levenshteinDistance(baseHost, baseOfficial);
+      if (dist >= 1 && dist <= 2) {
+        return { brand, official, reason: `Lookalike domain detected targeting ${brand} (edit distance ${dist} from ${official})` };
+      }
+
+      if (cleanHost.includes(baseOfficial) && (cleanHost.includes("login") || cleanHost.includes("verify") || cleanHost.includes("secure") || cleanHost.includes("auth"))) {
+        return { brand, official, reason: `Deceptive keyword subdomain detected targeting ${brand}` };
+      }
+    }
+  }
+  return null;
+}
+
+function sendNativeNotification(title, message) {
+  try {
+    if (chrome.notifications && chrome.notifications.create) {
+      chrome.notifications.create({
+        type: "basic",
+        iconUrl: "icons/icon128.png",
+        title: title || "PhishGuard-AI Alert",
+        message: message || "Potential phishing threat detected.",
+        priority: 2
+      });
+    }
+  } catch (_e) {}
+}
+
+function combineResults(visualResult, semanticResult, errors, pageUrl, pageText) {
+  const host = hostFromUrl(pageUrl);
+  const typosquat = detectTypoSquatting(host);
+
   const semanticAnalysis = semanticResult && semanticResult.data
     ? semanticResult.data.semantic_analysis
     : null;
@@ -238,15 +275,25 @@ function combineResults(visualResult, semanticResult, errors, pageUrl) {
   const bothUnavailable = !visualResult && !semanticResult;
 
   let riskLevel = "safe";
-  if (muleThreat || visualRisk === "dangerous" || (semanticThreat && !officialVisualMatch)) {
+  if (typosquat) {
+    riskLevel = "dangerous";
+  } else if (muleThreat || visualRisk === "dangerous" || (semanticThreat && !officialVisualMatch)) {
     riskLevel = "dangerous";
   } else if (visualRisk === "suspicious") {
     riskLevel = "suspicious";
   } else if (bothUnavailable || hasErrors) {
-    riskLevel = "unavailable";
+    // Offline heuristic fallback
+    if (pageText && /(urgent|verify.*account|suspended|pdrm|transfer.*deposit|password|security.*update)/i.test(pageText)) {
+      riskLevel = "suspicious";
+    } else {
+      riskLevel = "unavailable";
+    }
   }
 
   const reasons = [];
+  if (typosquat) {
+    reasons.push(`CRITICAL: ${typosquat.reason}.`);
+  }
   if (riskLevel === "safe") {
     if (officialVisualMatch) {
       reasons.push(
@@ -364,12 +411,20 @@ async function analyzePage(tab, pagePayload) {
     errors.push(`Semantic: ${semantic.error}`);
   }
 
-  const result = combineResults(visual.data, semantic.data, errors, pagePayload.url);
+  const result = combineResults(visual.data, semantic.data, errors, pagePayload.url, pagePayload.visibleText);
   result.page_url = pagePayload.url;
   result.page_title = pagePayload.title || "";
   result.page_host = hostFromUrl(pagePayload.url);
   const saved = await saveResult(tab.id, result);
   sendWarningToTab(tab.id, saved);
+
+  if (saved.risk_level === "dangerous") {
+    sendNativeNotification(
+      "PhishGuard-AI Threat Intercepted",
+      `High-risk phishing activity blocked on ${result.page_host || "webpage"}.`
+    );
+  }
+
   return saved;
 }
 

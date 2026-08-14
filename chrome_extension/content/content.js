@@ -56,6 +56,7 @@ const PHISHGUARD_BLOCK_SCREEN_ID = "phishguard-ai-fullscreen-block";
 function showFullScreenBlockScreen(result) {
   clearWarningBanner();
   highlightMuleAccounts(result);
+  highlightScamKeywords();
 
   const existingBlock = document.getElementById(PHISHGUARD_BLOCK_SCREEN_ID);
   if (existingBlock) existingBlock.remove();
@@ -138,6 +139,7 @@ function showWarningBanner(result) {
 function showTopBanner(result) {
   clearWarningBanner();
   highlightMuleAccounts(result);
+  highlightScamKeywords();
 
   const banner = document.createElement("div");
   banner.id = PHISHGUARD_BANNER_ID;
@@ -205,12 +207,83 @@ function showTopBanner(result) {
   document.documentElement.appendChild(banner);
 }
 
+const PHISHGUARD_KEYWORD_CLASS = "phishguard-ai-keyword-highlight";
+
+const SUSPICIOUS_KEYWORDS = [
+  "urgent verification", "immediate verification", "account suspension", "account suspended",
+  "flagged for suspicious", "pdrm verification", "authorized pdrm", "transfer verification",
+  "avoid account closure", "avoid suspension", "verify account now", "update login details",
+  "unauthorized login", "security alert", "temporary freeze", "reactivate account"
+];
+
+function clearKeywordHighlights() {
+  const highlights = document.querySelectorAll(`span.${PHISHGUARD_KEYWORD_CLASS}`);
+  for (const highlight of highlights) {
+    const text = document.createTextNode(highlight.textContent || "");
+    highlight.replaceWith(text);
+  }
+}
+
+function highlightScamKeywords() {
+  clearKeywordHighlights();
+  if (!document.body) return;
+
+  const escaped = SUSPICIOUS_KEYWORDS.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  const pattern = new RegExp(`(${escaped.join("|")})`, "gi");
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+
+  while (walker.nextNode()) {
+    const node = walker.currentNode;
+    if (!shouldSkipTextNode(node) && pattern.test(node.nodeValue || "")) {
+      nodes.push(node);
+    }
+    pattern.lastIndex = 0;
+  }
+
+  for (const node of nodes) {
+    const text = node.nodeValue || "";
+    const fragment = document.createDocumentFragment();
+    let lastIndex = 0;
+    pattern.lastIndex = 0;
+    let match = pattern.exec(text);
+
+    while (match) {
+      if (match.index > lastIndex) {
+        fragment.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+      }
+
+      const span = document.createElement("span");
+      span.className = PHISHGUARD_KEYWORD_CLASS;
+      span.textContent = match[0];
+      span.title = "PhishGuard AI: High-risk Social Engineering Phrasing Detected";
+      Object.assign(span.style, {
+        background: "rgba(239, 68, 68, 0.18)",
+        color: "#b91c1c",
+        borderBottom: "2px wavy #ef4444",
+        padding: "0 2px",
+        fontWeight: "600",
+        cursor: "help"
+      });
+      fragment.appendChild(span);
+      lastIndex = match.index + match[0].length;
+      match = pattern.exec(text);
+    }
+
+    if (lastIndex < text.length) {
+      fragment.appendChild(document.createTextNode(text.slice(lastIndex)));
+    }
+    node.replaceWith(fragment);
+  }
+}
+
 function clearWarningBanner() {
   const existing = document.getElementById(PHISHGUARD_BANNER_ID);
   if (existing) existing.remove();
   const existingBlock = document.getElementById(PHISHGUARD_BLOCK_SCREEN_ID);
   if (existingBlock) existingBlock.remove();
   clearMuleHighlights();
+  clearKeywordHighlights();
 }
 
 function getFlaggedAccountNumbers(result) {

@@ -90,6 +90,9 @@ _SEED_MULE_ACCOUNTS: Final[list[tuple[str, str, str, int]]] = [
     ("212345678901", "Bank Rakyat", "Carousell", 13),
     ("156789012345", "Maybank", "Mudah.my", 22),
     ("3567891234", "Public Bank", "Shopee", 17),
+    ("0123456789", "DuitNow (Maybank)", "WhatsApp Scam", 19),
+    ("0198765432", "DuitNow (CIMB)", "Telegram Scam", 15),
+    ("980102-14-5678", "DuitNow (NRIC)", "Facebook Marketplace", 8),
 ]
 
 _INSERT_SEED: Final[str] = """

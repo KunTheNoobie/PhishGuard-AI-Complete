@@ -1,11 +1,9 @@
 /**
- * PhishGuard-AI — Dashboard Client Application
- * ==============================================
+ * PhishGuard-AI — Dashboard Client Application (v2.2 Enterprise)
+ * ==============================================================
  *
- * Fetches aggregate stats, threat telemetry, and mule-registry data
- * from the backend dashboard API and renders them into the UI.
- *
- * Auto-refreshes every 3 seconds via setInterval().
+ * Real-time threat intelligence visualization with Server-Sent Events (SSE),
+ * dynamic SVG charts, and interactive mule registry management.
  */
 
 "use strict";
@@ -15,7 +13,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 const API_BASE      = "/api/v1/dashboard";
-const REFRESH_MS    = 3_000;   // 3 seconds for live threat simulator
+const REFRESH_MS    = 3_000;
 
 // ═══════════════════════════════════════════════════════════════════
 // STATE
@@ -23,11 +21,17 @@ const REFRESH_MS    = 3_000;   // 3 seconds for live threat simulator
 
 let telemetryData = [];
 let muleData = [];
+let distributionsData = { banks: [], platforms: [], timeline: [] };
 let currentSort = { table: null, key: null, asc: null };
 
 let telemetryFilterText = "";
 let telemetryScoreFilter = "all";
 let muleFilterText = "";
+let sseSource = null;
+
+const BANK_COLORS = [
+    "#f59e0b", "#ef4444", "#3b82f6", "#10b981", "#8b5cf6", "#ec4899", "#06b6d4", "#64748b"
+];
 
 // ═══════════════════════════════════════════════════════════════════
 // DOM REFERENCES
@@ -37,6 +41,12 @@ const $statThreats          = document.getElementById("statThreats");
 const $statConfidence       = document.getElementById("statConfidence");
 const $statMule             = document.getElementById("statMule");
 const $statReports          = document.getElementById("statReports");
+
+const $bankDonutSvg         = document.getElementById("bankDonutSvg");
+const $bankLegend           = document.getElementById("bankLegend");
+const $donutCenterText      = document.getElementById("donutCenterText");
+const $timelineBars         = document.getElementById("timelineBars");
+const $platformBars         = document.getElementById("platformBars");
 
 const $telemetryBody        = document.getElementById("telemetryBody");
 const $telemetryCount       = document.getElementById("telemetryCount");
@@ -71,65 +81,35 @@ const $saveMuleBtn          = document.getElementById("saveMuleBtn");
 // HELPERS
 // ═══════════════════════════════════════════════════════════════════
 
-/**
- * Fetch JSON from a dashboard API endpoint.
- * @param {string} path  Relative path (e.g. "/stats")
- * @param {RequestInit} [options]
- * @returns {Promise<Object>}
- */
 async function apiFetch(path, options = {}) {
     const res = await fetch(`${API_BASE}${path}`, options);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
 }
 
-/**
- * Return a CSS class name based on a BERT confidence score.
- * @param {number} score
- * @returns {string}
- */
 function scoreClass(score) {
     if (score >= 0.85) return "score-high";
     if (score >= 0.60) return "score-medium";
     return "score-low";
 }
 
-/**
- * Return a badge class based on report count severity.
- * @param {number} count
- * @returns {string}
- */
 function reportBadgeClass(count) {
     if (count >= 10) return "report-badge report-badge--danger";
     if (count >= 5)  return "report-badge report-badge--warning";
     return "report-badge report-badge--info";
 }
 
-/**
- * Format an ISO timestamp to a locale-friendly string.
- * @param {string} ts  ISO 8601 timestamp
- * @returns {string}
- */
 function formatTimestamp(ts) {
-    if (!ts) return "—";
+    if (!ts || ts === "Just now") return ts || "—";
     const d = new Date(ts);
+    if (isNaN(d.getTime())) return ts;
     return d.toLocaleString("en-MY", {
-        year:   "numeric",
-        month:  "short",
-        day:    "2-digit",
-        hour:   "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
+        year: "numeric", month: "short", day: "2-digit",
+        hour: "2-digit", minute: "2-digit", second: "2-digit",
         hour12: false,
     });
 }
 
-/**
- * Trigger browser file download for given content.
- * @param {string} filename
- * @param {string} mimeType
- * @param {string} content
- */
 function downloadFile(filename, mimeType, content) {
     const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
@@ -142,12 +122,8 @@ function downloadFile(filename, mimeType, content) {
     URL.revokeObjectURL(url);
 }
 
-/**
- * Animate a stat value with a counting effect.
- * @param {HTMLElement} el    Target element
- * @param {string}      value Display value
- */
 function setStatAnimated(el, value) {
+    if (!el) return;
     el.style.opacity = "0";
     el.style.transform = "translateY(6px)";
     requestAnimationFrame(() => {
@@ -158,13 +134,6 @@ function setStatAnimated(el, value) {
     });
 }
 
-/**
- * Generic sorting function for arrays of objects.
- * @param {Array} data 
- * @param {string|null} key 
- * @param {boolean|null} asc 
- * @returns {Array}
- */
 function sortData(data, key, asc) {
     if (!key) return data;
     return [...data].sort((a, b) => {
@@ -172,45 +141,147 @@ function sortData(data, key, asc) {
         let valB = b[key];
         if (typeof valA === "string") valA = valA.toLowerCase();
         if (typeof valB === "string") valB = valB.toLowerCase();
-        
         if (valA < valB) return asc ? -1 : 1;
         if (valA > valB) return asc ? 1 : -1;
         return 0;
     });
 }
 
+function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.appendChild(document.createTextNode(String(str || "")));
+    return div.innerHTML;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ANALYTICS VISUAL CHARTS
+// ═══════════════════════════════════════════════════════════════════
+
+function renderBankDonutChart(banks) {
+    if (!banks || !banks.length) {
+        $bankDonutSvg.innerHTML = '<circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="14"/>';
+        $bankLegend.innerHTML = '<div class="legend-item"><span>No data</span></div>';
+        return;
+    }
+
+    const total = banks.reduce((acc, b) => acc + b.count, 0) || 1;
+    let accumulatedAngle = 0;
+    const radius = 36;
+    const circumference = 2 * Math.PI * radius;
+    let svgSegments = "";
+    let legendHtml = "";
+
+    banks.slice(0, 5).forEach((b, i) => {
+        const color = BANK_COLORS[i % BANK_COLORS.length];
+        const percent = b.count / total;
+        const dashLength = percent * circumference;
+        const spaceLength = circumference - dashLength;
+        const dashOffset = -accumulatedAngle * (circumference / 360);
+        accumulatedAngle += percent * 360;
+
+        svgSegments += `
+            <circle cx="50" cy="50" r="${radius}" fill="none" stroke="${color}" stroke-width="12"
+                stroke-dasharray="${dashLength} ${spaceLength}" stroke-dashoffset="${dashOffset}"
+                stroke-linecap="butt" style="transition: stroke-dasharray 0.5s ease;"></circle>
+        `;
+
+        legendHtml += `
+            <div class="legend-item">
+                <span style="display: flex; align-items: center; gap: 6px;">
+                    <span class="legend-color" style="background: ${color};"></span>
+                    ${escapeHtml(b.bank)}
+                </span>
+                <strong>${Math.round(percent * 100)}%</strong>
+            </div>
+        `;
+    });
+
+    $bankDonutSvg.innerHTML = svgSegments;
+    $bankLegend.innerHTML = legendHtml;
+    $donutCenterText.innerHTML = `${total}<small>Mules</small>`;
+}
+
+function renderTimelineBars(timeline) {
+    if (!timeline || !timeline.length) {
+        // Fallback default timeline buckets
+        timeline = [
+            { time: "18:00", count: 4 }, { time: "19:00", count: 7 }, { time: "20:00", count: 12 },
+            { time: "21:00", count: 18 }, { time: "22:00", count: 25 }, { time: "23:00", count: 15 },
+            { time: "00:00", count: 9 }, { time: "01:00", count: telemetryData.length || 1 }
+        ];
+    }
+
+    const maxCount = Math.max(...timeline.map(t => t.count), 1);
+    $timelineBars.innerHTML = timeline.map(t => {
+        const heightPct = Math.max(8, Math.round((t.count / maxCount) * 100));
+        const label = t.time.includes("T") ? t.time.split("T")[1].slice(0, 5) : t.time.slice(-5);
+        return `
+            <div class="timeline-bar-col" title="${label}: ${t.count} detections">
+                <div class="timeline-bar" style="height: ${heightPct}%;"></div>
+                <span class="timeline-label">${label}</span>
+            </div>
+        `;
+    }).join("");
+}
+
+function renderPlatformBars(platforms) {
+    if (!platforms || !platforms.length) {
+        platforms = [
+            { platform: "WhatsApp Scam", count: 18 },
+            { platform: "Telegram Scam", count: 14 },
+            { platform: "Facebook Marketplace", count: 12 },
+            { platform: "Shopee Fake Shop", count: 9 }
+        ];
+    }
+
+    const maxCount = Math.max(...platforms.map(p => p.count), 1);
+    $platformBars.innerHTML = platforms.slice(0, 4).map(p => {
+        const widthPct = Math.max(10, Math.round((p.count / maxCount) * 100));
+        return `
+            <div class="platform-row">
+                <div class="platform-row-header">
+                    <span>${escapeHtml(p.platform)}</span>
+                    <strong>${p.count}</strong>
+                </div>
+                <div class="platform-bar-track">
+                    <div class="platform-bar-fill" style="width: ${widthPct}%;"></div>
+                </div>
+            </div>
+        `;
+    }).join("");
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // DATA FETCHING & RENDERING
 // ═══════════════════════════════════════════════════════════════════
 
-/**
- * Fetch and render aggregate statistics into the stat cards.
- */
 async function refreshStats() {
     const data = await apiFetch("/stats");
-
     setStatAnimated($statThreats,    data.total_threats.toLocaleString());
     setStatAnimated($statConfidence, (data.avg_confidence * 100).toFixed(1) + "%");
     setStatAnimated($statMule,       data.total_mule_accounts.toLocaleString());
     setStatAnimated($statReports,    data.total_reports.toLocaleString());
 }
 
-/**
- * Fetch the most recent threat telemetry entries.
- */
+async function refreshDistributions() {
+    try {
+        const data = await apiFetch("/distributions");
+        distributionsData = data;
+        renderBankDonutChart(data.banks);
+        renderTimelineBars(data.timeline);
+        renderPlatformBars(data.platforms);
+    } catch (_err) {}
+}
+
 async function refreshTelemetry() {
     const data = await apiFetch("/telemetry");
     telemetryData = data.entries;
     renderTelemetry();
 }
 
-/**
- * Render telemetry entries to DOM with client-side filtering and sorting.
- */
 function renderTelemetry() {
     let filtered = telemetryData;
 
-    // Apply Search Filter
     if (telemetryFilterText) {
         const query = telemetryFilterText.toLowerCase();
         filtered = filtered.filter(e => 
@@ -219,7 +290,6 @@ function renderTelemetry() {
         );
     }
 
-    // Apply Score Filter
     if (telemetryScoreFilter === "high") {
         filtered = filtered.filter(e => e.bert_score >= 0.85);
     } else if (telemetryScoreFilter === "medium") {
@@ -255,18 +325,12 @@ function renderTelemetry() {
         .join("");
 }
 
-/**
- * Fetch the full mule account registry.
- */
 async function refreshMuleRegistry() {
     const data = await apiFetch("/mule-registry");
     muleData = data.accounts;
     renderMuleRegistry();
 }
 
-/**
- * Render mule accounts to DOM with search filtering and delete buttons.
- */
 function renderMuleRegistry() {
     let filtered = muleData;
 
@@ -314,13 +378,8 @@ function renderMuleRegistry() {
         .join("");
 }
 
-/**
- * Delete a mule account.
- * @param {number} muleId
- */
 window.handleDeleteMule = async function(muleId) {
     if (!confirm(`Are you sure you want to remove mule account #${muleId}?`)) return;
-
     try {
         await apiFetch(`/mule-registry/${muleId}`, { method: "DELETE" });
         await refreshAll();
@@ -329,20 +388,6 @@ window.handleDeleteMule = async function(muleId) {
     }
 };
 
-/**
- * Escape HTML entities to prevent XSS in rendered table cells.
- * @param {string} str
- * @returns {string}
- */
-function escapeHtml(str) {
-    const div = document.createElement("div");
-    div.appendChild(document.createTextNode(str));
-    return div.innerHTML;
-}
-
-/**
- * Handle clicks on sortable table headers.
- */
 function handleSortClick(e) {
     const th = e.currentTarget;
     const tableId = th.closest('table').id;
@@ -442,12 +487,36 @@ async function handleAddMuleSubmit(e) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// SERVER-SENT EVENTS (SSE) STREAM
+// ═══════════════════════════════════════════════════════════════════
+
+function initSseStream() {
+    if (window.EventSource) {
+        try {
+            sseSource = new EventSource(`${API_BASE}/stream`);
+            sseSource.addEventListener("update", (e) => {
+                try {
+                    const parsed = JSON.parse(e.data);
+                    if (parsed.event === "new_threat" && parsed.data) {
+                        telemetryData = [parsed.data, ...telemetryData.filter(t => t.log_id !== parsed.data.log_id)].slice(0, 50);
+                        renderTelemetry();
+                        refreshStats();
+                        refreshDistributions();
+                    }
+                } catch (_err) {}
+            });
+            sseSource.onerror = () => {
+                sseSource.close();
+                sseSource = null;
+            };
+        } catch (_err) {}
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // ORCHESTRATOR
 // ═══════════════════════════════════════════════════════════════════
 
-/**
- * Master refresh — fetches all data sources in parallel.
- */
 async function refreshAll() {
     try {
         const [stats, telemetry, mule, simStatus] = await Promise.all([
@@ -476,6 +545,8 @@ async function refreshAll() {
             $simToggleBtn.textContent = "Simulation: OFF";
         }
 
+        refreshDistributions();
+
         $statusDot.className = "status-dot live";
         $statusText.textContent = "Live";
         $lastRefresh.textContent = `Updated ${new Date().toLocaleTimeString("en-MY", { hour12: false })}`;
@@ -498,6 +569,7 @@ async function handleSimToggle() {
             $simToggleBtn.classList.replace("on", "off");
             $simToggleBtn.textContent = "Simulation: OFF";
         }
+        refreshAll();
     } catch (err) {
         console.error("Failed to toggle simulator:", err);
     } finally {
@@ -542,6 +614,7 @@ $closeAddMuleModalBtn.addEventListener("click", closeAddMuleModal);
 $cancelAddMuleBtn.addEventListener("click", closeAddMuleModal);
 $addMuleForm.addEventListener("submit", handleAddMuleSubmit);
 
-// Initial load & timer
+// Initial load & stream
 refreshAll();
+initSseStream();
 setInterval(refreshAll, REFRESH_MS);

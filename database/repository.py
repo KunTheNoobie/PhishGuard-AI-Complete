@@ -115,14 +115,26 @@ async def log_threat_telemetry(
         "VALUES (?, ?);"
     )
 
-    await db.execute(insert_sql, (url, score))
+    cursor = await db.execute(insert_sql, (url, score))
     await db.commit()
+    log_id = cursor.lastrowid
 
     logger.info(
         "TELEMETRY — Logged malicious URL '%s' (score=%.4f).",
         url,
         score,
     )
+
+    try:
+        from api.dashboard_endpoints import broadcast_threat_event
+        broadcast_threat_event("new_threat", {
+            "log_id": log_id,
+            "malicious_url": url,
+            "bert_score": round(score, 4),
+            "timestamp": "Just now",
+        })
+    except Exception:
+        pass
 
 
 # ==============================================================================

@@ -176,8 +176,12 @@ MULE_ACCOUNT_PATTERNS: Final[dict[str, str]] = {
     "AmBank": r"\b8\d{12}\b",
     "Bank Islam": r"\b1\d{13}\b",
     "Bank Rakyat": r"\b[02]\d{11}\b",
-    "Telecommunications (Phone)": r"\b(?:01|601|\+601)\d{8,9}\b",
+    "DuitNow Mobile / Phone": r"\b(?:\+?601[0-9]|01[0-9])[- ]?[0-9]{7,8}\b",
+    "DuitNow National ID / IC": r"\b\d{6}-\d{2}-\d{4}\b",
 }
+
+DUITNOW_PHONE_REGEX: Final[str] = r"\b(?:\+?601[0-9]|01[0-9])[- ]?[0-9]{7,8}\b"
+MALAYSIAN_IC_REGEX: Final[str] = r"\b\d{6}-\d{2}-\d{4}\b"
 
 # ==============================================================================
 # 8. ORCHESTRATION VERDICTS

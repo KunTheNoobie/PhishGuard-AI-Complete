@@ -99,3 +99,32 @@ class TestDashboardEnhancements:
         assert resp.status_code == 200
         assert "text/csv" in resp.headers["content-type"]
         assert "Log ID,Malicious URL,BERT Score,Timestamp" in resp.text
+
+    @pytest.mark.asyncio
+    async def test_dashboard_distributions(self, test_client: AsyncClient) -> None:
+        resp = await test_client.get("/api/v1/dashboard/distributions")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "banks" in data
+        assert "platforms" in data
+        assert "timeline" in data
+
+    @pytest.mark.asyncio
+    async def test_duitnow_scanner_integration(self, test_client: AsyncClient) -> None:
+        from services.mule_scanner import MuleScanner
+        import aiosqlite
+        from database.init_db import initialize_database
+
+        scanner = MuleScanner()
+        db = await initialize_database()
+        try:
+            # Test mobile DuitNow format
+            result = await scanner.scan_and_verify(
+                "Please pay deposit to DuitNow 012-3456789 immediately.", db
+            )
+            assert "012-3456789" in result["accounts_extracted"] or "0123456789" in result["accounts_extracted"]
+            assert result["mule_detected"] is True
+            assert any("DuitNow" in acc["bank_name"] for acc in result["flagged_accounts"])
+        finally:
+            await db.close()
+

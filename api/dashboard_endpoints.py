@@ -229,6 +229,115 @@ async def export_telemetry_csv(request: Request) -> Response:
 
 
 # ==============================================================================
+# GET /api/v1/dashboard/distributions (Analytics Charts)
+# ==============================================================================
+
+@router.get(
+    "/distributions",
+    summary="Data distributions for analytics charts",
+)
+async def get_distributions(request: Request) -> dict[str, Any]:
+    """Return bank and platform breakdowns for visual analytics charts."""
+    db = request.app.state.db
+
+    # Bank distribution
+    cursor = await db.execute(
+        "SELECT bank_name, COUNT(*), SUM(report_count) FROM mule_registry "
+        "GROUP BY bank_name ORDER BY COUNT(*) DESC LIMIT 8;"
+    )
+    bank_rows = await cursor.fetchall()
+    banks = [
+        {"bank": r[0], "count": r[1], "reports": r[2] or 0}
+        for r in bank_rows
+    ]
+
+    # Platform distribution
+    cursor = await db.execute(
+        "SELECT platform_flagged, COUNT(*) FROM mule_registry "
+        "GROUP BY platform_flagged ORDER BY COUNT(*) DESC LIMIT 6;"
+    )
+    platform_rows = await cursor.fetchall()
+    platforms = [
+        {"platform": r[0], "count": r[1]}
+        for r in platform_rows
+    ]
+
+    # Timeline distribution (recent threat velocity buckets)
+    cursor = await db.execute(
+        "SELECT SUBSTR(timestamp, 1, 13) as hour_bucket, COUNT(*), AVG(bert_score) "
+        "FROM threat_telemetry GROUP BY hour_bucket ORDER BY hour_bucket DESC LIMIT 12;"
+    )
+    timeline_rows = await cursor.fetchall()
+    timeline = [
+        {"time": r[0] + ":00", "count": r[1], "avg_score": round(r[2], 3)}
+        for r in reversed(timeline_rows)
+    ]
+
+    return {
+        "banks": banks,
+        "platforms": platforms,
+        "timeline": timeline,
+    }
+
+
+# ==============================================================================
+# GET /api/v1/dashboard/stream (Server-Sent Events)
+# ==============================================================================
+
+import json
+import asyncio
+from fastapi.responses import StreamingResponse
+
+# Set of active subscriber queues for broadcasting live threat events
+_SSE_CLIENTS: set[asyncio.Queue] = set()
+
+def broadcast_threat_event(event_type: str, data: dict[str, Any]) -> None:
+    """Broadcast an event to all connected dashboard SSE clients."""
+    payload = json.dumps({"event": event_type, "data": data})
+    for queue in list(_SSE_CLIENTS):
+        try:
+            queue.put_nowait(payload)
+        except Exception:
+            _SSE_CLIENTS.discard(queue)
+
+
+@router.get(
+    "/stream",
+    summary="Real-time Server-Sent Events stream",
+)
+async def sse_threat_stream(request: Request) -> StreamingResponse:
+    """Stream real-time threat intelligence and telemetry via Server-Sent Events (SSE)."""
+    client_queue: asyncio.Queue = asyncio.Queue(maxsize=100)
+    _SSE_CLIENTS.add(client_queue)
+
+    async def event_generator():
+        try:
+            # Send initial connected ping
+            yield "event: connected\ndata: {\"status\": \"connected\"}\n\n"
+            while True:
+                if await request.is_disconnected():
+                    break
+                try:
+                    message = await asyncio.wait_for(client_queue.get(), timeout=15.0)
+                    yield f"event: update\ndata: {message}\n\n"
+                except asyncio.TimeoutError:
+                    # Keep-alive heartbeat
+                    yield ": heartbeat\n\n"
+        finally:
+            _SSE_CLIENTS.discard(client_queue)
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+# ==============================================================================
 # SIMULATOR TOGGLE
 # ==============================================================================
 
@@ -250,4 +359,5 @@ async def toggle_simulator(request: Request) -> dict[str, Any]:
 async def simulator_status(request: Request) -> dict[str, Any]:
     """Check if the simulator is currently running."""
     return {"simulator_running": getattr(request.app.state, "simulator_running", False)}
+
 

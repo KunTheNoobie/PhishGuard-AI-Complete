@@ -103,14 +103,29 @@ class MuleScanner:
 
         unique_accounts: list[str] = sorted(all_matches)
 
+        # ── 3. Normalize for database lookup (e.g. strip dashes/spaces) ──
+        normalized_lookup: set[str] = set(unique_accounts)
+        for acc in unique_accounts:
+            clean = re.sub(r"[\s\-]", "", acc)
+            if clean:
+                normalized_lookup.add(clean)
+                if clean.startswith("+60"):
+                    normalized_lookup.add("0" + clean[3:])
+                elif clean.startswith("60"):
+                    normalized_lookup.add("0" + clean[2:])
+                elif clean.startswith("0"):
+                    normalized_lookup.add("+6" + clean)
+                    normalized_lookup.add("6" + clean)
+
         logger.debug(
-            "Total unique account(s) extracted: %d",
+            "Total unique account(s) extracted: %d (lookup candidates: %d)",
             len(unique_accounts),
+            len(normalized_lookup),
         )
 
-        # ── 3. Registry lookup ──
+        # ── 4. Registry lookup ──
         flagged: list[dict[str, Any]] = await check_mule_accounts(
-            unique_accounts, db
+            sorted(normalized_lookup), db
         )
 
         mule_detected: bool = len(flagged) > 0
