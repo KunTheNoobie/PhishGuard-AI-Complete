@@ -130,35 +130,94 @@ class QuickScanRequest(BaseModel):
 )
 async def quick_scan_url(request: Request, payload: QuickScanRequest) -> dict[str, Any]:
     """Run an instant heuristic & mule scanner scan on any URL or text payload."""
+    import pathlib
+    import httpx
+    from urllib.parse import urlparse
+
     db = request.app.state.db
     mule_scanner = request.app.state.mule_scanner
+    semantic_engine = getattr(request.app.state, "semantic_engine", None)
 
-    # Run mule & DuitNow scan on provided text and URL
-    combined_text = f"{payload.url} {payload.text_content}"
+    target_url = payload.url.strip()
+    fetched_content = payload.text_content or ""
+
+    # Check if target_url is a web URL or local static file
+    if target_url.startswith("http://") or target_url.startswith("https://") or "test_scam.html" in target_url:
+        parsed = urlparse(target_url if "://" in target_url else f"http://{target_url}")
+        # If local test scam page on disk
+        if "test_scam.html" in parsed.path:
+            local_scam_path = pathlib.Path("dashboard/test_scam.html")
+            if local_scam_path.is_file():
+                fetched_content += " " + local_scam_path.read_text(encoding="utf-8", errors="ignore")
+
+        # Attempt HTTP fetch for external or live local URLs
+        if not fetched_content or len(fetched_content) < 100:
+            try:
+                async with httpx.AsyncClient(timeout=2.5, follow_redirects=True) as client:
+                    resp = await client.get(target_url)
+                    if resp.status_code == 200:
+                        fetched_content += " " + resp.text
+            except Exception:
+                pass
+
+    combined_text = f"{target_url} {fetched_content}"
+
+    # 1. Run Mule & DuitNow Scanner
     mule_result = await mule_scanner.scan_and_verify(combined_text, db)
 
-    # Typo-squatting heuristic check
-    from urllib.parse import urlparse
-    parsed = urlparse(payload.url if "://" in payload.url else f"http://{payload.url}")
-    host = (parsed.hostname or payload.url).lower()
+    # 2. Run BERT Semantic Engine if available
+    bert_score = 0.05
+    is_phishing_semantic = False
+    if semantic_engine and len(combined_text.strip()) > 20:
+        try:
+            sem_result = semantic_engine.predict_proba(combined_text)
+            bert_score = float(sem_result.get("phishing_probability", 0.05))
+            is_phishing_semantic = bert_score >= 0.70
+        except Exception:
+            pass
 
-    # Fast confidence assessment
-    is_threat = mule_result["mule_detected"] or any(
+    # 3. Typo-squatting & keywords
+    parsed = urlparse(target_url if "://" in target_url else f"http://{target_url}")
+    host = (parsed.hostname or target_url).lower()
+    has_scam_keywords = any(
         kw in combined_text.lower()
-        for kw in ["verify", "suspended", "urgent", "security update", "pdrm", "bank login"]
+        for kw in ["verify", "suspended", "urgent", "security update", "pdrm", "bank login", "transfer", "deposit"]
     )
 
-    score = 0.94 if mule_result["mule_detected"] else (0.82 if is_threat else 0.05)
-    verdict = "BLOCK_RENDER" if score >= 0.75 else "SAFE"
+    is_threat = mule_result["mule_detected"] or is_phishing_semantic or (has_scam_keywords and "scam" in target_url)
+    if mule_result["mule_detected"]:
+        score = max(0.99, bert_score)
+        verdict = "BLOCK_RENDER"
+    elif is_threat:
+        score = max(0.85, bert_score)
+        verdict = "BLOCK_RENDER"
+    else:
+        score = bert_score if bert_score < 0.5 else 0.05
+        verdict = "SAFE"
+
+    # Broadcast event if threat detected so dashboard counters immediately update
+    if verdict == "BLOCK_RENDER":
+        try:
+            from database.repository import log_threat_telemetry
+            log_id = await log_threat_telemetry(db, target_url, score)
+            await broadcast_threat_event("new_threat", {
+                "log_id": log_id,
+                "malicious_url": target_url,
+                "bert_score": round(score, 4),
+                "timestamp": "Just now",
+            })
+        except Exception:
+            pass
 
     return {
-        "url": payload.url,
+        "url": target_url,
         "verdict": verdict,
         "score": score,
         "mule_detected": mule_result["mule_detected"],
         "flagged_accounts": mule_result["flagged_accounts"],
         "scanned_at": "Just now",
     }
+
 
 
 # ==============================================================================

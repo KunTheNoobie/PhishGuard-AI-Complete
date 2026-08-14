@@ -148,4 +148,17 @@ class TestDashboardEnhancements:
         assert data["verdict"] == "BLOCK_RENDER"
         assert data["mule_detected"] is True
 
+    @pytest.mark.asyncio
+    async def test_quick_scan_local_scam_page(self, test_client: AsyncClient) -> None:
+        resp = await test_client.post(
+            "/api/v1/dashboard/quick-scan",
+            json={"url": "http://127.0.0.1:8000/dashboard/test_scam.html"}
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["verdict"] == "BLOCK_RENDER"
+        assert data["mule_detected"] is True
+        assert any(acc["account_number"] == "112233445566" for acc in data["flagged_accounts"])
+
+
 
