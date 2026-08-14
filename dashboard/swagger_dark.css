@@ -24,7 +24,7 @@
 }
 
 /* ─── Global Body & Wrapper ─── */
-body {
+html, body {
     background-color: var(--bg-primary) !important;
     background-image:
         radial-gradient(ellipse 60% 40% at 50% 0%, rgba(99, 102, 241, 0.18) 0%, transparent 60%),
@@ -51,7 +51,11 @@ body {
 .swagger-ui th,
 .swagger-ui div,
 .swagger-ui li,
-.swagger-ui a {
+.swagger-ui a,
+.swagger-ui i,
+.swagger-ui b,
+.swagger-ui em,
+.swagger-ui strong {
     color: #e2e8f0;
 }
 
@@ -281,6 +285,33 @@ body {
     border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
+/* ─── ALL DESCRIPTIONS & MARKDOWN (FIX DARK TEXT INVISIBILITY) ─── */
+.swagger-ui .opblock-description-wrapper,
+.swagger-ui .opblock-description-wrapper p,
+.swagger-ui .opblock-description-wrapper h4,
+.swagger-ui .opblock-description-wrapper div,
+.swagger-ui .opblock-description-wrapper i,
+.swagger-ui .opblock-title_normal,
+.swagger-ui .opblock-title_normal p,
+.swagger-ui .opblock-title_normal h4,
+.swagger-ui .opblock-external-docs-wrapper,
+.swagger-ui .opblock-external-docs-wrapper p,
+.swagger-ui .opblock-external-docs-wrapper a,
+.swagger-ui .opblock-summary-description,
+.swagger-ui .opblock .opblock-summary-description,
+.swagger-ui .markdown,
+.swagger-ui .markdown p,
+.swagger-ui .markdown span,
+.swagger-ui .markdown li,
+.swagger-ui .renderedMarkdown,
+.swagger-ui .renderedMarkdown p,
+.swagger-ui .renderedMarkdown span,
+.swagger-ui .renderedMarkdown li {
+    color: #f1f5f9 !important;
+    font-size: 0.95rem !important;
+    line-height: 1.6 !important;
+}
+
 .swagger-ui .opblock-section-header {
     background: rgba(15, 23, 42, 0.95) !important;
     border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
@@ -393,10 +424,9 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   SCHEMAS & MODELS SECTION — ABSOLUTE ZERO WHITE HIGHLIGHTS
+   SCHEMAS & MODELS SECTION — ZERO WHITE HIGHLIGHTS
    ═══════════════════════════════════════════════════════════════════ */
 
-/* Wipe out ANY white background on buttons, spans, headers, containers */
 .swagger-ui section.models {
     background: #0f172a !important;
     border: 1px solid rgba(99, 102, 241, 0.4) !important;
@@ -441,7 +471,6 @@ body {
     box-shadow: 0 4px 20px rgba(99, 102, 241, 0.2) !important;
 }
 
-/* Eliminate white buttons & rectangles in Swagger 5 JSON Schema */
 .swagger-ui .json-schema-2020-12,
 .swagger-ui .json-schema-2020-12 button,
 .swagger-ui .json-schema-2020-12-accordion,
@@ -459,7 +488,6 @@ body {
     outline: none !important;
 }
 
-/* Titles */
 .swagger-ui .json-schema-2020-12__title,
 .swagger-ui .json-schema-2020-12-head .json-schema-2020-12__title,
 .swagger-ui .json-schema-2020-12-property .json-schema-2020-12__title,
@@ -479,7 +507,6 @@ body {
     color: #38bdf8 !important;
 }
 
-/* Expand All Button */
 .swagger-ui .json-schema-2020-12-expand-deep-button {
     background: rgba(99, 102, 241, 0.2) !important;
     border: 1px solid rgba(99, 102, 241, 0.5) !important;
@@ -498,7 +525,6 @@ body {
     color: #ffffff !important;
 }
 
-/* Attribute Types (object, string, integer) */
 .swagger-ui .json-schema-2020-12__attribute,
 .swagger-ui .json-schema-2020-12__attribute--primary,
 .swagger-ui .model-hint {
@@ -510,11 +536,6 @@ body {
     padding-left: 0.5rem !important;
 }
 
-.swagger-ui .json-schema-2020-12__attribute--muted {
-    color: #94a3b8 !important;
-}
-
-/* Schema Body */
 .swagger-ui .json-schema-2020-12-body {
     border-left: 2px solid rgba(99, 102, 241, 0.3) !important;
     padding-left: 1rem !important;
@@ -537,7 +558,6 @@ body {
     fill: #38bdf8 !important;
 }
 
-/* Property Table inside Classic Model */
 .swagger-ui .model {
     color: #f8fafc !important;
     font-family: 'JetBrains Mono', monospace !important;

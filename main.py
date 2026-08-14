@@ -330,7 +330,7 @@ app.mount(
 # ==============================================================================
 
 _SWAGGER_CYBER_DARK_HTML: Final[str] = """<!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark-mode">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -340,8 +340,8 @@ _SWAGGER_CYBER_DARK_HTML: Final[str] = """<!DOCTYPE html>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
-    <link rel="stylesheet" href="/dashboard/styles.css?v=5">
-    <link rel="stylesheet" href="/dashboard/swagger_dark.css?v=5">
+    <link rel="stylesheet" href="/dashboard/styles.css?v=6">
+    <link rel="stylesheet" href="/dashboard/swagger_dark.css?v=6">
     <style>
         .swagger-ui .scheme-container { background: transparent !important; box-shadow: none !important; border: none !important; }
         .swagger-ui section.models { background: #0f172a !important; border: 1px solid rgba(99, 102, 241, 0.4) !important; }
@@ -350,8 +350,10 @@ _SWAGGER_CYBER_DARK_HTML: Final[str] = """<!DOCTYPE html>
         .swagger-ui .json-schema-2020-12__title, .swagger-ui .model-title, .swagger-ui span.model-title__text { color: #38bdf8 !important; font-family: 'JetBrains Mono', monospace !important; font-weight: 800 !important; }
         .swagger-ui .json-schema-2020-12__attribute { color: #a78bfa !important; font-family: 'JetBrains Mono', monospace !important; }
         .swagger-ui .model { color: #f8fafc !important; }
+        .swagger-ui .opblock-description-wrapper, .swagger-ui .opblock-description-wrapper p, .swagger-ui .opblock-title_normal p, .swagger-ui .opblock-summary-description, .swagger-ui .markdown p, .swagger-ui .renderedMarkdown p, .swagger-ui .parameters-col_description p, .swagger-ui .response-col_description { color: #f1f5f9 !important; font-size: 0.95rem !important; line-height: 1.6 !important; }
     </style>
 </head>
+
 
 
 
