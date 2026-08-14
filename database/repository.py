@@ -93,12 +93,11 @@ async def log_threat_telemetry(
     url: str,
     score: float,
     db: aiosqlite.Connection,
-) -> None:
+) -> int:
     """Persist a malicious-URL detection event to the telemetry table.
 
     This method is designed to be invoked as a **background task** via
-    ``BackgroundTasks`` so that response latency is not penalized by the
-    write I/O.
+    ``BackgroundTasks`` or directly during synchronous scans.
 
     Parameters
     ----------
@@ -109,7 +108,13 @@ async def log_threat_telemetry(
         classification.
     db : aiosqlite.Connection
         Active database connection (injected).
+
+    Returns
+    -------
+    int
+        Inserted record primary key (`log_id`).
     """
+    import asyncio
     insert_sql: str = (
         "INSERT INTO threat_telemetry (malicious_url, bert_score) "
         "VALUES (?, ?);"
@@ -117,7 +122,7 @@ async def log_threat_telemetry(
 
     cursor = await db.execute(insert_sql, (url, score))
     await db.commit()
-    log_id = cursor.lastrowid
+    log_id: int = cursor.lastrowid or 0
 
     logger.info(
         "TELEMETRY — Logged malicious URL '%s' (score=%.4f).",
@@ -127,14 +132,17 @@ async def log_threat_telemetry(
 
     try:
         from api.dashboard_endpoints import broadcast_threat_event
-        broadcast_threat_event("new_threat", {
+        asyncio.create_task(broadcast_threat_event("new_threat", {
             "log_id": log_id,
             "malicious_url": url,
             "bert_score": round(score, 4),
             "timestamp": "Just now",
-        })
+        }))
     except Exception:
         pass
+
+    return log_id
+
 
 
 # ==============================================================================

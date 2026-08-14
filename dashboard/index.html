@@ -535,10 +535,11 @@
                                 <th class="sortable" data-sort-key="malicious_url">Malicious URL <span class="sort-icon"></span></th>
                                 <th class="sortable" data-sort-key="bert_score">BERT Score <span class="sort-icon"></span></th>
                                 <th class="sortable" data-sort-key="timestamp">Timestamp <span class="sort-icon"></span></th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="telemetryBody">
-                            <tr class="table-empty"><td colspan="4">Loading threat data…</td></tr>
+                            <tr class="table-empty"><td colspan="5">Loading threat data…</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -633,6 +634,27 @@
             </div>
         </div>
 
+        <!-- ─── Forensic Incident Report Modal Dialog ─── -->
+        <div id="forensicReportModal" class="modal-overlay hidden" aria-hidden="true">
+            <div class="modal-card" style="max-width: 600px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">📄 Threat Forensic Incident Report</h3>
+                    <button id="closeForensicModalBtn" class="modal-close-btn" type="button">&times;</button>
+                </div>
+                <div id="forensicReportBody" style="font-size: 0.85rem; line-height: 1.6; color: var(--text-secondary);">
+                    Loading forensic dossier...
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="printReportBtn" class="action-btn action-btn--primary" onclick="window.print()">
+                        🖨️ Print / Save PDF
+                    </button>
+                    <button type="button" id="dismissForensicBtn" class="action-btn" onclick="document.getElementById('forensicReportModal').classList.add('hidden')">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <!-- ═══════════════════ FOOTER ═══════════════════ -->
@@ -644,3 +666,4 @@
     <script src="app.js"></script>
 </body>
 </html>
+

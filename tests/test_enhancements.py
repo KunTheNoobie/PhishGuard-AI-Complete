@@ -160,5 +160,67 @@ class TestDashboardEnhancements:
         assert data["mule_detected"] is True
         assert any(acc["account_number"] == "112233445566" for acc in data["flagged_accounts"])
 
+    @pytest.mark.asyncio
+    async def test_forensic_incident_report(self, test_client: AsyncClient) -> None:
+        # 1. Quick scan a threat to populate telemetry
+        await test_client.post(
+            "/api/v1/dashboard/quick-scan",
+            json={"url": "http://scam-bank.test", "text_content": "Urgent pay to DuitNow 012-3456789"}
+        )
+        tel_resp = await test_client.get("/api/v1/dashboard/telemetry")
+        assert tel_resp.status_code == 200
+        entries = tel_resp.json()["entries"]
+        assert len(entries) > 0
+        first_id = entries[0]["log_id"]
+
+        # 2. Fetch structured forensic report
+        rep_resp = await test_client.get(f"/api/v1/dashboard/telemetry/{first_id}/report")
+        assert rep_resp.status_code == 200
+        rep_data = rep_resp.json()
+        assert "incident_id" in rep_data
+        assert "url_hash_sha256" in rep_data
+        assert "targeted_institution" in rep_data
+        assert "recommended_action" in rep_data
+
+
+    @pytest.mark.asyncio
+    async def test_qr_scanner_quishing_detection(self) -> None:
+        from services.qr_scanner import extract_duitnow_qr_accounts, scan_and_verify_qr
+        from database.init_db import initialize_database
+
+        # Sample EMVCo QR with seeded Maybank mule account 112233445566
+        sample_qr = "00020101021126330013my.com.paynet011211223344556652045311"
+        extracted = extract_duitnow_qr_accounts(sample_qr)
+        assert len(extracted) > 0
+        assert any(e["account_number"] == "112233445566" for e in extracted)
+
+        db = await initialize_database()
+        try:
+            scan_res = await scan_and_verify_qr(sample_qr, db)
+            assert scan_res["qr_detected"] is True
+            assert scan_res["quishing_threat"] is True
+            assert len(scan_res["flagged_accounts"]) > 0
+            assert any(f["account_number"] == "112233445566" for f in scan_res["flagged_accounts"])
+        finally:
+            await db.close()
+
+
+    def test_domain_heuristic_analyzer(self) -> None:
+        from services.heuristic_engine import analyze_url_heuristics
+
+        # Test IP address
+        res_ip = analyze_url_heuristics("http://192.168.1.100/login/maybank")
+        assert res_ip["is_ip_address"] is True
+        assert res_ip["heuristic_score"] >= 0.40
+
+        # Test High-risk TLD
+        res_tld = analyze_url_heuristics("http://maybank2u-update.top/auth")
+        assert any(".top" in i for i in res_tld["indicators"])
+
+        # Test Punycode
+        res_puny = analyze_url_heuristics("http://xn--mybank2u-9ya.com")
+        assert res_puny["is_punycode"] is True
+
+
 
 

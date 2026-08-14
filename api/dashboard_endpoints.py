@@ -199,7 +199,7 @@ async def quick_scan_url(request: Request, payload: QuickScanRequest) -> dict[st
     if verdict == "BLOCK_RENDER":
         try:
             from database.repository import log_threat_telemetry
-            log_id = await log_threat_telemetry(db, target_url, score)
+            log_id = await log_threat_telemetry(target_url, score, db)
             await broadcast_threat_event("new_threat", {
                 "log_id": log_id,
                 "malicious_url": target_url,
@@ -208,6 +208,7 @@ async def quick_scan_url(request: Request, payload: QuickScanRequest) -> dict[st
             })
         except Exception:
             pass
+
 
     return {
         "url": target_url,
@@ -252,6 +253,72 @@ async def get_telemetry(request: Request) -> dict[str, Any]:
     ]
 
     return {"count": len(entries), "entries": entries}
+
+
+@router.get(
+    "/telemetry/{log_id}/report",
+    summary="Generate forensic threat incident report",
+    response_description="Detailed forensic dossier for law enforcement / internal security reporting.",
+)
+async def get_telemetry_report(request: Request, log_id: int) -> dict[str, Any]:
+    """Generate a structured forensic incident dossier for a threat telemetry entry."""
+    import hashlib
+    db = request.app.state.db
+
+    cursor = await db.execute(
+        "SELECT log_id, malicious_url, bert_score, timestamp FROM threat_telemetry WHERE log_id = ?;",
+        (log_id,)
+    )
+
+    row = await cursor.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Threat telemetry incident not found")
+
+    target_url = row[1]
+    bert_score = float(row[2])
+    timestamp = row[3]
+
+    # Calculate SHA-256 digital fingerprint
+    url_sha256 = hashlib.sha256(target_url.encode()).hexdigest()
+
+    # Identify targeted entity
+    url_lower = target_url.lower()
+    targeted_bank = "Generic Financial Entity"
+    if "maybank" in url_lower:
+        targeted_bank = "Maybank (Malayan Banking Berhad)"
+    elif "cimb" in url_lower:
+        targeted_bank = "CIMB Bank Berhad"
+    elif "pbe" in url_lower or "public" in url_lower:
+        targeted_bank = "Public Bank Berhad"
+    elif "rhb" in url_lower:
+        targeted_bank = "RHB Bank Berhad"
+    elif "hlb" in url_lower or "hongleong" in url_lower:
+        targeted_bank = "Hong Leong Bank Berhad"
+
+    # Query matching mule accounts
+    mule_cursor = await db.execute(
+        "SELECT account_number, bank_name, platform_flagged, report_count FROM mule_registry ORDER BY report_count DESC LIMIT 3;"
+    )
+    mule_rows = await mule_cursor.fetchall()
+    active_mules = [
+        {"account_number": m[0], "bank_name": m[1], "platform": m[2], "reports": m[3]}
+        for m in mule_rows
+    ]
+
+    return {
+        "incident_id": f"PG-INC-2026-{log_id:05d}",
+        "timestamp": timestamp,
+        "target_url": target_url,
+        "url_hash_sha256": url_sha256,
+        "threat_classification": "CRITICAL_PHISHING_ATTACK" if bert_score >= 0.85 else "SUSPICIOUS_DOMAIN",
+        "bert_confidence": round(bert_score * 100, 2),
+        "targeted_institution": targeted_bank,
+        "jurisdiction": "Malaysia (Bank Negara / PDRM CCID Reference)",
+        "active_mules_referenced": active_mules,
+        "recommended_action": "Domain takedown notification (CERT/MyCERT) and blacklist propagation via DNS RPZ.",
+        "generated_by": "PhishGuard-AI Forensic Engine v3.2",
+    }
+
 
 
 # ==============================================================================

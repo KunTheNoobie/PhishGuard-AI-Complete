@@ -208,13 +208,83 @@ function showTopBanner(result) {
 }
 
 const PHISHGUARD_KEYWORD_CLASS = "phishguard-ai-keyword-highlight";
+const PHISHGUARD_CRED_WARN_ID = "phishguard-ai-cred-warning";
 
 const SUSPICIOUS_KEYWORDS = [
+  // English
   "urgent verification", "immediate verification", "account suspension", "account suspended",
   "flagged for suspicious", "pdrm verification", "authorized pdrm", "transfer verification",
   "avoid account closure", "avoid suspension", "verify account now", "update login details",
-  "unauthorized login", "security alert", "temporary freeze", "reactivate account"
+  "unauthorized login", "security alert", "temporary freeze", "reactivate account",
+  "transfer deposit", "security deposit", "verify immediately", "claim e-wallet credit",
+  // Bahasa Melayu & Manglish
+  "akaun digantung", "akaun disekat", "tindakan segera", "pengesahan keselamatan",
+  "saman tertunggak", "pdrm saman", "tuntutan bantuan tunai", "bantuan e-wallet",
+  "kemaskini maklumat", "tukar kata laluan", "bayaran deposit", "cukai lhdn tertunggak",
+  "sekat kad debit", "log masuk tidak sah", "pengesahan maybank", "pengesahan cimb",
+  "kemaskini perbankan", "tebus hadiah", "akaun anda dibekukan"
 ];
+
+// Proactive Password & OTP/TAC Credential Interceptor
+function initCredentialInterceptor() {
+  const host = location.hostname.toLowerCase().replace(/^www\./, "");
+  const officialDomains = [
+    "maybank2u.com.my", "maybank.com", "cimbclicks.com.my", "cimb.com.my",
+    "pbebank.com", "pbebank.com.my", "rhbgroup.com", "rhbnow.com", "hlb.com.my"
+  ];
+  const isOfficial = officialDomains.some(d => host === d || host.endsWith("." + d));
+  if (isOfficial) return; // Legitimate bank domain
+
+  const credInputs = document.querySelectorAll(
+    'input[type="password"], input[name*="pass" i], input[name*="pin" i], input[name*="tac" i], input[name*="otp" i], input[placeholder*="TAC" i], input[placeholder*="OTP" i], input[placeholder*="PIN" i]'
+  );
+
+  credInputs.forEach(input => {
+    input.addEventListener("focus", () => {
+      let warn = document.getElementById(PHISHGUARD_CRED_WARN_ID);
+      if (!warn) {
+        warn = document.createElement("div");
+        warn.id = PHISHGUARD_CRED_WARN_ID;
+        warn.innerHTML = "⚠️ <strong>PhishGuard Warning:</strong> Unverified Domain. Never enter online banking passwords or TAC/OTP codes on third-party pages.";
+        Object.assign(warn.style, {
+          position: "absolute",
+          background: "#1e1b4b",
+          color: "#f87171",
+          border: "1px solid #ef4444",
+          borderRadius: "6px",
+          padding: "6px 12px",
+          fontSize: "12px",
+          fontFamily: "-apple-system, sans-serif",
+          boxShadow: "0 8px 16px rgba(0,0,0,0.5)",
+          zIndex: "2147483646",
+          pointerEvents: "none",
+          transition: "opacity 0.2s ease"
+        });
+        document.body.appendChild(warn);
+      }
+      const rect = input.getBoundingClientRect();
+      warn.style.top = `${window.scrollY + rect.top - 38}px`;
+      warn.style.left = `${window.scrollX + rect.left}px`;
+      warn.style.display = "block";
+      warn.style.opacity = "1";
+    });
+
+    input.addEventListener("blur", () => {
+      const warn = document.getElementById(PHISHGUARD_CRED_WARN_ID);
+      if (warn) {
+        warn.style.opacity = "0";
+        setTimeout(() => { if (warn) warn.style.display = "none"; }, 200);
+      }
+    });
+  });
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initCredentialInterceptor);
+} else {
+  initCredentialInterceptor();
+}
+
 
 function clearKeywordHighlights() {
   const highlights = document.querySelectorAll(`span.${PHISHGUARD_KEYWORD_CLASS}`);

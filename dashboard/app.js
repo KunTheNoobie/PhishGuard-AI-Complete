@@ -302,7 +302,7 @@ function renderTelemetry() {
 
     if (filtered.length === 0) {
         $telemetryBody.innerHTML =
-            '<tr class="table-empty"><td colspan="4">No threats match current filter criteria.</td></tr>';
+            '<tr class="table-empty"><td colspan="5">No threats match current filter criteria.</td></tr>';
         return;
     }
 
@@ -320,10 +320,62 @@ function renderTelemetry() {
                 <td class="url-cell" title="${escapeHtml(e.malicious_url)}">${escapeHtml(e.malicious_url)}</td>
                 <td class="${scoreClass(e.bert_score)}">${(e.bert_score * 100).toFixed(1)}%</td>
                 <td>${formatTimestamp(e.timestamp)}</td>
+                <td>
+                    <button class="action-btn" style="padding: 2px 8px; font-size: 0.72rem;" onclick="openIncidentReport(${e.log_id})">
+                        📄 Dossier
+                    </button>
+                </td>
             </tr>`
         )
         .join("");
 }
+
+async function openIncidentReport(logId) {
+    const modal = document.getElementById("forensicReportModal");
+    const body = document.getElementById("forensicReportBody");
+    if (!modal || !body) return;
+
+    modal.classList.remove("hidden");
+    body.innerHTML = "Fetching forensic telemetry dossier...";
+
+    try {
+        const report = await apiFetch(`/telemetry/${logId}/report`);
+        const mulesHtml = (report.active_mules_referenced || []).map(m => `
+            <li style="margin-bottom: 4px;">
+                <strong>${escapeHtml(m.bank_name)}:</strong> <code>${escapeHtml(m.account_number)}</code> 
+                <span style="opacity: 0.8;">(${m.reports} incident reports on ${escapeHtml(m.platform)})</span>
+            </li>
+        `).join("");
+
+        body.innerHTML = `
+            <div style="background: rgba(15, 23, 42, 0.6); padding: 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 14px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                    <strong>Reference:</strong> <code>${escapeHtml(report.incident_id)}</code>
+                    <span style="color: #f87171; font-weight: 700;">${escapeHtml(report.threat_classification)}</span>
+                </div>
+                <div style="margin-bottom: 6px;"><strong>Targeted URL:</strong> <code style="word-break: break-all; color: var(--accent-cyan);">${escapeHtml(report.target_url)}</code></div>
+                <div style="margin-bottom: 6px;"><strong>SHA-256 Digest:</strong> <code style="font-size: 0.75rem; word-break: break-all;">${escapeHtml(report.url_hash_sha256)}</code></div>
+                <div style="margin-bottom: 6px;"><strong>Target Entity:</strong> ${escapeHtml(report.targeted_institution)}</div>
+                <div style="margin-bottom: 6px;"><strong>AI Threat Probability:</strong> <span class="score-high">${report.bert_confidence}%</span></div>
+                <div><strong>Jurisdiction:</strong> ${escapeHtml(report.jurisdiction)}</div>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <strong>Associated High-Risk Mule Accounts:</strong>
+                <ul style="margin-top: 6px; padding-left: 20px; font-size: 0.8rem;">
+                    ${mulesHtml || '<li>No direct mule accounts linked in session.</li>'}
+                </ul>
+            </div>
+
+            <div style="background: rgba(99, 102, 241, 0.1); border-left: 3px solid #6366f1; padding: 10px; border-radius: 4px; font-size: 0.78rem;">
+                <strong>Recommended Mitigation:</strong> ${escapeHtml(report.recommended_action)}
+            </div>
+        `;
+    } catch (err) {
+        body.innerHTML = `<span style="color: #f87171;">Failed to load report: ${escapeHtml(err.message)}</span>`;
+    }
+}
+
 
 async function refreshMuleRegistry() {
     const data = await apiFetch("/mule-registry");
@@ -707,6 +759,15 @@ $openAddMuleModalBtn.addEventListener("click", openAddMuleModal);
 $closeAddMuleModalBtn.addEventListener("click", closeAddMuleModal);
 $cancelAddMuleBtn.addEventListener("click", closeAddMuleModal);
 $addMuleForm.addEventListener("submit", handleAddMuleSubmit);
+
+const closeForensicModalBtn = document.getElementById("closeForensicModalBtn");
+if (closeForensicModalBtn) {
+    closeForensicModalBtn.addEventListener("click", () => {
+        const modal = document.getElementById("forensicReportModal");
+        if (modal) modal.classList.add("hidden");
+    });
+}
+
 
 // Initial load & stream
 refreshAll();

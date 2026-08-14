@@ -184,7 +184,23 @@ DUITNOW_PHONE_REGEX: Final[str] = r"\b(?:\+?601[0-9]|01[0-9])[- ]?[0-9]{7,8}\b"
 MALAYSIAN_IC_REGEX: Final[str] = r"\b\d{6}-\d{2}-\d{4}\b"
 
 # ==============================================================================
-# 8. ORCHESTRATION VERDICTS
+# 8. ORCHESTRATION VERDICTS & BILINGUAL SCAM LEXICON
 # ==============================================================================
 VERDICT_BLOCK: Final[str] = "BLOCK_RENDER"
 VERDICT_SAFE: Final[str] = "SAFE"
+
+BILINGUAL_SCAM_KEYWORDS: Final[list[str]] = [
+    # English
+    "urgent verification", "immediate verification", "account suspension", "account suspended",
+    "flagged for suspicious", "pdrm verification", "authorized pdrm", "transfer verification",
+    "avoid account closure", "avoid suspension", "verify account now", "update login details",
+    "unauthorized login", "security alert", "temporary freeze", "reactivate account",
+    "transfer deposit", "security deposit", "verify immediately", "claim e-wallet credit",
+    # Bahasa Melayu & Manglish
+    "akaun digantung", "akaun disekat", "tindakan segera", "pengesahan keselamatan",
+    "saman tertunggak", "pdrm saman", "tuntutan bantuan tunai", "bantuan e-wallet",
+    "kemaskini maklumat", "tukar kata laluan", "bayaran deposit", "cukai lhdn tertunggak",
+    "sekat kad debit", "log masuk tidak sah", "pengesahan maybank", "pengesahan cimb",
+    "kemaskini perbankan", "tebus hadiah", "akaun anda dibekukan",
+]
+

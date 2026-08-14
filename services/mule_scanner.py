@@ -117,16 +117,28 @@ class MuleScanner:
                     normalized_lookup.add("+6" + clean)
                     normalized_lookup.add("6" + clean)
 
+        # ── 4. QR Quishing payload scan ──
+        from services.qr_scanner import scan_and_verify_qr
+        qr_result = await scan_and_verify_qr(text, db)
+        for qr_proxy in qr_result.get("extracted_proxies", []):
+            unique_accounts.append(qr_proxy["account_number"])
+            normalized_lookup.add(qr_proxy["account_number"])
+
         logger.debug(
             "Total unique account(s) extracted: %d (lookup candidates: %d)",
             len(unique_accounts),
             len(normalized_lookup),
         )
 
-        # ── 4. Registry lookup ──
+        # ── 5. Registry lookup ──
         flagged: list[dict[str, Any]] = await check_mule_accounts(
             sorted(normalized_lookup), db
         )
+
+        # Merge any specific QR flagged accounts
+        for qr_flagged in qr_result.get("flagged_accounts", []):
+            if not any(f["account_number"] == qr_flagged["account_number"] for f in flagged):
+                flagged.append(qr_flagged)
 
         mule_detected: bool = len(flagged) > 0
 
@@ -142,4 +154,6 @@ class MuleScanner:
             "accounts_extracted": unique_accounts,
             "flagged_accounts": flagged,
             "mule_detected": mule_detected,
+            "quishing_detected": qr_result.get("quishing_threat", False),
         }
+
