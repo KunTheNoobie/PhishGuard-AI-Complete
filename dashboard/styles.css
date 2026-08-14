@@ -52,18 +52,20 @@
 
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background-color: var(--bg-primary);
+    background-color: #060911;
     background-image:
-        radial-gradient(ellipse 60% 40% at 50% 0%, rgba(99, 102, 241, 0.18) 0%, transparent 60%),
-        radial-gradient(ellipse 50% 50% at 85% 85%, rgba(6, 182, 212, 0.1) 0%, transparent 50%),
-        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-    background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
+        radial-gradient(circle 900px at 50% -120px, rgba(99, 102, 241, 0.32), transparent 70%),
+        radial-gradient(circle 700px at 90% 70%, rgba(6, 182, 212, 0.22), transparent 60%),
+        radial-gradient(circle 800px at 10% 90%, rgba(139, 92, 246, 0.22), transparent 65%),
+        linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    background-size: 100% 100%, 100% 100%, 100% 100%, 36px 36px, 36px 36px;
     background-attachment: fixed;
     color: var(--text-primary);
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
 }
+
 
 /* Utility */
 .hidden {

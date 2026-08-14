@@ -340,10 +340,23 @@ _SWAGGER_CYBER_DARK_HTML: Final[str] = """<!DOCTYPE html>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
-    <link rel="stylesheet" href="/dashboard/styles.css?v=7">
-    <link rel="stylesheet" href="/dashboard/swagger_dark.css?v=7">
+    <link rel="stylesheet" href="/dashboard/styles.css?v=8">
+    <link rel="stylesheet" href="/dashboard/swagger_dark.css?v=8">
 
     <style>
+        html, body {
+            background-color: #060911 !important;
+            background-image:
+                radial-gradient(circle 900px at 50% -120px, rgba(99, 102, 241, 0.32), transparent 70%),
+                radial-gradient(circle 700px at 90% 70%, rgba(6, 182, 212, 0.22), transparent 60%),
+                radial-gradient(circle 800px at 10% 90%, rgba(139, 92, 246, 0.22), transparent 65%),
+                linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px) !important;
+            background-size: 100% 100%, 100% 100%, 100% 100%, 36px 36px, 36px 36px !important;
+            background-attachment: fixed !important;
+            min-height: 100vh !important;
+        }
+        #swagger-ui, .swagger-ui, .swagger-ui .wrapper { background: transparent !important; background-color: transparent !important; }
         .swagger-ui .scheme-container { background: transparent !important; box-shadow: none !important; border: none !important; }
         .swagger-ui section.models { background: #0f172a !important; border: 1px solid rgba(99, 102, 241, 0.4) !important; }
         .swagger-ui section.models .model-container { background: #111827 !important; border: 1px solid rgba(255, 255, 255, 0.12) !important; }
@@ -354,6 +367,7 @@ _SWAGGER_CYBER_DARK_HTML: Final[str] = """<!DOCTYPE html>
         .swagger-ui .opblock-description-wrapper, .swagger-ui .opblock-description-wrapper p, .swagger-ui .opblock-title_normal p, .swagger-ui .opblock-summary-description, .swagger-ui .markdown p, .swagger-ui .renderedMarkdown p, .swagger-ui .parameters-col_description p, .swagger-ui .response-col_description { color: #f1f5f9 !important; font-size: 0.95rem !important; line-height: 1.6 !important; }
     </style>
 </head>
+
 
 
 
