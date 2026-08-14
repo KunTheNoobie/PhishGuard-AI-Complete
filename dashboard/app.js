@@ -915,6 +915,7 @@ function initSseStream() {
                         renderTelemetry();
                         refreshStats();
                         refreshDistributions();
+                        playAlertSound();
                     }
                 } catch (_err) {}
             });
@@ -1482,35 +1483,47 @@ const $dismissXaiBtn = document.getElementById("dismissXaiBtn");
 if ($closeXaiModalBtn) $closeXaiModalBtn.addEventListener("click", () => document.getElementById("xaiModal")?.classList.add("hidden"));
 if ($dismissXaiBtn) $dismissXaiBtn.addEventListener("click", () => document.getElementById("xaiModal")?.classList.add("hidden"));
 
-// Multi-Tone Audio Synthesizer Engine
+// ═══════════════════════════════════════════════════════════════════
+// MULTI-TONE SOC AUDIO SYNTHESIZER ENGINE (Web Audio API)
+// ═══════════════════════════════════════════════════════════════════
+
 let audioContext = null;
-let isAudioEnabled = false;
-let currentTone = "tactical";
+let isAudioEnabled = localStorage.getItem("phishguard_audio_enabled") === "true";
+let currentTone = localStorage.getItem("phishguard_audio_tone") || "tactical";
 
 const $audioToggleBtn = document.getElementById("audioToggleBtn");
 const $audioStatusText = document.getElementById("audioStatusText");
 const $audioToneSelect = document.getElementById("audioToneSelect");
 
 if ($audioToneSelect) {
+    $audioToneSelect.value = currentTone;
     $audioToneSelect.addEventListener("change", (e) => {
         currentTone = e.target.value;
-        if (isAudioEnabled) playAlertSound();
+        localStorage.setItem("phishguard_audio_tone", currentTone);
+        // Play instant live acoustic preview of selected tone
+        playTone(currentTone, true);
     });
 }
 
 if ($audioToggleBtn) {
+    if (isAudioEnabled) {
+        $audioToggleBtn.classList.add("active");
+        if ($audioStatusText) $audioStatusText.textContent = "Sound: ON";
+    }
+
     $audioToggleBtn.addEventListener("click", () => {
         isAudioEnabled = !isAudioEnabled;
+        localStorage.setItem("phishguard_audio_enabled", isAudioEnabled);
         if ($audioStatusText) $audioStatusText.textContent = isAudioEnabled ? "Sound: ON" : "Sound: OFF";
         $audioToggleBtn.classList.toggle("active", isAudioEnabled);
         if (isAudioEnabled) {
-            playAlertSound();
+            playTone(currentTone, true);
         }
     });
 }
 
-function playAlertSound() {
-    if (!isAudioEnabled) return;
+function playTone(tone, forcePreview = false) {
+    if (!isAudioEnabled && !forcePreview) return;
     try {
         if (!audioContext) {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -1520,55 +1533,92 @@ function playAlertSound() {
         }
 
         const now = audioContext.currentTime;
-        const osc = audioContext.createOscillator();
-        const gain = audioContext.createGain();
 
-        if (currentTone === "warhorn") {
-            // Low sawtooth war horn
-            osc.type = "sawtooth";
-            osc.frequency.setValueAtTime(140, now);
-            osc.frequency.exponentialRampToValueAtTime(80, now + 0.6);
-            gain.gain.setValueAtTime(0.35, now);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
-            osc.connect(gain);
-            gain.connect(audioContext.destination);
-            osc.start(now);
-            osc.stop(now + 0.65);
-        } else if (currentTone === "sonar") {
-            // Pure sine sonar ping
-            osc.type = "sine";
-            osc.frequency.setValueAtTime(920, now);
-            gain.gain.setValueAtTime(0.4, now);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
-            osc.connect(gain);
-            gain.connect(audioContext.destination);
-            osc.start(now);
-            osc.stop(now + 0.8);
-        } else if (currentTone === "matrix") {
-            // Fast frequency modulation chirp
-            osc.type = "square";
-            osc.frequency.setValueAtTime(440, now);
-            osc.frequency.setValueAtTime(880, now + 0.08);
-            osc.frequency.setValueAtTime(1760, now + 0.16);
-            gain.gain.setValueAtTime(0.2, now);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-            osc.connect(gain);
-            gain.connect(audioContext.destination);
-            osc.start(now);
-            osc.stop(now + 0.35);
-        } else {
-            // Tactical bleep default
-            osc.type = "sine";
-            osc.frequency.setValueAtTime(880, now);
-            osc.frequency.setValueAtTime(1760, now + 0.08);
+        if (tone === "warhorn") {
+            // Low dual-sawtooth cyberpunk war horn
+            const osc1 = audioContext.createOscillator();
+            const osc2 = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+
+            osc1.type = "sawtooth";
+            osc2.type = "sawtooth";
+            osc1.frequency.setValueAtTime(140, now);
+            osc2.frequency.setValueAtTime(145, now);
+            osc1.frequency.exponentialRampToValueAtTime(75, now + 0.6);
+            osc2.frequency.exponentialRampToValueAtTime(78, now + 0.6);
+
             gain.gain.setValueAtTime(0.3, now);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+
+            osc1.connect(gain);
+            osc2.connect(gain);
+            gain.connect(audioContext.destination);
+
+            osc1.start(now);
+            osc2.start(now);
+            osc1.stop(now + 0.65);
+            osc2.stop(now + 0.65);
+        } else if (tone === "sonar") {
+            // High-Q Submarine Sonar Acoustic Ping
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(1050, now);
+            osc.frequency.exponentialRampToValueAtTime(850, now + 0.8);
+
+            gain.gain.setValueAtTime(0.35, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.85);
+
             osc.connect(gain);
             gain.connect(audioContext.destination);
+
             osc.start(now);
-            osc.stop(now + 0.25);
+            osc.stop(now + 0.85);
+        } else if (tone === "matrix") {
+            // Matrix CRT Terminal Triple-Chirp Arpeggio
+            [523.25, 659.25, 1046.50].forEach((freq, i) => {
+                const osc = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                const start = now + (i * 0.08);
+
+                osc.type = "square";
+                osc.frequency.setValueAtTime(freq, start);
+
+                gain.gain.setValueAtTime(0.18, start);
+                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.12);
+
+                osc.connect(gain);
+                gain.connect(audioContext.destination);
+
+                osc.start(start);
+                osc.stop(start + 0.12);
+            });
+        } else {
+            // Tactical Double Bleep (Default)
+            [880, 1760].forEach((freq, i) => {
+                const osc = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                const start = now + (i * 0.08);
+
+                osc.type = "sine";
+                osc.frequency.setValueAtTime(freq, start);
+
+                gain.gain.setValueAtTime(0.25, start);
+                gain.gain.exponentialRampToValueAtTime(0.001, start + 0.1);
+
+                osc.connect(gain);
+                gain.connect(audioContext.destination);
+
+                osc.start(start);
+                osc.stop(start + 0.1);
+            });
         }
     } catch (_err) {}
+}
+
+function playAlertSound() {
+    playTone(currentTone, false);
 }
 
 
