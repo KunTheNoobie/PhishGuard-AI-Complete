@@ -18,17 +18,23 @@ const REFRESH_MS    = 3_000;
 // ═══════════════════════════════════════════════════════════════════
 // THEME INITIALIZATION
 // ═══════════════════════════════════════════════════════════════════
+function applyTheme(t) {
+    document.documentElement.setAttribute("data-theme", t);
+    if (document.body) document.body.setAttribute("data-theme", t);
+    localStorage.setItem("phishguard_theme", t);
+}
+
 const savedTheme = localStorage.getItem("phishguard_theme") || "cyberpunk";
-document.documentElement.setAttribute("data-theme", savedTheme);
+applyTheme(savedTheme);
+
 const $themeSelector = document.getElementById("themeSelector");
 if ($themeSelector) {
     $themeSelector.value = savedTheme;
     $themeSelector.addEventListener("change", (e) => {
-        const t = e.target.value;
-        document.documentElement.setAttribute("data-theme", t);
-        localStorage.setItem("phishguard_theme", t);
+        applyTheme(e.target.value);
     });
 }
+
 
 
 
