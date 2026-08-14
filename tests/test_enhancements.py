@@ -451,3 +451,104 @@ class TestDashboardEnhancements:
         data = ep_resp.json()
         assert "certificate_issuer" in data
         assert "trust_tier" in data
+
+    @pytest.mark.asyncio
+    async def test_playbook_engine_execution_and_api(self, test_client: AsyncClient) -> None:
+        from services.playbook_engine import execute_playbook_action, AVAILABLE_PLAYBOOKS
+        assert len(AVAILABLE_PLAYBOOKS) >= 3
+
+        # Test list endpoint
+        l_resp = await test_client.get("/api/v1/dashboard/playbooks")
+        assert l_resp.status_code == 200
+        assert len(l_resp.json()["playbooks"]) >= 3
+
+        # Test manual run endpoint
+        r_resp = await test_client.post(
+            "/api/v1/dashboard/playbooks/run",
+            json={
+                "playbook_id": "PLAYBOOK-CRITICAL-INTERCEPT",
+                "target_url": "https://cimbclicks-auth.top/login",
+                "target_bank": "CIMB Bank",
+                "confidence": 0.98
+            }
+        )
+        assert r_resp.status_code == 200
+        r_data = r_resp.json()
+        assert r_data["status"] == "SUCCESS"
+        assert len(r_data["actions_executed"]) > 0
+
+        # Test history endpoint
+        h_resp = await test_client.get("/api/v1/dashboard/playbooks/history")
+        assert h_resp.status_code == 200
+        assert h_resp.json()["total_executions"] > 0
+
+    def test_typosquat_homoglyph_generator(self) -> None:
+        from services.typosquat_engine import generate_typosquats_for_domain, get_complete_typosquat_radar
+        res = generate_typosquats_for_domain("maybank2u.com.my", limit=10)
+        assert len(res) > 0
+        assert any("Homoglyph" in v["technique"] or "Hyphenated" in v["technique"] for v in res)
+
+        radar = get_complete_typosquat_radar()
+        assert radar["total_tracked_brands"] == 10
+        assert radar["total_pre_emptive_variants"] > 30
+
+    @pytest.mark.asyncio
+    async def test_typosquat_radar_endpoint(self, test_client: AsyncClient) -> None:
+        resp = await test_client.get("/api/v1/dashboard/typosquat-radar")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["status"] == "ACTIVE_RADAR"
+        assert len(data["institutions"]) == 10
+
+    def test_multi_vector_risk_scorer(self) -> None:
+        from services.multi_vector_scorer import compute_multi_vector_risk
+        res = compute_multi_vector_risk(
+            url="http://maybank2u-tac-verify.top/auth",
+            text_content="URGENT TAC update needed for Maybank account.",
+            bert_score=0.95,
+            mule_detected=True,
+            mule_count=2
+        )
+        assert res["composite_score"] >= 75.0
+        assert res["verdict"] in ["CRITICAL_THREAT", "SUSPICIOUS_PHISH"]
+        assert "vectors" in res
+        assert res["vectors"]["neural_nlp_score"] > 0
+        assert res["vectors"]["mule_syndicate_score"] > 0
+
+    @pytest.mark.asyncio
+    async def test_multi_vector_endpoint(self, test_client: AsyncClient) -> None:
+        resp = await test_client.post(
+            "/api/v1/dashboard/multi-vector-score",
+            json={
+                "url": "http://cimbclicks-secure.xyz/login",
+                "bert_score": 0.88,
+                "mule_detected": False
+            }
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "composite_score" in data
+        assert "vectors" in data
+
+    @pytest.mark.asyncio
+    async def test_threat_graph_and_speed_endpoints(self, test_client: AsyncClient) -> None:
+        from database.repository import log_threat_telemetry
+        db = test_client._transport.app.state.db
+        log_id = await log_threat_telemetry("http://pbebank-update.top/auth", 0.94, db)
+
+        # Graph endpoint
+        g_resp = await test_client.get(f"/api/v1/dashboard/threat-graph/{log_id}")
+        assert g_resp.status_code == 200
+        g_data = g_resp.json()
+        assert "nodes" in g_data
+        assert "links" in g_data
+        assert any(n["id"] == "domain" for n in g_data["nodes"])
+
+        # Simulator Speed endpoint
+        s_resp = await test_client.post(
+            "/api/v1/dashboard/simulator/speed",
+            json={"speed": 2.5}
+        )
+        assert s_resp.status_code == 200
+        assert s_resp.json()["simulator_speed"] == 2.5
+

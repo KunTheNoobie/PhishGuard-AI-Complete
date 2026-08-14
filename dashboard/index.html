@@ -403,6 +403,18 @@
                 <option value="sonar">📡 Sonar</option>
                 <option value="matrix">🟢 Matrix</option>
             </select>
+            <select id="simSpeedSelect" class="page-size-select" title="Simulation Speed">
+                <option value="0.5">0.5x</option>
+                <option value="1.0" selected>1.0x</option>
+                <option value="2.0">2.0x</option>
+                <option value="5.0">5.0x</option>
+            </select>
+            <button id="openPlaybooksBtn" class="action-btn" type="button" title="Autonomous Incident Playbooks">
+                🤖 Playbooks
+            </button>
+            <button id="openTyposquatBtn" class="action-btn" type="button" title="Pre-Emptive Typosquat Radar">
+                🎯 Typosquat
+            </button>
             <button id="openWebhookModalBtn" class="action-btn" type="button" title="Configure Discord / Slack / Telegram Alerts">
                 ⚙️ Alerts
             </button>
@@ -1005,6 +1017,60 @@
                 </div>
                 <div class="modal-actions">
                     <button type="button" id="dismissSinkholeBtn" class="action-btn action-btn--primary" onclick="document.getElementById('sinkholeModal').classList.add('hidden')">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── Autonomous SOC Playbooks Monitor Modal ─── -->
+        <div id="playbookModal" class="modal-overlay hidden" aria-hidden="true">
+            <div class="modal-card" style="max-width: 680px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">🤖 Autonomous SOC Incident Playbooks</h3>
+                    <button id="closePlaybookModalBtn" class="modal-close-btn" type="button">&times;</button>
+                </div>
+                <div id="playbookModalContent" style="max-height: 60vh; overflow-y: auto; margin-bottom: 1rem; font-size: 0.84rem;">
+                    Loading playbooks & audit history...
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="dismissPlaybookBtn" class="action-btn action-btn--primary" onclick="document.getElementById('playbookModal').classList.add('hidden')">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── Pre-Emptive Homoglyph & Typosquat Radar Modal ─── -->
+        <div id="typosquatModal" class="modal-overlay hidden" aria-hidden="true">
+            <div class="modal-card" style="max-width: 720px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">🎯 Pre-Emptive Typosquatting & Homoglyph Protection Radar</h3>
+                    <button id="closeTyposquatModalBtn" class="modal-close-btn" type="button">&times;</button>
+                </div>
+                <div id="typosquatModalContent" style="max-height: 60vh; overflow-y: auto; margin-bottom: 1rem; font-size: 0.84rem;">
+                    Scanning 10 banking entities for homoglyph and bit-squat variants...
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="dismissTyposquatBtn" class="action-btn action-btn--primary" onclick="document.getElementById('typosquatModal').classList.add('hidden')">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── Interactive SVG Threat Attack Tree Graph Modal ─── -->
+        <div id="threatGraphModal" class="modal-overlay hidden" aria-hidden="true">
+            <div class="modal-card" style="max-width: 760px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">🌲 Phishing Attack Tree & Threat Graph Visualizer</h3>
+                    <button id="closeThreatGraphModalBtn" class="modal-close-btn" type="button">&times;</button>
+                </div>
+                <div id="threatGraphModalContent" style="min-height: 280px; max-height: 60vh; overflow-y: auto; margin-bottom: 1rem;">
+                    Rendering attack tree graph...
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="dismissThreatGraphBtn" class="action-btn action-btn--primary" onclick="document.getElementById('threatGraphModal').classList.add('hidden')">
                         Close
                     </button>
                 </div>

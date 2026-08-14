@@ -99,14 +99,18 @@ async def simulate_live_threats(state) -> None:
 
     logger.info("Live Threat Simulator started.")
     while True:
-        await asyncio.sleep(random.randint(5, 12))
+        # Dynamic interval based on speed multiplier
+        speed = max(0.2, min(getattr(state, "simulator_speed", 1.0), 10.0))
+        base_interval = random.uniform(4.0, 9.0)
+        await asyncio.sleep(base_interval / speed)
         
         if not getattr(state, "simulator_running", False):
             continue
             
         try:
             # 1. Always inject a telemetry log (malicious URL detection)
-            malicious_url = f"http://{random.choice(domains)}/auth/login?token={random.randint(1000, 9999)}"
+            chosen_domain = random.choice(domains)
+            malicious_url = f"http://{chosen_domain}/auth/login?token={random.randint(1000, 9999)}"
             score = round(random.uniform(0.75, 0.99), 3)
             await state.db.execute(
                 "INSERT INTO threat_telemetry (malicious_url, bert_score) VALUES (?, ?)",
@@ -114,14 +118,14 @@ async def simulate_live_threats(state) -> None:
             )
 
             # 2. 40% chance to report a new mule account or increment an existing one
+            inserted_mule = None
             if random.random() < 0.4:
                 account_num = str(random.randint(1000000000, 99999999999999))
                 bank = random.choice(banks)
                 plat = random.choice(platforms)
                 reports = random.randint(1, 3)
+                inserted_mule = {"account_number": account_num, "bank_name": bank}
                 
-                # Check if it exists to just increment report_count, though randomly generated it's unlikely
-                # but let's just insert
                 await state.db.execute(
                     """
                     INSERT INTO mule_registry (account_number, bank_name, platform_flagged, report_count) 
@@ -132,9 +136,22 @@ async def simulate_live_threats(state) -> None:
 
             await state.db.commit()
             logger.debug("Live Threat Simulator: Injected new threat intel.")
+
+            # 3. Autonomous Playbook Trigger on Critical Threats
+            if score >= 0.92 and inserted_mule:
+                from services.playbook_engine import execute_playbook_action
+                threat_payload = {
+                    "malicious_url": malicious_url,
+                    "url": malicious_url,
+                    "bank": inserted_mule["bank_name"],
+                    "score": score,
+                    "mules": [inserted_mule]
+                }
+                asyncio.create_task(execute_playbook_action("PLAYBOOK-CRITICAL-INTERCEPT", threat_payload, state.db))
+
         except Exception as e:
             logger.error("Live Threat Simulator Error: %s", e)
-            await asyncio.sleep(5)
+            await asyncio.sleep(3)
 
 
 # ==============================================================================

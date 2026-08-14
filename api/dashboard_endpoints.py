@@ -17,7 +17,7 @@ Thesis Reference   : §5.3 — Operational Monitoring & Telemetry Visualisation
 from __future__ import annotations
 
 import logging
-from typing import Any, Final
+from typing import Any, Final, Optional, Dict, List
 
 from fastapi import APIRouter, Request
 
@@ -1317,6 +1317,157 @@ async def get_ssl_intel(payload: SslIntelRequest) -> dict[str, Any]:
     """Inspects SSL certificate issuer, cipher strength, and domain lifespan."""
     from services.ssl_analyzer import analyze_target_ssl
     return analyze_target_ssl(payload.url)
+
+
+# ==============================================================================
+# PHASE 9: AUTONOMOUS PLAYBOOKS, TYPOSQUAT RADAR & ATTACK TREE GRAPH
+# ==============================================================================
+
+@router.get(
+    "/playbooks",
+    summary="List available autonomous SOC playbooks",
+)
+async def list_playbooks() -> dict[str, Any]:
+    from services.playbook_engine import AVAILABLE_PLAYBOOKS
+    return {"playbooks": AVAILABLE_PLAYBOOKS}
+
+
+@router.get(
+    "/playbooks/history",
+    summary="Get autonomous playbook execution history",
+)
+async def get_playbook_audit_history() -> dict[str, Any]:
+    from services.playbook_engine import get_playbook_history
+    history = get_playbook_history()
+    return {"total_executions": len(history), "history": history}
+
+
+class PlaybookRunRequest(BaseModel):
+    playbook_id: str
+    target_url: str
+    target_bank: Optional[str] = "Maybank"
+    confidence: Optional[float] = 0.95
+
+
+@router.post(
+    "/playbooks/run",
+    summary="Manually trigger an autonomous SOC playbook execution",
+)
+async def run_playbook(request: Request, payload: PlaybookRunRequest) -> dict[str, Any]:
+    from services.playbook_engine import execute_playbook_action
+    db = request.app.state.db
+    threat_event = {
+        "malicious_url": payload.target_url,
+        "url": payload.target_url,
+        "bank": payload.target_bank,
+        "score": payload.confidence
+    }
+    result = await execute_playbook_action(payload.playbook_id, threat_event, db)
+    return result
+
+
+@router.get(
+    "/typosquat-radar",
+    summary="Get Pre-Emptive Homoglyph & Typosquatting Brand Protection Radar",
+)
+async def get_typosquat_radar() -> dict[str, Any]:
+    from services.typosquat_engine import get_complete_typosquat_radar
+    return get_complete_typosquat_radar()
+
+
+class MultiVectorRequest(BaseModel):
+    url: str
+    text_content: Optional[str] = None
+    bert_score: Optional[float] = 0.85
+    mule_detected: Optional[bool] = False
+    mule_count: Optional[int] = 0
+
+
+@router.post(
+    "/multi-vector-score",
+    summary="Compute 5-layer Multi-Vector Composite Risk Assessment",
+)
+async def evaluate_multi_vector_score(payload: MultiVectorRequest) -> dict[str, Any]:
+    from services.multi_vector_scorer import compute_multi_vector_risk
+    return compute_multi_vector_risk(
+        url=payload.url,
+        text_content=payload.text_content,
+        bert_score=payload.bert_score or 0.85,
+        mule_detected=payload.mule_detected or False,
+        mule_count=payload.mule_count or 0
+    )
+
+
+@router.get(
+    "/threat-graph/{log_id}",
+    summary="Generate Interactive Threat Attack Tree Graph for a specific Incident",
+)
+async def get_threat_attack_graph(request: Request, log_id: int) -> dict[str, Any]:
+    db = request.app.state.db
+    cur = await db.execute("SELECT log_id, malicious_url, bert_score, timestamp FROM threat_telemetry WHERE log_id = ?;", (log_id,))
+    row = await cur.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Incident not found.")
+
+    target_url = row[1]
+    score = float(row[2])
+    
+    # Extract domain
+    domain = target_url.split("://")[1].split("/")[0] if "://" in target_url else target_url
+
+    # Query active mules
+    mule_cur = await db.execute("SELECT account_number, bank_name, report_count FROM mule_registry LIMIT 3;")
+    mules = await mule_cur.fetchall()
+
+    nodes = [
+        {"id": "attacker", "label": "Host ASN: Cloudflare / Namecheap", "type": "attacker", "color": "#f87171", "icon": "💀"},
+        {"id": "domain", "label": domain, "type": "domain", "color": "#fbbf24", "icon": "🌐"},
+        {"id": "brand", "label": "Spoofed: Maybank2u", "type": "brand", "color": "#38bdf8", "icon": "🦁"},
+        {"id": "victim", "label": "Victim Delivery: SMS / WhatsApp", "type": "delivery", "color": "#a855f7", "icon": "📱"}
+    ]
+
+    links = [
+        {"source": "attacker", "target": "domain", "label": "Hosts Rogue Vhost"},
+        {"source": "domain", "target": "brand", "label": "Impersonates Portal"},
+        {"source": "victim", "target": "domain", "label": "Lures Credential Harvest"}
+    ]
+
+    for i, m in enumerate(mules):
+        m_id = f"mule_{i}"
+        nodes.append({
+            "id": m_id,
+            "label": f"Mule: {m[0]} ({m[1]})",
+            "type": "mule",
+            "color": "#ef4444",
+            "icon": "💳"
+        })
+        links.append({
+            "source": "domain",
+            "target": m_id,
+            "label": f"Funnel {m[2]}x Incident Exfil"
+        })
+
+    return {
+        "incident_id": f"PG-MAL-2026-{log_id:05d}",
+        "confidence": score,
+        "nodes": nodes,
+        "links": links
+    }
+
+
+class SimSpeedRequest(BaseModel):
+    speed: float = 1.0
+
+
+@router.post(
+    "/simulator/speed",
+    summary="Configure Simulation Event Stream Speed Multiplier",
+)
+async def set_simulator_speed(request: Request, payload: SimSpeedRequest) -> dict[str, Any]:
+    speed = max(0.2, min(payload.speed, 10.0))
+    request.app.state.simulator_speed = speed
+    return {"simulator_speed": speed, "message": f"Simulation speed set to {speed}x"}
+
 
 
 

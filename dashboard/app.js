@@ -605,11 +605,14 @@ function renderTelemetry() {
                 <td>${formatTimestamp(e.timestamp)}</td>
                 <td>
                     <div style="display: flex; gap: 4px;">
-                        <button class="action-btn" style="padding: 2px 8px; font-size: 0.72rem;" onclick="openIncidentReport(${e.log_id})">
+                        <button class="action-btn" style="padding: 2px 6px; font-size: 0.7rem;" onclick="openIncidentReport(${e.log_id})">
                             📄 Dossier
                         </button>
-                        <button class="action-btn action-btn--primary" style="padding: 2px 8px; font-size: 0.72rem;" onclick="openXaiAttribution(${e.log_id})">
+                        <button class="action-btn action-btn--primary" style="padding: 2px 6px; font-size: 0.7rem;" onclick="openXaiAttribution(${e.log_id})">
                             🧠 XAI
+                        </button>
+                        <button class="action-btn" style="padding: 2px 6px; font-size: 0.7rem; border-color: rgba(99,102,241,0.4);" onclick="openThreatGraph(${e.log_id})">
+                            🌲 Graph
                         </button>
                     </div>
                 </td>
@@ -1617,9 +1620,231 @@ function playTone(tone, forcePreview = false) {
     } catch (_err) {}
 }
 
-function playAlertSound() {
-    playTone(currentTone, false);
+// ═══════════════════════════════════════════════════════════════════
+// PHASE 9: AUTONOMOUS PLAYBOOKS, TYPOSQUAT RADAR & ATTACK GRAPH
+// ═══════════════════════════════════════════════════════════════════
+
+// Simulation Speed Controller
+const $simSpeedSelect = document.getElementById("simSpeedSelect");
+if ($simSpeedSelect) {
+    $simSpeedSelect.addEventListener("change", async (e) => {
+        const speedVal = parseFloat(e.target.value) || 1.0;
+        try {
+            await apiFetch("/simulator/speed", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ speed: speedVal })
+            });
+        } catch (_e) {}
+    });
 }
+
+// Autonomous Playbooks Modal
+const $playbookModal = document.getElementById("playbookModal");
+const $openPlaybooksBtn = document.getElementById("openPlaybooksBtn");
+const $closePlaybookModalBtn = document.getElementById("closePlaybookModalBtn");
+const $dismissPlaybookBtn = document.getElementById("dismissPlaybookBtn");
+const $playbookModalContent = document.getElementById("playbookModalContent");
+
+async function openPlaybooksModal() {
+    if (!$playbookModal || !$playbookModalContent) return;
+    $playbookModal.classList.remove("hidden");
+    $playbookModalContent.innerHTML = "Fetching autonomous SOC playbooks and execution history...";
+
+    try {
+        const [pbData, histData] = await Promise.all([
+            apiFetch("/playbooks"),
+            apiFetch("/playbooks/history")
+        ]);
+
+        const playbooksHtml = (pbData.playbooks || []).map(p => `
+            <div style="background: rgba(15, 23, 42, 0.7); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 10px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <strong style="color: #fff;">${escapeHtml(p.name)}</strong>
+                    <span style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; font-weight: 700;">${escapeHtml(p.severity)}</span>
+                </div>
+                <div style="font-size: 0.78rem; color: var(--accent-cyan); margin-bottom: 6px;">
+                    • <strong>Trigger:</strong> ${escapeHtml(p.trigger)}
+                </div>
+                <div style="font-size: 0.76rem; color: var(--text-secondary);">
+                    <strong>Automated Remediation Actions:</strong>
+                    <ul style="margin-top: 3px; padding-left: 18px; line-height: 1.4;">
+                        ${(p.actions || []).map(a => `<li>${escapeHtml(a)}</li>`).join("")}
+                    </ul>
+                </div>
+                <div style="text-align: right; margin-top: 8px;">
+                    <button class="action-btn action-btn--primary" style="padding: 2px 8px; font-size: 0.72rem;" onclick="manualRunPlaybook('${escapeHtml(p.id)}')">
+                        ⚡ Execute Remediation
+                    </button>
+                </div>
+            </div>
+        `).join("");
+
+        const historyHtml = (histData.history || []).slice(0, 5).map(h => `
+            <div style="background: rgba(255,255,255,0.03); padding: 8px 10px; border-radius: 6px; margin-bottom: 6px; font-size: 0.75rem;">
+                <div style="display: flex; justify-content: space-between;">
+                    <strong>${escapeHtml(h.execution_id)} (${escapeHtml(h.playbook_name)})</strong>
+                    <span style="color: #34d399; font-weight: 700;">${escapeHtml(h.status)}</span>
+                </div>
+                <div style="color: var(--text-muted); margin-top: 2px;">
+                    Target: <code>${escapeHtml(h.target_url)}</code>
+                </div>
+            </div>
+        `).join("");
+
+        $playbookModalContent.innerHTML = `
+            <div style="margin-bottom: 14px;">
+                <strong style="color: #fff; font-size: 0.9rem;">Configured Autonomous Remediation Workflows:</strong>
+                <div style="margin-top: 8px;">${playbooksHtml}</div>
+            </div>
+
+            <div>
+                <strong style="color: #fff; font-size: 0.9rem;">Recent Autonomous Audit Trail:</strong>
+                <div style="margin-top: 8px;">${historyHtml || '<div style="color: var(--text-muted);">No automated actions executed yet in this session.</div>'}</div>
+            </div>
+        `;
+    } catch (err) {
+        $playbookModalContent.innerHTML = `<span style="color: #f87171;">Failed to load playbooks: ${escapeHtml(err.message)}</span>`;
+    }
+}
+
+async function manualRunPlaybook(playbookId) {
+    try {
+        const res = await apiFetch("/playbooks/run", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ playbook_id: playbookId, target_url: "https://maybank2u-secure-verify.top/auth", target_bank: "Maybank", confidence: 0.96 })
+        });
+        alert(`✅ Playbook executed successfully! Execution ID: ${res.execution_id}`);
+        openPlaybooksModal();
+    } catch (err) {
+        alert("Failed to execute playbook: " + err.message);
+    }
+}
+
+if ($openPlaybooksBtn) $openPlaybooksBtn.addEventListener("click", openPlaybooksModal);
+if ($closePlaybookModalBtn) $closePlaybookModalBtn.addEventListener("click", () => $playbookModal?.classList.add("hidden"));
+if ($dismissPlaybookBtn) $dismissPlaybookBtn.addEventListener("click", () => $playbookModal?.classList.add("hidden"));
+
+// Pre-Emptive Typosquat Radar Modal
+const $typosquatModal = document.getElementById("typosquatModal");
+const $openTyposquatBtn = document.getElementById("openTyposquatBtn");
+const $closeTyposquatModalBtn = document.getElementById("closeTyposquatModalBtn");
+const $dismissTyposquatBtn = document.getElementById("dismissTyposquatBtn");
+const $typosquatModalContent = document.getElementById("typosquatModalContent");
+
+async function openTyposquatModal() {
+    if (!$typosquatModal || !$typosquatModalContent) return;
+    $typosquatModal.classList.remove("hidden");
+    $typosquatModalContent.innerHTML = "Computing pre-emptive homoglyph and IDN Punycode radar across 10 institutions...";
+
+    try {
+        const res = await apiFetch("/typosquat-radar");
+        
+        const institutionsHtml = (res.institutions || []).map(inst => {
+            const variantsHtml = (inst.variants || []).map(v => `
+                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.5); padding: 6px 10px; border-radius: 6px; margin-bottom: 4px; font-size: 0.75rem;">
+                    <div>
+                        <strong style="color: var(--accent-cyan); font-family: monospace;">${escapeHtml(v.variant)}</strong>
+                        <span style="opacity: 0.7; font-size: 0.7rem; margin-left: 6px;">(${escapeHtml(v.punycode)})</span>
+                        <div style="font-size: 0.7rem; color: var(--text-muted);">${escapeHtml(v.technique)}</div>
+                    </div>
+                    <span style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); padding: 2px 6px; border-radius: 4px; font-weight: 700;">${v.risk_score}% Risk</span>
+                </div>
+            `).join("");
+
+            return `
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); padding: 12px; border-radius: 8px; margin-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <strong style="color: #fff; font-size: 0.88rem;">${inst.logo} ${escapeHtml(inst.brand)}</strong>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">Primary: <code>${escapeHtml(inst.primary_domain)}</code></span>
+                    </div>
+                    <div>${variantsHtml}</div>
+                </div>
+            `;
+        }).join("");
+
+        $typosquatModalContent.innerHTML = `
+            <div style="background: rgba(99, 102, 241, 0.1); border-left: 3px solid #6366f1; padding: 10px; border-radius: 4px; font-size: 0.8rem; margin-bottom: 12px;">
+                <strong>Radar Status:</strong> Active monitoring across <strong>${res.total_tracked_brands} financial entities</strong> &bull; <strong>${res.total_pre_emptive_variants} pre-emptively sinkholed permutations</strong>.
+            </div>
+            <div>${institutionsHtml}</div>
+        `;
+    } catch (err) {
+        $typosquatModalContent.innerHTML = `<span style="color: #f87171;">Failed to load Typosquat Radar: ${escapeHtml(err.message)}</span>`;
+    }
+}
+
+if ($openTyposquatBtn) $openTyposquatBtn.addEventListener("click", openTyposquatModal);
+if ($closeTyposquatModalBtn) $closeTyposquatModalBtn.addEventListener("click", () => $typosquatModal?.classList.add("hidden"));
+if ($dismissTyposquatBtn) $dismissTyposquatBtn.addEventListener("click", () => $typosquatModal?.classList.add("hidden"));
+
+// Interactive SVG Threat Attack Tree Visualizer
+const $threatGraphModal = document.getElementById("threatGraphModal");
+const $closeThreatGraphModalBtn = document.getElementById("closeThreatGraphModalBtn");
+const $dismissThreatGraphBtn = document.getElementById("dismissThreatGraphBtn");
+const $threatGraphModalContent = document.getElementById("threatGraphModalContent");
+
+async function openThreatGraph(logId) {
+    if (!$threatGraphModal || !$threatGraphModalContent) return;
+    $threatGraphModal.classList.remove("hidden");
+    $threatGraphModalContent.innerHTML = "Generating interactive attack tree graph...";
+
+    try {
+        const data = await apiFetch(`/threat-graph/${logId}`);
+        
+        // Render stylized SVG attack graph
+        const nodes = data.nodes || [];
+        const links = data.links || [];
+
+        const nodePositions = {
+            "attacker": { x: 80, y: 70 },
+            "victim":   { x: 80, y: 190 },
+            "domain":   { x: 280, y: 130 },
+            "brand":    { x: 480, y: 70 },
+            "mule_0":   { x: 480, y: 140 },
+            "mule_1":   { x: 480, y: 200 },
+            "mule_2":   { x: 480, y: 260 },
+        };
+
+        const linesSvg = links.map(l => {
+            const src = nodePositions[l.source] || { x: 100, y: 100 };
+            const tgt = nodePositions[l.target] || { x: 300, y: 100 };
+            return `
+                <line x1="${src.x}" y1="${src.y}" x2="${tgt.x}" y2="${tgt.y}" stroke="#6366f1" stroke-width="2" stroke-dasharray="4 2" opacity="0.6"/>
+            `;
+        }).join("");
+
+        const nodesSvg = nodes.map(n => {
+            const pos = nodePositions[n.id] || { x: 300, y: 100 };
+            return `
+                <g transform="translate(${pos.x}, ${pos.y})">
+                    <circle r="18" fill="rgba(15, 23, 42, 0.9)" stroke="${n.color}" stroke-width="2" />
+                    <text text-anchor="middle" y="5" font-size="12">${n.icon || '📌'}</text>
+                    <text text-anchor="middle" y="32" fill="#fff" font-size="10" font-weight="600" font-family="sans-serif">${escapeHtml(n.label)}</text>
+                </g>
+            `;
+        }).join("");
+
+        $threatGraphModalContent.innerHTML = `
+            <div style="background: rgba(15, 23, 42, 0.7); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 12px; display: flex; justify-content: space-between; font-size: 0.8rem;">
+                <strong>Incident Reference: <code>${escapeHtml(data.incident_id)}</code></strong>
+                <span style="color: #f87171; font-weight: 700;">Phishing Probability: ${(data.confidence * 100).toFixed(1)}%</span>
+            </div>
+            <div style="background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, rgba(10, 13, 20, 0.9) 100%); border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); overflow: hidden;">
+                <svg viewBox="0 0 620 300" style="width: 100%; height: 300px; display: block;">
+                    ${linesSvg}
+                    ${nodesSvg}
+                </svg>
+            </div>
+        `;
+    } catch (err) {
+        $threatGraphModalContent.innerHTML = `<span style="color: #f87171;">Failed to render Attack Tree: ${escapeHtml(err.message)}</span>`;
+    }
+}
+
+if ($closeThreatGraphModalBtn) $closeThreatGraphModalBtn.addEventListener("click", () => $threatGraphModal?.classList.add("hidden"));
+if ($dismissThreatGraphBtn) $dismissThreatGraphBtn.addEventListener("click", () => $threatGraphModal?.classList.add("hidden"));
 
 
 // Initial load & stream
@@ -1633,5 +1858,6 @@ refreshSystemHealth();
 initSseStream();
 setInterval(masterRefresh, REFRESH_MS);
 setInterval(refreshSystemHealth, 10_000);
+
 
 
