@@ -340,9 +340,15 @@ _SWAGGER_CYBER_DARK_HTML: Final[str] = """<!DOCTYPE html>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
-    <link rel="stylesheet" href="/dashboard/styles.css">
-    <link rel="stylesheet" href="/dashboard/swagger_dark.css">
+    <link rel="stylesheet" href="/dashboard/styles.css?v=3">
+    <link rel="stylesheet" href="/dashboard/swagger_dark.css?v=3">
+    <style>
+        .swagger-ui .scheme-container { background: transparent !important; box-shadow: none !important; border: none !important; }
+        .swagger-ui section.models { background: rgba(17, 24, 39, 0.85) !important; }
+        .swagger-ui .model-container { background: rgba(15, 23, 42, 0.6) !important; }
+    </style>
 </head>
+
 <body>
     <!-- ═══════════════════ HEADER ═══════════════════ -->
     <header class="header">
