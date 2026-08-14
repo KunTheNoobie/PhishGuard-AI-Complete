@@ -554,21 +554,376 @@
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
                         Live SOC Geographic Attack Radar & Infrastructure Nodes
                     </h3>
-                    <span class="chart-tag chart-tag--pulse">Global Geo-Intel</span>
+                    <span class="chart-tag chart-tag--pulse">Global Cyber Defense Grid</span>
                 </div>
-                <div class="chart-container" style="flex-direction: column; gap: 0.75rem;">
-                    <svg class="radar-map-svg" id="geoRadarSvg" viewBox="0 0 800 180">
-                        <line x1="0" y1="90" x2="800" y2="90" stroke="rgba(255,255,255,0.06)" stroke-dasharray="4"/>
-                        <line x1="400" y1="0" x2="400" y2="180" stroke="rgba(255,255,255,0.06)" stroke-dasharray="4"/>
-                        <circle cx="400" cy="90" r="35" fill="none" stroke="rgba(99,102,241,0.12)" stroke-dasharray="3"/>
-                        <circle cx="400" cy="90" r="75" fill="none" stroke="rgba(99,102,241,0.08)"/>
-                        <circle cx="400" cy="90" r="130" fill="none" stroke="rgba(99,102,241,0.04)"/>
-                        <g id="geoRadarNodesGroup"></g>
+                <div class="chart-container" style="flex-direction: column; gap: 1rem;">
+                    <svg class="radar-map-svg" id="geoRadarSvg" viewBox="0 0 900 280">
+                        <defs>
+                            <linearGradient id="attackArcGradRed" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#ef4444" stop-opacity="0.8" />
+                                <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.3" />
+                            </linearGradient>
+                            <linearGradient id="attackArcGradCyan" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.7" />
+                                <stop offset="100%" stop-color="#6366f1" stop-opacity="0.2" />
+                            </linearGradient>
+                            <radialGradient id="radarSweepGrad" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" stop-color="#6366f1" stop-opacity="0.25" />
+                                <stop offset="100%" stop-color="#6366f1" stop-opacity="0" />
+                            </radialGradient>
+                            <filter id="glowFilter" x="-20%" y="-20%" width="140%" height="140%">
+                                <feGaussianBlur stdDeviation="3" result="blur" />
+                                <feMerge>
+                                    <feMergeNode in="blur" />
+                                    <feMergeNode in="SourceGraphic" />
+                                </feMerge>
+                            </filter>
+                        </defs>
+
+                        <!-- Cyber Map Grids & Rings -->
+                        <g opacity="0.18">
+                            <line x1="0" y1="140" x2="900" y2="140" stroke="#6366f1" stroke-dasharray="3 3"/>
+                            <line x1="450" y1="0" x2="450" y2="280" stroke="#6366f1" stroke-dasharray="3 3"/>
+                            <line x1="225" y1="0" x2="225" y2="280" stroke="#6366f1" stroke-dasharray="2 4"/>
+                            <line x1="675" y1="0" x2="675" y2="280" stroke="#6366f1" stroke-dasharray="2 4"/>
+                            <circle cx="450" cy="140" r="50" fill="none" stroke="#6366f1" stroke-dasharray="2 2"/>
+                            <circle cx="450" cy="140" r="110" fill="none" stroke="#6366f1"/>
+                            <circle cx="450" cy="140" r="180" fill="none" stroke="#6366f1" stroke-dasharray="4 4"/>
+                            <circle cx="450" cy="140" r="250" fill="none" stroke="#6366f1"/>
+                        </g>
+
+                        <!-- Simplified Stylized World Continent Silhouette Polygons -->
+                        <g fill="rgba(30, 41, 59, 0.45)" stroke="rgba(99, 102, 241, 0.3)" stroke-width="1">
+                            <!-- North America -->
+                            <path d="M 90 40 L 190 35 L 240 60 L 210 110 L 160 125 L 140 100 L 110 80 Z" />
+                            <!-- South America -->
+                            <path d="M 210 145 L 260 160 L 245 230 L 210 260 L 190 200 Z" />
+                            <!-- Europe -->
+                            <path d="M 430 45 L 485 40 L 510 75 L 460 95 L 430 80 Z" />
+                            <!-- Africa -->
+                            <path d="M 440 110 L 500 115 L 515 180 L 475 235 L 435 180 Z" />
+                            <!-- Asia & Middle East -->
+                            <path d="M 520 40 L 710 45 L 770 90 L 730 140 L 640 160 L 560 130 L 520 80 Z" />
+                            <!-- Southeast Asia Islands -->
+                            <path d="M 625 150 L 655 155 L 670 185 L 640 200 Z" />
+                            <!-- Australia / Oceania -->
+                            <path d="M 720 185 L 810 190 L 795 245 L 715 235 Z" />
+                        </g>
+
+                        <!-- Rotating Radar Sweep Line -->
+                        <g class="radar-sweep-line">
+                            <line x1="450" y1="140" x2="720" y2="140" stroke="#06b6d4" stroke-width="1.5" opacity="0.6" />
+                            <polygon points="450,140 720,120 720,140" fill="url(#radarSweepGrad)" />
+                        </g>
+
+                        <!-- Dynamic Animated Attack Trajectory Arcs -->
+                        <g id="geoRadarArcsGroup">
+                            <!-- Arc from San Jose to Kuala Lumpur -->
+                            <path d="M 170 92 Q 400 20 630 155" class="attack-arc" stroke="url(#attackArcGradRed)" />
+                            <!-- Arc from Frankfurt to Kuala Lumpur -->
+                            <path d="M 465 78 Q 550 90 630 155" class="attack-arc" stroke="url(#attackArcGradRed)" />
+                            <!-- Arc from Tokyo to Singapore -->
+                            <path d="M 745 95 Q 700 130 638 172" class="attack-arc" stroke="url(#attackArcGradCyan)" />
+                            <!-- Arc from Hong Kong to Kuala Lumpur -->
+                            <path d="M 685 130 Q 660 140 630 155" class="attack-arc" stroke="url(#attackArcGradRed)" />
+                        </g>
+
+                        <!-- Interactive Attack Nodes Group -->
+                        <g id="geoRadarNodesGroup" filter="url(#glowFilter)"></g>
                     </svg>
-                    <div id="geoNodesLegend" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.6rem;"></div>
+                    <div id="geoNodesLegend" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem;"></div>
                 </div>
             </article>
         </section>
+
+
+        <!-- ─── Live Threat Feed ─── -->
+        <section class="panel" aria-label="Recent threat detections">
+            <div class="panel__header">
+                <div class="panel__header-left">
+                    <h2 class="panel__title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 010 8.49m-8.48-.01a6 6 0 010-8.49m11.31-2.82a10 10 0 010 14.14m-14.14 0a10 10 0 010-14.14"/></svg>
+                        Live Threat Feed
+                    </h2>
+                    <span class="panel__badge" id="telemetryCount">0</span>
+                </div>
+                <div class="panel__actions">
+                    <input type="text" id="telemetrySearch" class="search-input" placeholder="Search by URL / ID / bank: / score:>..." />
+                    <select id="telemetryScoreFilter" class="filter-select" aria-label="Filter by AI confidence">
+                        <option value="all">All Confidence</option>
+                        <option value="high">High Risk (&ge;85%)</option>
+                        <option value="medium">Medium Risk (60–84%)</option>
+                        <option value="low">Low Risk (&lt;60%)</option>
+                    </select>
+                    <button id="exportTelemetryCsvBtn" class="action-btn" type="button">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                        CSV
+                    </button>
+                    <button id="exportTelemetryJsonBtn" class="action-btn" type="button">JSON</button>
+                    <button id="exportStixBtn" class="action-btn action-btn--primary" type="button" title="Export structured STIX 2.1 Threat Intelligence JSON Bundle">
+                        STIX 2.1
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="table" id="telemetryTable">
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-table="telemetry" data-key="log_id">ID</th>
+                            <th class="sortable" data-table="telemetry" data-key="malicious_url">Targeted Phishing URL</th>
+                            <th class="sortable" data-table="telemetry" data-key="bert_score">BERT Score</th>
+                            <th class="sortable" data-table="telemetry" data-key="timestamp">Timestamp</th>
+                            <th>Forensics</th>
+                        </tr>
+                    </thead>
+                    <tbody id="telemetryBody">
+                        <tr class="table-empty"><td colspan="5">Loading threat data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Threat Feed Pagination Bar -->
+            <div class="pagination-bar" id="telemetryPaginationBar">
+                <div class="pagination-info" id="telemetryPageInfo">Showing 0 to 0 of 0 entries</div>
+                <div class="pagination-controls" id="telemetryPageButtons"></div>
+                <div class="pagination-page-size">
+                    <label for="telemetryPageSize">Rows:</label>
+                    <select id="telemetryPageSize" class="page-size-select">
+                        <option value="10" selected>10 / page</option>
+                        <option value="25">25 / page</option>
+                        <option value="50">50 / page</option>
+                        <option value="100">100 / page</option>
+                        <option value="all">All</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        <!-- ─── Mule Account Registry ─── -->
+        <section class="panel" aria-label="Mule bank account registry">
+            <div class="panel__header">
+                <div class="panel__header-left">
+                    <h2 class="panel__title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
+                        Mule Account Registry
+                    </h2>
+                    <span class="panel__badge" id="muleCount">0</span>
+                </div>
+                <div class="panel__actions">
+                    <input type="text" id="muleSearch" class="search-input" placeholder="Search account / bank / platform…" />
+                    <button id="openBulkMuleModalBtn" class="action-btn" type="button" title="Import multiple mule accounts via CSV">
+                        📥 Bulk Import
+                    </button>
+                    <button id="openAddMuleModalBtn" class="action-btn action-btn--primary" type="button">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        Add Mule
+                    </button>
+                    <button id="exportMuleCsvBtn" class="action-btn" type="button">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                        CSV
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="table" id="muleTable">
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-table="mule" data-key="mule_id">#</th>
+                            <th class="sortable" data-table="mule" data-key="account_number">Account Number</th>
+                            <th class="sortable" data-table="mule" data-key="bank_name">Bank</th>
+                            <th class="sortable" data-table="mule" data-key="platform_flagged">Platform Flagged</th>
+                            <th class="sortable" data-table="mule" data-key="report_count">Reports</th>
+                            <th class="sortable" data-table="mule" data-key="created_at">Date Added</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="muleBody">
+                        <tr class="table-empty"><td colspan="7">Loading registry...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Mule Registry Pagination Bar -->
+            <div class="pagination-bar" id="mulePaginationBar">
+                <div class="pagination-info" id="mulePageInfo">Showing 0 to 0 of 0 entries</div>
+                <div class="pagination-controls" id="mulePageButtons"></div>
+                <div class="pagination-page-size">
+                    <label for="mulePageSize">Rows:</label>
+                    <select id="mulePageSize" class="page-size-select">
+                        <option value="10" selected>10 / page</option>
+                        <option value="25">25 / page</option>
+                        <option value="50">50 / page</option>
+                        <option value="100">100 / page</option>
+                        <option value="all">All</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        <!-- ─── Add Mule Account Modal Dialog ─── -->
+        <div id="addMuleModal" class="modal-overlay hidden" aria-hidden="true">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <h3 class="modal-title">Flag Suspicious Mule Account</h3>
+                    <button id="closeAddMuleModalBtn" class="modal-close-btn" type="button">&times;</button>
+                </div>
+                <form id="addMuleForm" class="modal-form">
+                    <div class="form-group">
+                        <label for="muleAccountInput">Account / DuitNow Identifier</label>
+                        <input type="text" id="muleAccountInput" required placeholder="e.g. 112233445566 or 0123456789" />
+                    </div>
+                    <div class="form-group">
+                        <label for="muleBankInput">Target Institution / Bank</label>
+                        <select id="muleBankInput" required>
+                            <option value="" disabled selected>Select Institution</option>
+                            <option value="Maybank">Maybank (Malayan Banking)</option>
+                            <option value="CIMB Bank">CIMB Bank</option>
+                            <option value="Public Bank">Public Bank</option>
+                            <option value="RHB Bank">RHB Bank</option>
+                            <option value="Hong Leong Bank">Hong Leong Bank</option>
+                            <option value="Touch n Go eWallet">Touch 'n Go eWallet</option>
+                            <option value="GrabPay">GrabPay Malaysia</option>
+                            <option value="Other / Generic">Other Financial Institution</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="mulePlatformInput">Discovery Vector / Platform</label>
+                        <input type="text" id="mulePlatformInput" required placeholder="e.g. WhatsApp, Telegram, SMS, Carousell" />
+                    </div>
+                    <div class="form-group">
+                        <label for="muleReportsInput">Initial Incident Reports Count</label>
+                        <input type="number" id="muleReportsInput" min="1" max="999" value="1" required />
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" id="cancelAddMuleBtn" class="action-btn">Cancel</button>
+                        <button type="submit" id="saveMuleBtn" class="action-btn action-btn--primary">Add to Registry</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- ─── Bulk Import Mule Modal Dialog ─── -->
+        <div id="bulkMuleModal" class="modal-overlay hidden" aria-hidden="true">
+            <div class="modal-card" style="max-width: 560px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">📥 Bulk Import Mule Accounts</h3>
+                    <button id="closeBulkMuleModalBtn" class="modal-close-btn" type="button">&times;</button>
+                </div>
+                <form id="bulkMuleForm" class="modal-form">
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                        Paste CSV lines below in format: <code>Account, Bank, Platform, Reports</code> (one per line) or drop a <code>.csv</code> file:
+                    </p>
+                    <div class="form-group">
+                        <textarea id="bulkMuleText" rows="6" style="width: 100%; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: #fff; padding: 0.75rem; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; resize: vertical;" placeholder="112233445566, Maybank, WhatsApp, 3&#10;558844887979, CIMB Bank, Telegram, 8&#10;988812259332, Hong Leong Bank, Shopee, 2"></textarea>
+                    </div>
+                    <div id="bulkImportStatus" style="font-size: 0.8rem; margin-bottom: 0.5rem; display: none;"></div>
+                    <div class="modal-actions">
+                        <button type="button" id="cancelBulkMuleBtn" class="action-btn">Cancel</button>
+                        <button type="submit" id="submitBulkMuleBtn" class="action-btn action-btn--primary">Batch Ingest Accounts</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- ─── Forensic Incident Report Modal Dialog ─── -->
+        <div id="forensicReportModal" class="modal-overlay hidden" aria-hidden="true">
+            <div class="modal-card" style="max-width: 680px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">📄 Threat Forensic Incident Report</h3>
+                    <button id="closeForensicModalBtn" class="modal-close-btn" type="button">&times;</button>
+                </div>
+                <div id="forensicReportBody" style="font-size: 0.85rem; line-height: 1.6; color: var(--text-secondary);">
+                    Loading forensic dossier...
+                </div>
+                <div class="modal-actions" style="justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+                    <div style="display: flex; gap: 0.4rem;">
+                        <button type="button" id="quarantineCurrentBtn" class="action-btn action-btn--delete" style="font-size: 0.78rem;" title="Quarantine this domain system-wide">
+                            🛡️ Quarantine
+                        </button>
+                        <button type="button" id="whitelistCurrentBtn" class="action-btn" style="font-size: 0.78rem;" title="Whitelist this domain for 24h">
+                            ✅ Whitelist
+                        </button>
+                        <button type="button" id="copyTakedownBtn" class="action-btn action-btn--primary" style="font-size: 0.78rem;" title="Generate and copy RFC abuse desk takedown email">
+                            📋 Takedown Notice
+                        </button>
+                    </div>
+                    <div style="display: flex; gap: 0.4rem;">
+                        <button type="button" id="printReportBtn" class="action-btn action-btn--primary" onclick="window.print()">
+                            🖨️ Print / PDF
+                        </button>
+                        <button type="button" id="dismissForensicBtn" class="action-btn" onclick="document.getElementById('forensicReportModal').classList.add('hidden')">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── Webhook Alert Settings Modal Dialog ─── -->
+        <div id="webhookModal" class="modal-overlay hidden" aria-hidden="true">
+            <div class="modal-card" style="max-width: 580px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">⚙️ Multi-Channel SOC Alert Webhooks</h3>
+                    <button id="closeWebhookModalBtn" class="modal-close-btn" type="button">&times;</button>
+                </div>
+                <form id="webhookForm" class="modal-form">
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                        Real-time push notifications will be dispatched when high-confidence phishing threats or mule accounts are intercepted.
+                    </p>
+                    <div class="form-group">
+                        <label for="discordWebhookInput">Discord Webhook URL</label>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <input type="url" id="discordWebhookInput" placeholder="https://discord.com/api/webhooks/..." />
+                            <button type="button" class="action-btn" id="testDiscordBtn" style="white-space: nowrap;">Test Ping</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="slackWebhookInput">Slack Incoming Webhook URL</label>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <input type="url" id="slackWebhookInput" placeholder="https://hooks.slack.com/services/..." />
+                            <button type="button" class="action-btn" id="testSlackBtn" style="white-space: nowrap;">Test Ping</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="telegramTokenInput">Telegram Bot Token & Chat ID</label>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 0.5rem;">
+                            <input type="text" id="telegramTokenInput" placeholder="Bot Token (e.g. 123456:ABC...)" />
+                            <input type="text" id="telegramChatInput" placeholder="Chat ID (e.g. -10012345678)" />
+                            <button type="button" class="action-btn" id="testTelegramBtn" style="white-space: nowrap;">Test Ping</button>
+                        </div>
+                    </div>
+                    <div id="webhookStatusMsg" style="font-size: 0.8rem; padding: 0.4rem; border-radius: 4px; display: none;"></div>
+                    <div class="modal-actions">
+                        <button type="button" id="cancelWebhookBtn" class="action-btn">Cancel</button>
+                        <button type="submit" id="saveWebhookBtn" class="action-btn action-btn--primary">Save Configuration</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- ─── Executive CISO Briefing Modal Dialog ─── -->
+        <div id="cisoReportModal" class="modal-overlay hidden" aria-hidden="true">
+            <div class="modal-card" style="max-width: 680px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">📑 Executive CISO Security Briefing</h3>
+                    <button id="closeCisoModalBtn" class="modal-close-btn" type="button">&times;</button>
+                </div>
+                <div id="cisoReportContent" style="font-size: 0.85rem; line-height: 1.6; color: var(--text-secondary);">
+                    Generating executive CISO threat summary...
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="action-btn action-btn--primary" onclick="window.print()">
+                        🖨️ Print / Save PDF
+                    </button>
+                    <button type="button" id="dismissCisoBtn" class="action-btn" onclick="document.getElementById('cisoReportModal').classList.add('hidden')">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+
 
 
         <!-- ─── Live Threat Feed ─── -->

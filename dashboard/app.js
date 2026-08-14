@@ -346,35 +346,77 @@ function renderGeoRadar(nodes) {
 
     if (!nodes || !nodes.length) {
         nodes = [
-            { city: "Kuala Lumpur", country_code: "MY", lat: 3.139, lng: 101.6869, threats: 84, asn: "TM Net (AS4788)", status: "critical" },
-            { city: "Singapore", country_code: "SG", lat: 1.3521, lng: 103.8198, threats: 42, asn: "Singtel (AS7473)", status: "high" },
-            { city: "San Jose", country_code: "US", lat: 37.3382, lng: -121.8863, threats: 38, asn: "Cloudflare (AS13335)", status: "medium" },
-            { city: "Frankfurt", country_code: "DE", lat: 50.1109, lng: 8.6821, threats: 26, asn: "DigitalOcean (AS14061)", status: "medium" },
+            { city: "Kuala Lumpur", country_code: "MY", threats: 111, asn: "TM Net (AS4788)", status: "critical" },
+            { city: "Singapore", country_code: "SG", threats: 58, asn: "Singtel (AS7473)", status: "high" },
+            { city: "San Jose", country_code: "US", threats: 42, asn: "Cloudflare Anycast (AS13335)", status: "medium" },
+            { city: "Frankfurt", country_code: "DE", threats: 26, asn: "DigitalOcean (AS14061)", status: "medium" },
+            { city: "Hong Kong", country_code: "HK", threats: 15, asn: "Tencent Cloud (AS132203)", status: "low" },
+            { city: "Tokyo", country_code: "JP", threats: 10, asn: "AWS Tokyo (AS16509)", status: "low" },
         ];
     }
+
+    // High-precision non-overlapping map positions on 900x280 canvas with customized leader line offsets
+    const nodeConfig = {
+        "kuala lumpur": { x: 630, y: 155, labelX: 645, labelY: 158, align: "start", leader: null },
+        "singapore":    { x: 638, y: 175, labelX: 585, labelY: 215, align: "end",   leader: "638,175 605,210 585,210" },
+        "san jose":     { x: 170, y: 92,  labelX: 95,  labelY: 82,  align: "end",   leader: "170,92 125,82 100,82" },
+        "frankfurt":    { x: 465, y: 78,  labelX: 395, labelY: 70,  align: "end",   leader: "465,78 425,70 400,70" },
+        "hong kong":    { x: 685, y: 125, labelX: 715, labelY: 135, align: "start", leader: "685,125 705,135 715,135" },
+        "tokyo":        { x: 745, y: 92,  labelX: 765, labelY: 82,  align: "start", leader: "745,92 758,82 765,82" },
+    };
 
     let svgHtml = "";
     let legendHtml = "";
 
     nodes.forEach(n => {
-        const x = Math.round(((n.lng + 180) / 360) * 720 + 40);
-        const y = Math.round(((90 - n.lat) / 180) * 140 + 20);
-        const isPulse = n.status === "critical" || n.status === "high";
-        const color = n.status === "critical" ? "#ef4444" : n.status === "high" ? "#f59e0b" : "#3b82f6";
+        const key = (n.city || "").toLowerCase().trim();
+        const conf = nodeConfig[key] || { x: 450, y: 140, labelX: 470, labelY: 140, align: "start", leader: null };
+        const isCritical = n.status === "critical";
+        const isHigh = n.status === "high";
+        const color = isCritical ? "#ef4444" : isHigh ? "#f59e0b" : "#06b6d4";
+        const text = `${n.city} (${n.threats})`;
 
-        if (isPulse) {
-            svgHtml += `<circle cx="${x}" cy="${y}" r="6" fill="none" stroke="${color}" stroke-width="1.5" class="radar-pulse-node" />`;
+        // Leader line if configured
+        if (conf.leader) {
+            svgHtml += `<polyline points="${conf.leader}" fill="none" stroke="${color}" stroke-width="1.2" stroke-dasharray="2 2" opacity="0.75" />`;
         }
-        svgHtml += `<circle cx="${x}" cy="${y}" r="4" fill="${color}" stroke="#ffffff" stroke-width="1" />`;
-        svgHtml += `<text x="${x + 7}" y="${y + 3}" fill="#e2e8f0" font-size="10" font-family="'JetBrains Mono', monospace">${escapeHtml(n.city)} (${n.threats})</text>`;
+
+        // Pulse wave circles for active threats
+        if (isCritical || isHigh) {
+            svgHtml += `<circle cx="${conf.x}" cy="${conf.y}" r="6" fill="none" stroke="${color}" stroke-width="1.8" class="radar-pulse-node" />`;
+            if (isCritical) {
+                svgHtml += `<circle cx="${conf.x}" cy="${conf.y}" r="12" fill="none" stroke="${color}" stroke-width="0.8" opacity="0.4" />`;
+            }
+        }
+
+        // Center hub dot
+        svgHtml += `<circle cx="${conf.x}" cy="${conf.y}" r="4.5" fill="${color}" stroke="#ffffff" stroke-width="1.5" style="cursor: pointer;" />`;
+
+        // Text label pill background + text
+        const badgeWidth = text.length * 7.2 + 12;
+        const rectX = conf.align === "end" ? conf.labelX - badgeWidth : conf.labelX - 4;
+        const textAnchor = conf.align === "end" ? "end" : "start";
+
+        svgHtml += `
+            <g style="cursor: pointer;" onclick="filterFeedByCity('${escapeHtml(n.city)}')">
+                <rect x="${rectX}" y="${conf.labelY - 12}" width="${badgeWidth}" height="16" rx="4" fill="rgba(10, 15, 30, 0.88)" stroke="${color}" stroke-width="0.8" />
+                <text x="${conf.labelX}" y="${conf.labelY}" fill="#ffffff" font-size="10.5" font-weight="600" font-family="'JetBrains Mono', monospace" text-anchor="${textAnchor}">${escapeHtml(text)}</text>
+            </g>
+        `;
 
         legendHtml += `
-            <div style="background: rgba(15, 23, 42, 0.6); padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.06); font-size: 0.78rem;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
-                    <strong style="color: ${color};">${escapeHtml(n.city)}, ${n.country_code}</strong>
-                    <span class="report-badge" style="font-size: 0.7rem;">${n.threats} attacks</span>
+            <div class="geo-node-card" onclick="filterFeedByCity('${escapeHtml(n.city)}')">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${color}; box-shadow: 0 0 8px ${color};"></span>
+                        <strong style="color: #ffffff; font-size: 0.82rem;">${escapeHtml(n.city)}, ${n.country_code}</strong>
+                    </div>
+                    <span class="report-badge" style="font-size: 0.72rem; font-weight: 700; background: ${color}22; color: ${color}; border: 1px solid ${color}44;">${n.threats} attacks</span>
                 </div>
-                <div style="color: var(--text-muted); font-size: 0.72rem;">${escapeHtml(n.asn)}</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2px;">
+                    <span style="color: var(--text-muted); font-size: 0.72rem;">${escapeHtml(n.asn)}</span>
+                    <span style="color: var(--accent-cyan); font-size: 0.7rem; font-family: monospace;">🔍 Filter</span>
+                </div>
             </div>
         `;
     });
@@ -382,6 +424,18 @@ function renderGeoRadar(nodes) {
     group.innerHTML = svgHtml;
     legend.innerHTML = legendHtml;
 }
+
+function filterFeedByCity(city) {
+    const $search = document.getElementById("telemetrySearch");
+    if ($search) {
+        $search.value = `bank:${city}`;
+        telemetryFilterText = `bank:${city}`;
+        telemetryPagination.page = 1;
+        renderTelemetry();
+        $search.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+}
+
 
 async function refreshDistributions() {
     try {
