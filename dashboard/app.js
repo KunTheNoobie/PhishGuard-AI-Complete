@@ -9,6 +9,13 @@
 "use strict";
 
 // ═══════════════════════════════════════════════════════════════════
+// CONFIGURATION
+// ═══════════════════════════════════════════════════════════════════
+
+const API_BASE      = location.protocol === "file:" ? "http://127.0.0.1:8000/api/v1/dashboard" : "/api/v1/dashboard";
+const REFRESH_MS    = 3_000;
+
+// ═══════════════════════════════════════════════════════════════════
 // THEME INITIALIZATION
 // ═══════════════════════════════════════════════════════════════════
 const savedTheme = localStorage.getItem("phishguard_theme") || "cyberpunk";
@@ -22,6 +29,7 @@ if ($themeSelector) {
         localStorage.setItem("phishguard_theme", t);
     });
 }
+
 
 
 // ═══════════════════════════════════════════════════════════════════
