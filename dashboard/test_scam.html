@@ -10,81 +10,207 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <style>
-        .scam-page-wrapper {
-            max-width: 900px;
-            margin: 2rem auto;
+        .test-site-container {
+            max-width: 1000px;
+            margin: 2rem auto 4rem;
             padding: 0 1.5rem;
             display: flex;
             flex-direction: column;
             align-items: center;
         }
-        .sim-banner {
+
+        .sim-control-banner {
             width: 100%;
             background: rgba(239, 68, 68, 0.12);
-            border: 1px solid #ef4444;
-            border-radius: var(--radius-sm);
-            padding: 0.85rem 1.25rem;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            border-radius: var(--radius-md);
+            padding: 1rem 1.5rem;
             color: #f87171;
-            font-size: 0.85rem;
+            font-size: 0.88rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 2rem;
             flex-wrap: wrap;
+            gap: 1rem;
+            box-shadow: 0 4px 20px rgba(239, 68, 68, 0.15);
+        }
+
+        .sim-control-banner strong {
+            color: #ef4444;
+            display: flex;
+            align-items: center;
             gap: 0.5rem;
         }
-        .scam-card {
+
+        /* ─── Simulated Phishing Portal ─── */
+        .phish-card {
             background: #ffffff;
-            color: #1e293b;
-            padding: 36px;
-            border-radius: 12px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-            max-width: 540px;
+            color: #0f172a;
+            border-radius: 16px;
+            box-shadow: 0 24px 48px rgba(0, 0, 0, 0.6);
+            max-width: 580px;
             width: 100%;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.2);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
-        .scam-card h2 {
-            color: #dc2626;
+
+        .phish-header {
+            background: linear-gradient(135deg, #ffc800 0%, #ffae00 100%);
+            padding: 1.5rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 3px solid #e09900;
+        }
+
+        .phish-header-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .phish-header-title {
             font-size: 1.35rem;
-            margin-bottom: 12px;
-            font-weight: 800;
+            font-weight: 900;
+            color: #1a1a1a;
+            letter-spacing: -0.02em;
         }
-        .scam-card p {
+
+        .phish-header-badge {
+            background: #dc2626;
+            color: #ffffff;
+            font-size: 0.72rem;
+            font-weight: 800;
+            padding: 0.25rem 0.6rem;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .phish-body {
+            padding: 2rem;
+        }
+
+        .phish-alert-box {
+            background: #fef2f2;
+            border-left: 4px solid #ef4444;
+            padding: 1rem 1.25rem;
+            border-radius: 6px;
+            margin-bottom: 1.5rem;
+        }
+
+        .phish-alert-box h3 {
+            color: #b91c1c;
+            font-size: 1rem;
+            margin-bottom: 0.35rem;
+            font-weight: 700;
+        }
+
+        .phish-alert-box p {
+            color: #7f1d1d;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        .mule-account-card {
+            background: #fffbeb;
+            border: 1px dashed #f59e0b;
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .mule-account-card h4 {
+            color: #92400e;
+            font-size: 0.88rem;
+            margin-bottom: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .mule-detail-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.88rem;
+            padding: 0.3rem 0;
+            color: #78350f;
+            border-bottom: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .mule-detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .mule-detail-row strong {
+            color: #451a03;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.95rem;
+        }
+
+        /* ─── Simulated Form Inputs ─── */
+        .phish-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .form-group label {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        .form-group input {
+            padding: 0.75rem 1rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
             font-size: 0.92rem;
-            line-height: 1.6;
-            color: #334155;
-            margin-bottom: 16px;
-        }
-        .mule-box {
-            background: #fef3c7;
-            border-left: 4px solid #f59e0b;
-            padding: 16px;
-            margin: 20px 0;
-            border-radius: 6px;
-            color: #78350f;
-            font-size: 0.9rem;
-        }
-        .mule-box p {
-            margin-bottom: 6px;
-            color: #78350f;
-        }
-        .mule-box p:last-child {
-            margin-bottom: 0;
-        }
-        .scam-btn {
-            background: #f59e0b;
-            color: #000;
-            padding: 12px 24px;
-            text-decoration: none;
-            font-weight: 800;
-            border-radius: 6px;
-            display: inline-block;
-            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+            color: #0f172a;
+            outline: none;
             transition: all 0.2s ease;
         }
-        .scam-btn:hover {
-            background: #d97706;
-            transform: translateY(-1px);
+
+        .form-group input:focus {
+            border-color: #f59e0b;
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+        }
+
+        .phish-submit-btn {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: #000000;
+            font-weight: 800;
+            font-size: 1rem;
+            padding: 0.9rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(217, 119, 6, 0.4);
+            transition: all 0.2s ease;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+
+        .phish-submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(217, 119, 6, 0.6);
+        }
+
+        .phish-footer-notice {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            text-align: center;
+            margin-top: 1.25rem;
+            line-height: 1.4;
         }
     </style>
 </head>
@@ -97,7 +223,7 @@
             </div>
             <div>
                 <h1 class="header__title">PhishGuard-AI</h1>
-                <p class="header__subtitle">Threat Simulation Target</p>
+                <p class="header__subtitle">Simulated Threat Target</p>
             </div>
         </div>
 
@@ -122,36 +248,89 @@
 
         <div class="header__status">
             <span class="status-dot error"></span>
-            <span class="status-text" style="color: #f87171;">Simulated Target</span>
+            <span class="status-text" style="color: #f87171;">Scam Target Active</span>
         </div>
     </header>
 
-    <main class="scam-page-wrapper">
-        <div class="sim-banner">
+    <main class="test-site-container">
+        <!-- Control Banner -->
+        <div class="sim-control-banner">
             <div>
-                <strong>⚠️ Simulated Financial Phishing Scenario:</strong> This live page demonstrates an unauthorized Maybank social engineering lure containing seeded money mule account <code>112233445566</code>.
+                <strong>⚠️ Simulated Financial Phishing Target:</strong>
+                <span>Contains deceptive Maybank branding and flagged money mule account <code>112233445566</code> for extension & sandbox verification.</span>
             </div>
-            <a href="sandbox.html" class="action-btn action-btn--primary" style="text-decoration: none; font-size: 0.78rem;">
-                Inspect in Sandbox →
-            </a>
+            <div style="display: flex; gap: 0.5rem;">
+                <a href="sandbox.html" class="action-btn action-btn--primary" style="text-decoration: none; font-size: 0.78rem; padding: 0.4rem 0.8rem;">
+                    🎮 Inspect in Sandbox
+                </a>
+                <a href="index.html" class="action-btn" style="text-decoration: none; font-size: 0.78rem; padding: 0.4rem 0.8rem;">
+                    ← Return to SOC
+                </a>
+            </div>
         </div>
 
-        <div class="scam-card">
-            <h2>Maybank Online Banking Security Alert</h2>
-            <p>Your Maybank2u online account has been flagged for suspicious login activity. Immediate verification is required to prevent account suspension.</p>
-            
-            <div class="mule-box">
-                <p><strong>Action Required:</strong> Transfer verification deposit to the authorized PDRM verification account below:</p>
-                <p><strong>Bank:</strong> Maybank</p>
-                <p><strong>Account Number:</strong> 112233445566</p>
+        <!-- Simulated Phishing Target Card -->
+        <div class="phish-card">
+            <div class="phish-header">
+                <div class="phish-header-brand">
+                    <span style="font-size: 1.6rem;">🐯</span>
+                    <span class="phish-header-title">Maybank2u Alert</span>
+                </div>
+                <span class="phish-header-badge">Urgent Action</span>
             </div>
 
-            <p>Failure to complete verification within 2 hours will result in permanent access suspension.</p>
-            <a href="#" class="scam-btn">Verify Account Now</a>
+            <div class="phish-body">
+                <div class="phish-alert-box">
+                    <h3>Akaun Bank Anda Telah Digantung Sementara</h3>
+                    <p>Your Maybank online banking account has been temporarily flagged for suspicious activity. Immediate identity and TAC verification is required within 2 hours to avoid permanent suspension.</p>
+                </div>
+
+                <div class="mule-account-card">
+                    <h4>PDRM Verification Deposit Account</h4>
+                    <div class="mule-detail-row">
+                        <span>Designated Institution:</span>
+                        <span>Maybank Berhad</span>
+                    </div>
+                    <div class="mule-detail-row">
+                        <span>Recipient Name:</span>
+                        <span>PDRM CCID Escrow Officer</span>
+                    </div>
+                    <div class="mule-detail-row">
+                        <span>Account Number:</span>
+                        <strong>112233445566</strong>
+                    </div>
+                </div>
+
+                <form class="phish-form" onsubmit="event.preventDefault(); alert('⚠️ PhishGuard Intercept: This is a simulated phishing attack submission!');">
+                    <div class="form-group">
+                        <label for="usernameInput">Maybank2u Username / NRIC Number</label>
+                        <input type="text" id="usernameInput" placeholder="e.g. johndoe99 / 990101-14-1234" required />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="passwordInput">Online Banking Password</label>
+                        <input type="password" id="passwordInput" placeholder="••••••••••••" required />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tacInput">6-Digit TAC / OTP Code (Sent to your phone)</label>
+                        <input type="text" id="tacInput" maxlength="6" placeholder="123456" required />
+                    </div>
+
+                    <button type="submit" class="phish-submit-btn">
+                        🔒 Verify Account & Release Hold
+                    </button>
+                </form>
+
+                <p class="phish-footer-notice">
+                    Official Security Notice &bull; Malayan Banking Berhad (Co. Reg. 196001000142)<br/>
+                    Protected under Bank Negara Malaysia Cyber Regulations.
+                </p>
+            </div>
         </div>
     </main>
 
-    <footer class="footer" style="margin-top: 4rem;">
+    <footer class="footer">
         <p>&copy; 2026 PhishGuard-AI &mdash; Threat Intelligence Platform<br/>
         <small>Faculty of Computing & Information Technology, TAR UMT</small></p>
     </footer>

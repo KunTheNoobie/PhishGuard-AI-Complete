@@ -38,7 +38,7 @@ from typing import AsyncIterator, Final
 import torch
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from slowapi import Limiter, _rate_limit_exceeded_handler  # type: ignore[import-untyped]
 from slowapi.errors import RateLimitExceeded  # type: ignore[import-untyped]
@@ -235,8 +235,8 @@ app: Final[FastAPI] = FastAPI(
     description=APP_DESCRIPTION,
     version=APP_VERSION,
     lifespan=lifespan,
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url=None,
+    redoc_url=None,
     openapi_url="/openapi.json",
     contact={
         "name": "PhishGuard-AI Security Team",
@@ -247,6 +247,7 @@ app: Final[FastAPI] = FastAPI(
         "identifier": "LicenseRef-PhishGuard-Proprietary",
     },
 )
+
 
 # ── Attach the rate limiter to the app ──
 app.state.limiter = limiter
@@ -322,6 +323,107 @@ app.mount(
     StaticFiles(directory="dashboard", html=True),
     name="dashboard",
 )
+
+
+# ==============================================================================
+# Custom Cyber Dark Swagger UI & Documentation (§6.4)
+# ==============================================================================
+
+_SWAGGER_CYBER_DARK_HTML: Final[str] = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhishGuard-AI — API Documentation & OpenAPI Specs</title>
+    <link rel="icon" type="image/png" href="/dashboard/favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
+    <link rel="stylesheet" href="/dashboard/styles.css">
+    <link rel="stylesheet" href="/dashboard/swagger_dark.css">
+</head>
+<body>
+    <!-- ═══════════════════ HEADER ═══════════════════ -->
+    <header class="header">
+        <div class="header__brand">
+            <div class="header__logo">
+                <img src="/dashboard/favicon.png" alt="PhishGuard Cyber Shield" class="header__logo-img" />
+            </div>
+            <div>
+                <h1 class="header__title">PhishGuard-AI</h1>
+                <p class="header__subtitle">API & Threat Intel Specs</p>
+            </div>
+        </div>
+
+        <nav class="header__nav" aria-label="Main Navigation">
+            <a href="/dashboard/index.html" class="nav-tab">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+                Live Dashboard
+            </a>
+            <a href="/dashboard/sandbox.html" class="nav-tab">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Threat Sandbox
+            </a>
+            <a href="/dashboard/test_scam.html" class="nav-tab">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                Test Scam Target
+            </a>
+            <a href="/docs" class="nav-tab active">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                API Docs
+            </a>
+        </nav>
+
+        <div class="header__status">
+            <span class="status-dot live"></span>
+            <span class="status-text">FastAPI 2.0 Docs</span>
+        </div>
+    </header>
+
+    <div id="swagger-ui"></div>
+
+    <footer class="footer" style="margin-top: 3rem;">
+        <p>&copy; 2026 PhishGuard-AI &mdash; Threat Intelligence Platform<br/>
+        <small>Faculty of Computing & Information Technology, TAR UMT</small></p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+    <script>
+        window.onload = function() {
+            window.ui = SwaggerUIBundle({
+                url: '/openapi.json',
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIBundle.SwaggerUIStandalonePreset
+                ],
+                layout: "BaseLayout"
+            });
+        };
+    </script>
+</body>
+</html>
+"""
+
+
+@app.get("/docs", include_in_schema=False)
+async def custom_swagger_ui_html() -> HTMLResponse:
+    """Return the cyber-dark themed Swagger UI documentation."""
+    return HTMLResponse(content=_SWAGGER_CYBER_DARK_HTML)
+
+
+@app.get("/redoc", include_in_schema=False)
+async def custom_redoc_html() -> HTMLResponse:
+    """Return the Redoc documentation."""
+    from fastapi.openapi.docs import get_redoc_html
+    return get_redoc_html(
+        openapi_url="/openapi.json",
+        title="PhishGuard-AI — ReDoc API Documentation",
+        redoc_favicon_url="/dashboard/favicon.png",
+    )
+
 
 
 # ==============================================================================
