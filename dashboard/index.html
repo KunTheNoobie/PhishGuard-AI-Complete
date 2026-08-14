@@ -1077,6 +1077,41 @@
             </div>
         </div>
 
+        <!-- ─── Custom Cyberpunk Confirmation Dialog Modal ─── -->
+        <div id="cyberConfirmModal" class="modal-overlay hidden" aria-hidden="true" style="z-index: 10000;">
+            <div class="modal-card" style="max-width: 480px; border: 1px solid var(--accent-indigo);">
+                <div class="modal-header">
+                    <h3 class="modal-title" id="cyberConfirmTitle">🛡️ SOC Security Confirmation</h3>
+                    <button class="modal-close-btn" type="button">&times;</button>
+                </div>
+                <div id="cyberConfirmMessage" style="font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary); margin-bottom: 1.25rem;">
+                    Are you sure you want to proceed with this operation?
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="cyberConfirmCancelBtn" class="action-btn">Cancel</button>
+                    <button type="button" id="cyberConfirmOkBtn" class="action-btn action-btn--primary">Confirm Action</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── Custom Cyberpunk Rich Notice Modal ─── -->
+        <div id="cyberNoticeModal" class="modal-overlay hidden" aria-hidden="true" style="z-index: 10000;">
+            <div class="modal-card" style="max-width: 600px; border: 1px solid var(--accent-cyan);">
+                <div class="modal-header">
+                    <h3 class="modal-title" id="cyberNoticeTitle">📋 SOC Intelligence Notice</h3>
+                    <button class="modal-close-btn" type="button">&times;</button>
+                </div>
+                <div id="cyberNoticeBody" style="font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary); margin-bottom: 1.25rem;"></div>
+                <div class="modal-actions" style="justify-content: space-between;">
+                    <button type="button" id="cyberNoticeCopyBtn" class="action-btn action-btn--primary">📋 Copy Text</button>
+                    <button type="button" class="action-btn modal-dismiss-btn">Dismiss</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── Cyberpunk Toast Notification Stack ─── -->
+        <div id="cyberToastContainer" class="cyber-toast-container" aria-live="polite"></div>
+
     </main>
 
     <!-- ═══════════════════ FOOTER ═══════════════════ -->

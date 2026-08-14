@@ -39,8 +39,127 @@ if ($themeSelector) {
 
 
 // ═══════════════════════════════════════════════════════════════════
-// STATE
+// CYBERPUNK TOAST NOTIFICATIONS & DIALOG SYSTEM
 // ═══════════════════════════════════════════════════════════════════
+
+const $cyberToastContainer = document.getElementById("cyberToastContainer");
+
+function showCyberToast(type = "info", title = "Notification", message = "", durationMs = 4000) {
+    if (!$cyberToastContainer) return;
+    const toast = document.createElement("div");
+    toast.className = `cyber-toast cyber-toast--${type}`;
+    
+    const iconMap = {
+        success: "✅",
+        danger: "🚨",
+        warning: "⚠️",
+        info: "ℹ️"
+    };
+
+    toast.innerHTML = `
+        <div class="cyber-toast__icon">${iconMap[type] || "ℹ️"}</div>
+        <div class="cyber-toast__content">
+            <div class="cyber-toast__title">${escapeHtml(title)}</div>
+            <div>${escapeHtml(message)}</div>
+        </div>
+        <button class="cyber-toast__close" type="button">&times;</button>
+    `;
+
+    toast.querySelector(".cyber-toast__close").addEventListener("click", () => {
+        toast.remove();
+    });
+
+    $cyberToastContainer.appendChild(toast);
+
+    if (durationMs > 0) {
+        setTimeout(() => {
+            toast.style.animation = "toastFadeOut 0.3s forwards";
+            setTimeout(() => toast.remove(), 300);
+        }, durationMs);
+    }
+}
+
+// In-UI Confirmation Modal replacing native confirm()
+function showCyberConfirm(title, message, confirmText = "Confirm Action") {
+    return new Promise((resolve) => {
+        const modal = document.getElementById("cyberConfirmModal");
+        const titleEl = document.getElementById("cyberConfirmTitle");
+        const msgEl = document.getElementById("cyberConfirmMessage");
+        const okBtn = document.getElementById("cyberConfirmOkBtn");
+        const cancelBtn = document.getElementById("cyberConfirmCancelBtn");
+
+        if (!modal) {
+            resolve(confirm(message));
+            return;
+        }
+
+        if (titleEl) titleEl.textContent = title;
+        if (msgEl) msgEl.textContent = message;
+        if (okBtn) okBtn.textContent = confirmText;
+
+        modal.classList.remove("hidden");
+
+        const cleanup = () => {
+            modal.classList.add("hidden");
+            okBtn.removeEventListener("click", onOk);
+            cancelBtn.removeEventListener("click", onCancel);
+        };
+
+        const onOk = () => {
+            cleanup();
+            resolve(true);
+        };
+
+        const onCancel = () => {
+            cleanup();
+            resolve(false);
+        };
+
+        okBtn.addEventListener("click", onOk);
+        cancelBtn.addEventListener("click", onCancel);
+    });
+}
+
+// In-UI Rich Notice Modal replacing bulky alert()
+function showCyberNoticeModal(title, detailsHtml, copyContent = "") {
+    const modal = document.getElementById("cyberNoticeModal");
+    const titleEl = document.getElementById("cyberNoticeTitle");
+    const bodyEl = document.getElementById("cyberNoticeBody");
+    const copyBtn = document.getElementById("cyberNoticeCopyBtn");
+
+    if (!modal) return;
+    if (titleEl) titleEl.textContent = title;
+    if (bodyEl) bodyEl.innerHTML = detailsHtml;
+
+    if (copyBtn) {
+        copyBtn.onclick = async () => {
+            if (copyContent) {
+                await navigator.clipboard.writeText(copyContent);
+                showCyberToast("success", "Copied", "Notice content copied to clipboard!");
+            }
+        };
+    }
+
+    modal.classList.remove("hidden");
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// UNIVERSAL MODAL CLOSE & BACKDROP HANDLERS
+// ═══════════════════════════════════════════════════════════════════
+document.addEventListener("click", (e) => {
+    if (e.target.closest(".modal-close-btn") || e.target.closest(".modal-dismiss-btn")) {
+        const modal = e.target.closest(".modal-overlay");
+        if (modal) modal.classList.add("hidden");
+    } else if (e.target.classList.contains("modal-overlay")) {
+        e.target.classList.add("hidden");
+    }
+});
+
+document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+        document.querySelectorAll(".modal-overlay:not(.hidden)").forEach((m) => m.classList.add("hidden"));
+    }
+});
 
 let telemetryData = [];
 let muleData = [];
@@ -894,8 +1013,9 @@ async function handleAddMuleSubmit(e) {
         });
         closeAddMuleModal();
         await refreshAll();
+        showCyberToast("success", "Mule Ingested", `Account ${payload.account_number} (${payload.bank_name}) registered.`);
     } catch (err) {
-        alert("Failed to register mule account: " + err.message);
+        showCyberToast("danger", "Registration Failed", err.message);
     } finally {
         $saveMuleBtn.disabled = false;
         $saveMuleBtn.textContent = "Add to Registry";
@@ -1043,7 +1163,7 @@ if ($quickScanForm) {
             `;
             if (isDanger) playAlertSound();
         } catch (err) {
-            alert("Scan failed: " + err.message);
+            showCyberToast("danger", "Inspection Failed", err.message);
         } finally {
             $quickScanBtn.disabled = false;
             $quickScanBtn.textContent = "Inspect Target";
@@ -1170,7 +1290,8 @@ if ($quarantineCurrentBtn) {
         if (!currentReportData || !currentReportData.target_url) return;
         let dom = currentReportData.target_url;
         try { dom = new URL(currentReportData.target_url).hostname || dom; } catch (_e) {}
-        if (!confirm(`Quarantine domain '${dom}' system-wide and broadcast emergency SIEM alert?`)) return;
+        const confirmed = await showCyberConfirm("🛡️ System Quarantine Confirmation", `Quarantine domain '${dom}' system-wide and broadcast emergency SIEM alert?`, "Quarantine Domain");
+        if (!confirmed) return;
 
         try {
             await apiFetch("/domains/quarantine", {
@@ -1178,9 +1299,9 @@ if ($quarantineCurrentBtn) {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ domain: dom, reason: `SOC Manual Quarantine from Incident ${currentReportData.incident_id}` })
             });
-            alert(`🛡️ Domain '${dom}' has been quarantined system-wide! Emergency webhook broadcast dispatched.`);
+            showCyberToast("danger", "Domain Quarantined", `🛡️ Domain '${dom}' has been quarantined system-wide!`);
         } catch (err) {
-            alert("Quarantine failed: " + err.message);
+            showCyberToast("danger", "Quarantine Failed", err.message);
         }
     });
 }
@@ -1190,7 +1311,8 @@ if ($whitelistCurrentBtn) {
         if (!currentReportData || !currentReportData.target_url) return;
         let dom = currentReportData.target_url;
         try { dom = new URL(currentReportData.target_url).hostname || dom; } catch (_e) {}
-        if (!confirm(`Whitelist domain '${dom}' as safe for 24 hours?`)) return;
+        const confirmed = await showCyberConfirm("✅ Safe Whitelist Exemption", `Whitelist domain '${dom}' as verified safe for 24 hours?`, "Whitelist Domain");
+        if (!confirmed) return;
 
         try {
             await apiFetch("/domains/whitelist", {
@@ -1198,9 +1320,9 @@ if ($whitelistCurrentBtn) {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ domain: dom, reason: "SOC Verified Safe / False Positive Exemption", ttl_hours: 24 })
             });
-            alert(`✅ Domain '${dom}' has been whitelisted for 24 hours.`);
+            showCyberToast("success", "Domain Whitelisted", `✅ Domain '${dom}' has been whitelisted for 24 hours.`);
         } catch (err) {
-            alert("Whitelist failed: " + err.message);
+            showCyberToast("danger", "Whitelist Failed", err.message);
         }
     });
 }
@@ -1210,10 +1332,17 @@ if ($copyTakedownBtn) {
         if (!currentReportLogId) return;
         try {
             const notice = await apiFetch(`/telemetry/${currentReportLogId}/takedown-notice`);
-            await navigator.clipboard.writeText(notice.body);
-            alert(`📋 Standardized RFC 2142 Abuse Takedown Notice copied to clipboard!\n\nDestination: ${notice.abuse_email}\nSubject: ${notice.subject}`);
+            const detailsHtml = `
+                <div style="background: rgba(15, 23, 42, 0.7); padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 10px; font-size: 0.8rem;">
+                    <div><strong>Recipient Abuse Desk:</strong> <code style="color: var(--accent-cyan);">${escapeHtml(notice.abuse_email)}</code></div>
+                    <div><strong>Subject:</strong> <code>${escapeHtml(notice.subject)}</code></div>
+                </div>
+                <pre style="background: rgba(0, 0, 0, 0.5); padding: 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.06); font-family: monospace; font-size: 0.76rem; max-height: 200px; overflow-y: auto; white-space: pre-wrap; color: #e2e8f0;">${escapeHtml(notice.body)}</pre>
+            `;
+            showCyberNoticeModal("📋 RFC 2142 Abuse Takedown Notice", detailsHtml, notice.body);
+            showCyberToast("info", "Takedown Generated", "RFC 2142 Abuse Notice ready for review and copy.");
         } catch (err) {
-            alert("Failed to generate takedown notice: " + err.message);
+            showCyberToast("danger", "Takedown Failed", err.message);
         }
     });
 }
@@ -1715,10 +1844,10 @@ async function manualRunPlaybook(playbookId) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ playbook_id: playbookId, target_url: "https://maybank2u-secure-verify.top/auth", target_bank: "Maybank", confidence: 0.96 })
         });
-        alert(`✅ Playbook executed successfully! Execution ID: ${res.execution_id}`);
+        showCyberToast("success", "Playbook Executed", `Execution ID: ${res.execution_id}`);
         openPlaybooksModal();
     } catch (err) {
-        alert("Failed to execute playbook: " + err.message);
+        showCyberToast("danger", "Execution Failed", err.message);
     }
 }
 
