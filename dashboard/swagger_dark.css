@@ -5,7 +5,7 @@
 :root {
     --bg-primary:       #0a0d14;
     --bg-secondary:     #0f172a;
-    --bg-card:          rgba(17, 24, 39, 0.92);
+    --bg-card:          rgba(17, 24, 39, 0.95);
     --bg-card-hover:    rgba(30, 41, 59, 0.98);
     --bg-input:         #090d16;
 
@@ -173,7 +173,7 @@ body {
     font-size: 0.9rem !important;
 }
 
-/* Operation Tags (Threat Analysis, Visual Identity, Dashboard, Operations) */
+/* Operation Tags */
 .swagger-ui .opblock-tag {
     color: #ffffff !important;
     font-size: 1.35rem !important;
@@ -292,7 +292,6 @@ body {
     color: #ffffff !important;
     font-size: 1rem !important;
     font-weight: 800 !important;
-    letter-spacing: -0.01em !important;
 }
 
 .swagger-ui .opblock-section-header label {
@@ -300,7 +299,7 @@ body {
     font-weight: 600 !important;
 }
 
-/* Parameters Table & Labels */
+/* Parameters Table */
 .swagger-ui table.parameters {
     color: #e2e8f0 !important;
 }
@@ -329,9 +328,6 @@ body {
     font-weight: 700 !important;
 }
 
-.swagger-ui .parameter__name.required {
-    font-weight: 800 !important;
-}
 .swagger-ui .parameter__name.required:after {
     color: #f87171 !important;
     content: " *" !important;
@@ -347,11 +343,6 @@ body {
 .swagger-ui .parameter__in {
     color: #94a3b8 !important;
     font-size: 0.78rem !important;
-    font-style: italic !important;
-}
-
-.swagger-ui .parameter__empty_value_toggle {
-    color: #94a3b8 !important;
 }
 
 .swagger-ui .parameters-col_description p {
@@ -360,27 +351,12 @@ body {
     line-height: 1.5 !important;
 }
 
-.swagger-ui .parameters-col_description input[type=text] {
-    width: 100% !important;
-    max-width: 400px !important;
-}
-
 /* Responses Section */
-.swagger-ui .responses-wrapper {
-    padding: 0.5rem 0 !important;
-}
-
-.swagger-ui .responses-inner {
-    padding: 0 !important;
-    background: transparent !important;
-}
-
 .swagger-ui .responses-table thead tr th {
     color: #ffffff !important;
     font-size: 0.85rem !important;
     font-weight: 800 !important;
     text-transform: uppercase !important;
-    letter-spacing: 0.04em !important;
     border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
     padding: 0.85rem 1rem !important;
 }
@@ -389,7 +365,6 @@ body {
     border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
     color: #e2e8f0 !important;
     padding: 1rem !important;
-    vertical-align: top !important;
 }
 
 .swagger-ui .response-col_status {
@@ -399,75 +374,13 @@ body {
     font-weight: 800 !important;
 }
 
-.swagger-ui .response-col_description {
-    color: #e2e8f0 !important;
-}
-
-.swagger-ui .response-col_description__inner div.markdown,
-.swagger-ui .response-col_description__inner div.renderedMarkdown,
-.swagger-ui .response-col_description__inner p {
+.swagger-ui .response-col_description__inner p,
+.swagger-ui .response-col_description__inner div {
     color: #ffffff !important;
     font-size: 0.95rem !important;
-    font-weight: 600 !important;
 }
 
-.swagger-ui .response-control-media-type__title {
-    color: #94a3b8 !important;
-    font-size: 0.82rem !important;
-    font-weight: 600 !important;
-}
-
-.swagger-ui .response-control-media-type__accept-header {
-    color: #cbd5e1 !important;
-    font-family: 'JetBrains Mono', monospace !important;
-}
-
-/* Tabs inside responses (Example Value, Schema) */
-.swagger-ui .tab {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
-    margin-bottom: 0.75rem !important;
-}
-
-.swagger-ui .tab li button.tablinks {
-    color: #94a3b8 !important;
-    font-weight: 700 !important;
-    font-size: 0.85rem !important;
-    padding: 0.4rem 0.85rem !important;
-}
-
-.swagger-ui .tab li button.tablinks.active {
-    color: #38bdf8 !important;
-    border-bottom: 2px solid #38bdf8 !important;
-}
-
-/* Inputs, Textareas, Selects */
-.swagger-ui input[type=text],
-.swagger-ui input[type=password],
-.swagger-ui textarea,
-.swagger-ui select {
-    background: #090d16 !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    color: #ffffff !important;
-    border-radius: 6px !important;
-    padding: 0.6rem 0.85rem !important;
-    font-family: 'JetBrains Mono', monospace !important;
-    font-size: 0.88rem !important;
-}
-
-.swagger-ui input[type=text]:focus,
-.swagger-ui textarea:focus,
-.swagger-ui select:focus {
-    border-color: var(--accent-indigo) !important;
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3) !important;
-    outline: none !important;
-}
-
-.swagger-ui select {
-    color: #ffffff !important;
-    background-color: #0f172a !important;
-}
-
-/* Code & Highlighted JSON Responses */
+/* Code Blocks */
 .swagger-ui .highlight-code,
 .swagger-ui .microlight,
 .swagger-ui pre {
@@ -477,55 +390,13 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.15) !important;
     font-family: 'JetBrains Mono', monospace !important;
     font-size: 0.88rem !important;
-    line-height: 1.5 !important;
-    padding: 1rem !important;
-}
-
-.swagger-ui pre.example {
-    color: #f1f5f9 !important;
-}
-
-/* Buttons */
-.swagger-ui .btn.try-out__btn {
-    background: rgba(99, 102, 241, 0.2) !important;
-    border: 1px solid rgba(99, 102, 241, 0.6) !important;
-    color: #ffffff !important;
-    border-radius: 6px !important;
-    font-weight: 700 !important;
-    padding: 6px 14px !important;
-}
-
-.swagger-ui .btn.try-out__btn:hover {
-    background: rgba(99, 102, 241, 0.4) !important;
-    box-shadow: 0 0 16px rgba(99, 102, 241, 0.3) !important;
-}
-
-.swagger-ui .btn.execute {
-    background: linear-gradient(135deg, var(--accent-indigo), #4338ca) !important;
-    border: 1px solid rgba(255, 255, 255, 0.25) !important;
-    color: #ffffff !important;
-    box-shadow: 0 0 20px rgba(99, 102, 241, 0.4) !important;
-    border-radius: 6px !important;
-    font-weight: 800 !important;
-    padding: 8px 24px !important;
-}
-
-.swagger-ui .btn.execute:hover {
-    box-shadow: 0 0 28px rgba(99, 102, 241, 0.6) !important;
-    transform: translateY(-1px);
-}
-
-.swagger-ui .btn.cancel {
-    background: rgba(239, 68, 68, 0.2) !important;
-    border: 1px solid rgba(239, 68, 68, 0.6) !important;
-    color: #ffffff !important;
-    border-radius: 6px !important;
-    font-weight: 700 !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   SCHEMAS & MODELS SECTION — ULTRA HIGH CONTRAST & READABILITY
+   SCHEMAS & MODELS SECTION — ABSOLUTE ZERO WHITE HIGHLIGHTS
    ═══════════════════════════════════════════════════════════════════ */
+
+/* Wipe out ANY white background on buttons, spans, headers, containers */
 .swagger-ui section.models {
     background: #0f172a !important;
     border: 1px solid rgba(99, 102, 241, 0.4) !important;
@@ -533,10 +404,6 @@ body {
     margin: 3rem 0 4rem !important;
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6) !important;
     overflow: hidden !important;
-}
-
-.swagger-ui section.models.is-open {
-    padding-bottom: 1.5rem !important;
 }
 
 .swagger-ui section.models h4 {
@@ -547,9 +414,6 @@ body {
     background: rgba(15, 23, 42, 0.95) !important;
     border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
     cursor: pointer !important;
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
 }
 
 .swagger-ui section.models h4 span {
@@ -561,8 +425,8 @@ body {
     fill: #38bdf8 !important;
 }
 
-/* Individual Schema Card Rows */
-.swagger-ui section.models .model-container {
+.swagger-ui section.models .model-container,
+.swagger-ui .models .model-container {
     background: #111827 !important;
     border: 1px solid rgba(255, 255, 255, 0.12) !important;
     margin: 0.75rem 1.5rem !important;
@@ -577,19 +441,30 @@ body {
     box-shadow: 0 4px 20px rgba(99, 102, 241, 0.2) !important;
 }
 
-/* Schema Title & Controls */
+/* Eliminate white buttons & rectangles in Swagger 5 JSON Schema */
+.swagger-ui .json-schema-2020-12,
+.swagger-ui .json-schema-2020-12 button,
+.swagger-ui .json-schema-2020-12-accordion,
+.swagger-ui .json-schema-2020-12-accordion__children,
+.swagger-ui .json-schema-2020-12-head,
+.swagger-ui .json-schema-2020-12-head button,
+.swagger-ui .model-box,
+.swagger-ui .model-box button,
 .swagger-ui .model-box-control,
 .swagger-ui .models-control {
-    color: #ffffff !important;
-    cursor: pointer !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: 0.6rem !important;
     background: transparent !important;
+    background-color: transparent !important;
     border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
 }
 
-.swagger-ui .model-title {
+/* Titles */
+.swagger-ui .json-schema-2020-12__title,
+.swagger-ui .json-schema-2020-12-head .json-schema-2020-12__title,
+.swagger-ui .json-schema-2020-12-property .json-schema-2020-12__title,
+.swagger-ui .model-title,
+.swagger-ui span.model-title__text {
     color: #38bdf8 !important;
     font-family: 'JetBrains Mono', monospace !important;
     font-size: 1.05rem !important;
@@ -599,165 +474,88 @@ body {
     border: none !important;
 }
 
-.swagger-ui span.model-title__text {
+.swagger-ui .json-schema-2020-12-property .json-schema-2020-12__title {
+    font-size: 0.95rem !important;
     color: #38bdf8 !important;
-    font-weight: 800 !important;
-    background: transparent !important;
 }
 
-.swagger-ui .model-hint {
-    background: rgba(99, 102, 241, 0.25) !important;
-    color: #c7d2fe !important;
+/* Expand All Button */
+.swagger-ui .json-schema-2020-12-expand-deep-button {
+    background: rgba(99, 102, 241, 0.2) !important;
     border: 1px solid rgba(99, 102, 241, 0.5) !important;
+    color: #c7d2fe !important;
     border-radius: 6px !important;
-    padding: 2px 8px !important;
+    padding: 3px 8px !important;
     font-size: 0.78rem !important;
     font-weight: 700 !important;
     font-family: 'JetBrains Mono', monospace !important;
+    margin-left: 0.6rem !important;
+    cursor: pointer !important;
 }
 
-.swagger-ui .model-toggle {
-    display: inline-block !important;
-    margin-left: 0.5rem !important;
+.swagger-ui .json-schema-2020-12-expand-deep-button:hover {
+    background: rgba(99, 102, 241, 0.4) !important;
+    color: #ffffff !important;
 }
 
-.swagger-ui .model-toggle:after {
-    filter: invert(1) brightness(2) !important;
+/* Attribute Types (object, string, integer) */
+.swagger-ui .json-schema-2020-12__attribute,
+.swagger-ui .json-schema-2020-12__attribute--primary,
+.swagger-ui .model-hint {
+    color: #a78bfa !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 0.88rem !important;
+    font-weight: 700 !important;
+    background: transparent !important;
+    padding-left: 0.5rem !important;
 }
 
-.swagger-ui .model-jump-to-path svg {
+.swagger-ui .json-schema-2020-12__attribute--muted {
+    color: #94a3b8 !important;
+}
+
+/* Schema Body */
+.swagger-ui .json-schema-2020-12-body {
+    border-left: 2px solid rgba(99, 102, 241, 0.3) !important;
+    padding-left: 1rem !important;
+    margin: 0.5rem 0 0.5rem 0.5rem !important;
+}
+
+.swagger-ui .json-schema-2020-12-keyword__name,
+.swagger-ui .json-schema-2020-12-keyword__name--primary {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+}
+
+.swagger-ui .json-schema-2020-12-keyword__value,
+.swagger-ui .json-schema-2020-12-keyword__value--primary {
+    color: #67e8f9 !important;
+    font-family: 'JetBrains Mono', monospace !important;
+}
+
+.swagger-ui .json-schema-2020-12-accordion__icon svg {
     fill: #38bdf8 !important;
 }
 
-/* Schema Box & Properties */
-.swagger-ui .model-box {
-    background: transparent !important;
-    padding: 0.75rem 0 0.25rem !important;
-}
-
+/* Property Table inside Classic Model */
 .swagger-ui .model {
     color: #f8fafc !important;
     font-family: 'JetBrains Mono', monospace !important;
-    font-size: 0.92rem !important;
-    line-height: 1.7 !important;
-}
-
-/* Braces and Brackets */
-.swagger-ui .brace-open,
-.swagger-ui .brace-close,
-.swagger-ui .bracket-open,
-.swagger-ui .bracket-close {
-    color: #f59e0b !important;
-    font-weight: 800 !important;
-    font-size: 1.1rem !important;
-}
-
-/* Property Table Inside Schemas */
-.swagger-ui table.model {
-    width: 100% !important;
-    margin-top: 0.5rem !important;
 }
 
 .swagger-ui table.model tr.property-row td {
     padding: 0.6rem 0.5rem !important;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
     color: #f8fafc !important;
-    vertical-align: top !important;
-}
-
-.swagger-ui table.model tr.property-row td:first-child {
-    color: #ffffff !important;
-    font-weight: 700 !important;
-    font-family: 'JetBrains Mono', monospace !important;
-    font-size: 0.95rem !important;
-    width: 35% !important;
 }
 
 .swagger-ui table.model .property-name {
     color: #38bdf8 !important;
     font-weight: 800 !important;
-    font-size: 0.95rem !important;
-}
-
-.swagger-ui table.model .property-name.required:after {
-    content: " *" !important;
-    color: #ef4444 !important;
-    font-weight: 900 !important;
 }
 
 .swagger-ui table.model .property-type,
 .swagger-ui table.model .prop-type {
     color: #a78bfa !important;
     font-weight: 700 !important;
-    font-size: 0.9rem !important;
-}
-
-.swagger-ui table.model .prop-format {
-    color: #94a3b8 !important;
-    font-size: 0.82rem !important;
-    font-style: italic !important;
-}
-
-.swagger-ui table.model .prop-enum {
-    color: #fbbf24 !important;
-    font-size: 0.85rem !important;
-}
-
-.swagger-ui table.model .prop-default {
-    color: #34d399 !important;
-    font-size: 0.85rem !important;
-}
-
-.swagger-ui table.model .renderedMarkdown p,
-.swagger-ui table.model .description {
-    color: #e2e8f0 !important;
-    font-size: 0.9rem !important;
-    line-height: 1.5 !important;
-}
-
-.swagger-ui table.model .star {
-    color: #ef4444 !important;
-    font-weight: 800 !important;
-}
-
-/* ─── Modal UX (Auth Dialogs) ─── */
-.swagger-ui .dialog-ux .backdrop-ux {
-    background: rgba(0, 0, 0, 0.85) !important;
-    backdrop-filter: blur(8px) !important;
-}
-
-.swagger-ui .dialog-ux .modal-ux {
-    background: #0f172a !important;
-    border: 1px solid rgba(99, 102, 241, 0.5) !important;
-    border-radius: 16px !important;
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.9) !important;
-    color: #ffffff !important;
-}
-
-.swagger-ui .dialog-ux .modal-ux-header {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
-    padding: 1.25rem 1.75rem !important;
-}
-
-.swagger-ui .dialog-ux .modal-ux-header h3 {
-    color: #ffffff !important;
-    font-weight: 800 !important;
-    font-size: 1.3rem !important;
-}
-
-.swagger-ui .dialog-ux .modal-ux-header .close-modal svg {
-    fill: #cbd5e1 !important;
-}
-
-.swagger-ui .dialog-ux .modal-ux-content {
-    color: #e2e8f0 !important;
-    padding: 1.75rem !important;
-}
-
-.swagger-ui .dialog-ux .modal-ux-content h4 {
-    color: #ffffff !important;
-}
-
-.swagger-ui .dialog-ux .modal-ux-content p {
-    color: #cbd5e1 !important;
 }

@@ -340,16 +340,19 @@ _SWAGGER_CYBER_DARK_HTML: Final[str] = """<!DOCTYPE html>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
-    <link rel="stylesheet" href="/dashboard/styles.css?v=4">
-    <link rel="stylesheet" href="/dashboard/swagger_dark.css?v=4">
+    <link rel="stylesheet" href="/dashboard/styles.css?v=5">
+    <link rel="stylesheet" href="/dashboard/swagger_dark.css?v=5">
     <style>
         .swagger-ui .scheme-container { background: transparent !important; box-shadow: none !important; border: none !important; }
         .swagger-ui section.models { background: #0f172a !important; border: 1px solid rgba(99, 102, 241, 0.4) !important; }
         .swagger-ui section.models .model-container { background: #111827 !important; border: 1px solid rgba(255, 255, 255, 0.12) !important; }
-        .swagger-ui .model-title { color: #38bdf8 !important; font-weight: 800 !important; }
+        .swagger-ui .json-schema-2020-12, .swagger-ui .json-schema-2020-12 button, .swagger-ui .json-schema-2020-12-accordion, .swagger-ui .model-box, .swagger-ui .model-box button, .swagger-ui .model-box-control, .swagger-ui .models-control { background: transparent !important; background-color: transparent !important; border: none !important; box-shadow: none !important; }
+        .swagger-ui .json-schema-2020-12__title, .swagger-ui .model-title, .swagger-ui span.model-title__text { color: #38bdf8 !important; font-family: 'JetBrains Mono', monospace !important; font-weight: 800 !important; }
+        .swagger-ui .json-schema-2020-12__attribute { color: #a78bfa !important; font-family: 'JetBrains Mono', monospace !important; }
         .swagger-ui .model { color: #f8fafc !important; }
     </style>
 </head>
+
 
 
 <body>
