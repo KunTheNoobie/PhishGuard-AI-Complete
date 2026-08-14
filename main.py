@@ -340,8 +340,9 @@ _SWAGGER_CYBER_DARK_HTML: Final[str] = """<!DOCTYPE html>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
-    <link rel="stylesheet" href="/dashboard/styles.css?v=6">
-    <link rel="stylesheet" href="/dashboard/swagger_dark.css?v=6">
+    <link rel="stylesheet" href="/dashboard/styles.css?v=7">
+    <link rel="stylesheet" href="/dashboard/swagger_dark.css?v=7">
+
     <style>
         .swagger-ui .scheme-container { background: transparent !important; box-shadow: none !important; border: none !important; }
         .swagger-ui section.models { background: #0f172a !important; border: 1px solid rgba(99, 102, 241, 0.4) !important; }
@@ -409,6 +410,12 @@ _SWAGGER_CYBER_DARK_HTML: Final[str] = """<!DOCTYPE html>
                 url: '/openapi.json',
                 dom_id: '#swagger-ui',
                 deepLinking: true,
+                docExpansion: 'list',
+                filter: true,
+                defaultModelsExpandDepth: 1,
+                defaultModelExpandDepth: 1,
+                showExtensions: true,
+                showCommonExtensions: true,
                 presets: [
                     SwaggerUIBundle.presets.apis,
                     SwaggerUIBundle.SwaggerUIStandalonePreset
@@ -419,6 +426,7 @@ _SWAGGER_CYBER_DARK_HTML: Final[str] = """<!DOCTYPE html>
     </script>
 </body>
 </html>
+
 """
 
 
