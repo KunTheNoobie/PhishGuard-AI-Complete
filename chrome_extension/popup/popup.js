@@ -14,6 +14,11 @@ const apiBaseUrl = document.getElementById("apiBaseUrl");
 const apiToken = document.getElementById("apiToken");
 const saveSettingsButton = document.getElementById("saveSettingsButton");
 const trustSiteBtn = document.getElementById("trustSiteBtn");
+const reportSafeBtn = document.getElementById("reportSafeBtn");
+
+// Gauge DOM
+const gaugeProgress = document.getElementById("gaugeProgress");
+const gaugeScore = document.getElementById("gaugeScore");
 
 // Tabs & History DOM
 const tabScannerBtn = document.getElementById("tabScannerBtn");
@@ -26,11 +31,11 @@ const clearHistoryBtn = document.getElementById("clearHistoryBtn");
 let activeScanResult = null;
 
 const STATUS_TITLES = {
-  safe: "Page looks safe",
-  suspicious: "Suspicious page",
-  dangerous: "Potential phishing page",
-  unavailable: "Backend unavailable",
-  neutral: "No page result yet"
+  safe: "Page Looks Safe",
+  suspicious: "Suspicious Activity",
+  dangerous: "Phishing Threat Intercepted",
+  unavailable: "Backend Unavailable",
+  neutral: "No Page Result Yet"
 };
 
 function sendRuntimeMessage(message) {
@@ -112,6 +117,24 @@ function setBadge(element, text, status) {
   element.className = `module-value ${status || "neutral"}`;
 }
 
+function updateGauge(scoreFraction, riskLevel) {
+  if (!gaugeProgress || !gaugeScore) return;
+  const circumference = 201.06; // 2 * PI * 32
+  const score = Math.max(0, Math.min(1, scoreFraction || 0));
+  const offset = circumference * (1 - score);
+  
+  gaugeProgress.style.strokeDashoffset = offset;
+  gaugeScore.textContent = `${Math.round(score * 100)}%`;
+
+  if (riskLevel === "dangerous" || score >= 0.75) {
+    gaugeProgress.style.stroke = "#ef4444";
+  } else if (riskLevel === "suspicious" || score >= 0.50) {
+    gaugeProgress.style.stroke = "#f59e0b";
+  } else {
+    gaugeProgress.style.stroke = "#10b981";
+  }
+}
+
 function riskForSemantic(semanticAnalysis) {
   if (!semanticAnalysis) return "unavailable";
   return semanticAnalysis.is_malicious ? "dangerous" : "safe";
@@ -137,6 +160,8 @@ function renderEmptyState() {
   reasonText.textContent = "Open an HTTP or HTTPS page and scan it.";
   logoList.innerHTML = "";
   trustSiteBtn.classList.add("hidden");
+  if (reportSafeBtn) reportSafeBtn.classList.add("hidden");
+  updateGauge(0, "neutral");
   setBadge(visualStatus, "Waiting", "neutral");
   setBadge(semanticStatus, "Waiting", "neutral");
   setBadge(muleStatus, "Waiting", "neutral");
@@ -147,10 +172,12 @@ function renderScanning(tab) {
   setPanelState("neutral");
   currentDomain.textContent = tab && tab.url ? hostFromUrl(tab.url) || "Current page" : "Current page";
   scanTime.textContent = "Scanning";
-  statusTitle.textContent = "Scanning page";
-  reasonText.textContent = "Please wait while this page is checked.";
+  statusTitle.textContent = "Inspecting Security Vectors...";
+  reasonText.textContent = "Analyzing BERT semantics, YOLOv8 logos, and DuitNow mule registry.";
   logoList.innerHTML = "";
   trustSiteBtn.classList.add("hidden");
+  if (reportSafeBtn) reportSafeBtn.classList.add("hidden");
+  updateGauge(0.5, "suspicious");
   setBadge(visualStatus, "Scanning", "neutral");
   setBadge(semanticStatus, "Scanning", "neutral");
   setBadge(muleStatus, "Scanning", "neutral");
@@ -181,6 +208,17 @@ function renderResult(result) {
   const muleScan = result.mule_scan ||
     (result.semantic && result.semantic.data ? result.semantic.data.mule_scan : null);
   const logos = result.detected_logos || (visualResult ? visualResult.detected_logos : []) || [];
+
+  // Gauge computation
+  let computedScore = 0.05;
+  if (risk === "dangerous" || result.final_verdict === "BLOCK_RENDER") {
+    computedScore = semanticAnalysis && semanticAnalysis.confidence ? semanticAnalysis.confidence : 0.95;
+  } else if (risk === "suspicious") {
+    computedScore = 0.65;
+  } else if (risk === "safe") {
+    computedScore = 0.02;
+  }
+  updateGauge(computedScore, risk);
 
   const visualRisk = visualResult && visualResult.risk_level ? visualResult.risk_level : "unavailable";
   setBadge(visualStatus, visualRisk.charAt(0).toUpperCase() + visualRisk.slice(1), visualRisk);
@@ -225,6 +263,7 @@ function renderResult(result) {
   // Trust Domain Button
   if (domain && domain !== "No domain" && domain !== "Unknown domain") {
     trustSiteBtn.classList.remove("hidden");
+    if (reportSafeBtn) reportSafeBtn.classList.remove("hidden");
     if (result.custom_trusted) {
       trustSiteBtn.classList.add("trusted");
       trustSiteBtn.textContent = `✓ Trusted (${domain})`;
@@ -236,6 +275,7 @@ function renderResult(result) {
     }
   } else {
     trustSiteBtn.classList.add("hidden");
+    if (reportSafeBtn) reportSafeBtn.classList.add("hidden");
   }
 }
 
@@ -256,7 +296,6 @@ async function saveToScanHistory(result) {
       timestamp: result.analyzed_at || new Date().toISOString()
     };
 
-    // Prepend and keep max 10
     history = [entry, ...history.filter(h => h.url !== entry.url)].slice(0, 10);
     chrome.storage.local.set({ phishguard_history: history }, () => {
       renderHistory();
@@ -291,7 +330,7 @@ function clearHistory() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// TRUST DOMAIN ACTION
+// ACTIONS
 // ═══════════════════════════════════════════════════════════════════
 
 async function handleTrustDomain() {
@@ -309,8 +348,14 @@ async function handleTrustDomain() {
   trustSiteBtn.textContent = `✓ Trusted (${domain})`;
   trustSiteBtn.disabled = true;
 
-  // Re-scan with trusted state
   scanActivePage();
+}
+
+function handleReportSafe() {
+  if (!activeScanResult) return;
+  const domain = activeScanResult.page_host || hostFromUrl(activeScanResult.page_url);
+  handleTrustDomain();
+  alert(`Domain '${domain}' has been whitelisted and recorded as safe.`);
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -400,7 +445,7 @@ async function saveSettings() {
   });
   saveSettingsButton.textContent = "Saved";
   window.setTimeout(() => {
-    saveSettingsButton.textContent = "Save";
+    saveSettingsButton.textContent = "Save Settings";
   }, 1000);
 }
 
@@ -409,6 +454,7 @@ tabScannerBtn.addEventListener("click", () => showTab("scanner"));
 tabHistoryBtn.addEventListener("click", () => showTab("history"));
 clearHistoryBtn.addEventListener("click", clearHistory);
 trustSiteBtn.addEventListener("click", handleTrustDomain);
+if (reportSafeBtn) reportSafeBtn.addEventListener("click", handleReportSafe);
 scanButton.addEventListener("click", scanActivePage);
 saveSettingsButton.addEventListener("click", saveSettings);
 

@@ -23,14 +23,17 @@ PhishGuard-AI is an end-to-end cybersecurity solution protecting users from adva
 ## 🚀 Key Features
 
 ### 🛡️ Chrome Extension (Manifest V3)
+- **Circular Threat Risk Gauge:** Interactive animated SVG score meter (0–100%) displaying real-time AI threat severity.
 - **Full-Screen Interception (`BLOCK_RENDER`):** Replaces dangerous phishing pages with a full-screen red security alert screen detailing the exact threat vectors (BERT score, flagged mule accounts) and providing a **"Back to Safety"** escape route.
 - **Explainable AI (XAI) Keyword Highlighting:** Highlights detected social engineering phrases (*"urgent verification"*, *"account suspended"*, *"transfer deposit"*) with in-page warnings and explanatory tooltips.
 - **Offline Typo-Squatting Resilience:** Detects domain spoofing targeting Malaysian banks (e.g. `maybannk2u.com.my`, `cimb-clicks-verify.com`) locally via Levenshtein edit distance even if the server is offline.
 - **Native OS Push Notifications:** Sends instant desktop notifications via `chrome.notifications` when a dangerous page is intercepted.
 - **Scan History (Last 10 Scans):** Built-in history tab in the popup preserving recent scan results with color-coded risk badges and timestamps.
-- **24-Hour Custom Domain Whitelisting:** Quickly trust development or private domains with the **"Trust Domain (24h)"** action.
+- **24-Hour Custom Domain Whitelisting:** Quickly trust development or private domains with the **"Trust Domain (24h)"** action or **"Report Safe"** button.
 
 ### 📊 Live Threat Intelligence Dashboard
+- **Admin Threat Inspector (Quick Scanner):** Directly paste and inspect any suspicious URL or scam text from the dashboard without needing browser extension interaction.
+- **Synthesized Audio Threat Alerts:** Instant Web Audio API audio chimes when high-risk threats are received in the live telemetry stream.
 - **Visual Analytics Charts:**
   - **Targeted Institutions (SVG Donut Chart):** Real-time breakdown of targeted financial institutions.
   - **24h Threat Velocity (Bar Timeline):** Hourly attack trends and peak detection frequencies.
@@ -57,8 +60,8 @@ PhishGuard-AI is an end-to-end cybersecurity solution protecting users from adva
 | **AI / Machine Learning** | PyTorch, Transformers (BERT), Ultralytics (YOLOv8) |
 | **Real-Time Streaming** | Server-Sent Events (SSE) via `asyncio.Queue` |
 | **Caching & Storage** | In-Memory SHA-256 TTL Cache, SQLite (aiosqlite) with WAL Mode |
-| **Browser Extension** | Manifest V3, Vanilla JavaScript, CSS3, `chrome.notifications` |
-| **Dashboard** | HTML5, Vanilla JavaScript, Responsive SVG Charts, Glassmorphism CSS |
+| **Browser Extension** | Manifest V3, Vanilla JavaScript, Dark Glassmorphism CSS, `chrome.notifications` |
+| **Dashboard** | HTML5, Vanilla JavaScript, Responsive SVG Charts, Web Audio API, Glassmorphism CSS |
 | **Containerization** | Docker, Docker Compose |
 
 ---
@@ -113,7 +116,7 @@ docker-compose logs -f
 
 ## 🧪 Running Automated Tests
 
-Run the full Pytest suite (81 unit and integration tests):
+Run the full Pytest suite (83 unit and integration tests):
 ```powershell
 .\venv\Scripts\python.exe -m pytest
 ```
@@ -128,13 +131,13 @@ PhishGuard-AI-Complete/
 ├── chrome_extension/      # MV3 Extension (Service Worker, Content Script, Popup UI)
 │   ├── background/        # Service worker (Levenshtein typosquatting, 24h whitelist, notifications)
 │   ├── content/           # Content script (Full-Screen BLOCK_RENDER, in-page XAI keyword highlights)
-│   └── popup/             # Popup UI (Scanner & Scan History tabs)
+│   └── popup/             # Popup UI (Circular SVG Risk Gauge, Scanner & History tabs)
 ├── core/                  # Configuration, DuitNow & Bank Regex, Security Settings
 ├── dashboard/             # Threat Intelligence Dashboard (HTML, SVG Charts, SSE Stream, Export, Search)
 ├── database/              # SQLite 3NF Schema, Repository CRUD & SSE Broadcaster, Seed Data
 ├── schemas/               # Pydantic validation models
 ├── services/              # BERT NLP Engine, YOLOv8, Mule & DuitNow Scanner, SHA-256 Cache
-├── tests/                 # 81 Unit & Integration tests
+├── tests/                 # 83 Unit & Integration tests
 ├── Dockerfile             # Container definition
 ├── docker-compose.yml     # Container orchestration
 ├── .env.example           # Configuration template

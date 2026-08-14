@@ -128,3 +128,24 @@ class TestDashboardEnhancements:
         finally:
             await db.close()
 
+    @pytest.mark.asyncio
+    async def test_system_health(self, test_client: AsyncClient) -> None:
+        resp = await test_client.get("/api/v1/dashboard/system-health")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["status"] == "healthy"
+        assert "cache" in data
+        assert "models" in data
+
+    @pytest.mark.asyncio
+    async def test_quick_scan_threat(self, test_client: AsyncClient) -> None:
+        resp = await test_client.post(
+            "/api/v1/dashboard/quick-scan",
+            json={"url": "http://scam-bank.test", "text_content": "Urgent pay to DuitNow 012-3456789"}
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["verdict"] == "BLOCK_RENDER"
+        assert data["mule_detected"] is True
+
+

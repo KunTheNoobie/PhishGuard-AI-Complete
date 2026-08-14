@@ -577,6 +577,100 @@ async function handleSimToggle() {
     }
 }
 
+// Audio Alert Synthesizer (Web Audio API)
+let soundAlertEnabled = false;
+const $audioToggleBtn = document.getElementById("audioToggleBtn");
+const $audioStatusText = document.getElementById("audioStatusText");
+
+function playThreatAlertSound() {
+    if (!soundAlertEnabled) return;
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(880, ctx.currentTime); // A5
+        osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.25);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.25);
+    } catch (_e) {}
+}
+
+if ($audioToggleBtn) {
+    $audioToggleBtn.addEventListener("click", () => {
+        soundAlertEnabled = !soundAlertEnabled;
+        if (soundAlertEnabled) {
+            $audioToggleBtn.classList.add("active");
+            $audioStatusText.textContent = "Sound: ON";
+            playThreatAlertSound();
+        } else {
+            $audioToggleBtn.classList.remove("active");
+            $audioStatusText.textContent = "Sound: OFF";
+        }
+    });
+}
+
+// Quick URL Scanner Handler
+const $quickScanForm = document.getElementById("quickScanForm");
+const $quickScanInput = document.getElementById("quickScanInput");
+const $quickScanBtn = document.getElementById("quickScanBtn");
+const $quickScanResult = document.getElementById("quickScanResult");
+const $healthText = document.getElementById("healthText");
+
+async function refreshSystemHealth() {
+    try {
+        const health = await apiFetch("/system-health");
+        if ($healthText) {
+            $healthText.textContent = `AI Engine: Online • Cache: ${health.cache.active_entries} entries • DB: 3NF Active`;
+        }
+    } catch (_e) {}
+}
+
+if ($quickScanForm) {
+    $quickScanForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const val = $quickScanInput.value.trim();
+        if (!val) return;
+
+        $quickScanBtn.disabled = true;
+        $quickScanBtn.textContent = "Inspecting...";
+
+        try {
+            const res = await apiFetch("/quick-scan", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url: val, text_content: val })
+            });
+
+            $quickScanResult.classList.remove("hidden", "safe", "dangerous");
+            const isDanger = res.verdict === "BLOCK_RENDER" || res.mule_detected;
+            $quickScanResult.classList.add(isDanger ? "dangerous" : "safe");
+
+            const muleStr = res.mule_detected
+                ? `⚠️ Flagged Mule Account Detected: ${res.flagged_accounts.map(a => a.account_number + ' (' + a.bank_name + ')').join(", ")}`
+                : "✅ No Mule Accounts Detected";
+
+            $quickScanResult.innerHTML = `
+                <div>
+                    <strong>Verdict: ${res.verdict}</strong> — Score: ${(res.score * 100).toFixed(1)}%<br>
+                    <span style="font-size: 0.8rem; opacity: 0.9;">${muleStr}</span>
+                </div>
+                <button class="action-btn" onclick="document.getElementById('quickScanResult').classList.add('hidden')">Dismiss</button>
+            `;
+            if (isDanger) playThreatAlertSound();
+        } catch (err) {
+            alert("Scan failed: " + err.message);
+        } finally {
+            $quickScanBtn.disabled = false;
+            $quickScanBtn.textContent = "Inspect Target";
+        }
+    });
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // BOOTSTRAP & EVENT LISTENERS
 // ═══════════════════════════════════════════════════════════════════
@@ -616,5 +710,7 @@ $addMuleForm.addEventListener("submit", handleAddMuleSubmit);
 
 // Initial load & stream
 refreshAll();
+refreshSystemHealth();
 initSseStream();
 setInterval(refreshAll, REFRESH_MS);
+setInterval(refreshSystemHealth, 10_000);

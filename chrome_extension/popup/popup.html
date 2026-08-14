@@ -10,66 +10,100 @@
   <body>
     <main class="popup-shell">
       <header class="topbar">
-        <div>
-          <h1>PhishGuard-AI</h1>
-          <p>Multi-Modal Security Engine</p>
+        <div class="brand-group">
+          <div class="brand-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div>
+            <h1>PhishGuard-AI</h1>
+            <p>Enterprise Browser Shield</p>
+          </div>
         </div>
         <span id="statusPill" class="status-pill neutral">Waiting</span>
       </header>
 
       <!-- ─── Navigation Tabs ─── -->
       <nav class="popup-tabs">
-        <button id="tabScannerBtn" class="tab-btn active" type="button">Scanner</button>
-        <button id="tabHistoryBtn" class="tab-btn" type="button">Scan History</button>
+        <button id="tabScannerBtn" class="tab-btn active" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          Scanner
+        </button>
+        <button id="tabHistoryBtn" class="tab-btn" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Scan History
+        </button>
       </nav>
 
       <!-- ─── SCANNER VIEW ─── -->
       <div id="scannerView" class="tab-view active">
         <section id="resultPanel" class="result-panel neutral">
           <div class="scan-meta">
-            <span id="currentDomain">No domain</span>
-            <span id="scanTime">Not scanned</span>
+            <span id="currentDomain" class="current-domain">No domain</span>
+            <span id="scanTime" class="scan-time">Not scanned</span>
           </div>
-          <div id="statusTitle" class="status-title">No page result yet</div>
-          <p id="reasonText" class="reason">Open an HTTP or HTTPS page and scan it.</p>
+
+          <!-- Circular Risk Gauge & Status Title -->
+          <div class="gauge-status-row">
+            <div class="gauge-wrapper">
+              <svg class="gauge-svg" viewBox="0 0 80 80">
+                <circle class="gauge-bg" cx="40" cy="40" r="32"></circle>
+                <circle id="gaugeProgress" class="gauge-fill" cx="40" cy="40" r="32"></circle>
+              </svg>
+              <div class="gauge-text">
+                <span id="gaugeScore">0%</span>
+                <small>RISK</small>
+              </div>
+            </div>
+            <div class="status-info">
+              <div id="statusTitle" class="status-title">No page result yet</div>
+              <p id="reasonText" class="reason">Open an HTTP or HTTPS page and scan it.</p>
+            </div>
+          </div>
+
           <ul id="logoList" class="logo-list"></ul>
+
           <div class="result-actions">
-            <button id="trustSiteBtn" class="trust-btn hidden" type="button">✓ Trust Domain (24h)</button>
+            <button id="trustSiteBtn" class="action-pill-btn hidden" type="button">✓ Trust Domain (24h)</button>
+            <button id="reportSafeBtn" class="action-pill-btn hidden" type="button">🛡️ Report Safe</button>
           </div>
         </section>
 
+        <!-- Multi-Modal Modules Breakdown -->
         <section class="module-panel" aria-label="Analysis modules">
           <div class="module-row">
-            <span>Visual Match</span>
+            <span class="module-label">Visual Match</span>
             <strong id="visualStatus" class="module-value neutral">Waiting</strong>
           </div>
           <div class="module-row">
-            <span>BERT Semantic</span>
+            <span class="module-label">BERT Semantic</span>
             <strong id="semanticStatus" class="module-value neutral">Waiting</strong>
           </div>
           <div class="module-row">
-            <span>Mule Account</span>
+            <span class="module-label">Mule & DuitNow</span>
             <strong id="muleStatus" class="module-value neutral">Waiting</strong>
           </div>
           <div class="module-row">
-            <span>Final Verdict</span>
+            <span class="module-label">Final Verdict</span>
             <strong id="finalVerdict" class="module-value neutral">Waiting</strong>
           </div>
         </section>
 
-        <button id="scanButton" class="primary-button" type="button">Scan Page</button>
+        <button id="scanButton" class="primary-button" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          Scan Page
+        </button>
 
         <details class="settings">
-          <summary>Backend Settings</summary>
+          <summary>Backend & Connection</summary>
           <label>
-            API URL
-            <input id="apiBaseUrl" type="text" autocomplete="off">
+            API Base URL
+            <input id="apiBaseUrl" type="text" autocomplete="off" placeholder="http://127.0.0.1:8000">
           </label>
           <label>
-            API Token
+            API Secret Key
             <input id="apiToken" type="password" autocomplete="off">
           </label>
-          <button id="saveSettingsButton" class="secondary-button" type="button">Save</button>
+          <button id="saveSettingsButton" class="secondary-button" type="button">Save Settings</button>
         </details>
       </div>
 
