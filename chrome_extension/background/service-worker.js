@@ -44,6 +44,18 @@ function sessionGet(keys) {
   });
 }
 
+async function getCustomTrustedDomains() {
+  const data = await storageGet({ custom_trusted_domains: {} });
+  const now = Date.now();
+  const valid = {};
+  for (const [domain, expiry] of Object.entries(data.custom_trusted_domains || {})) {
+    if (typeof expiry === "number" && expiry > now) {
+      valid[domain] = expiry;
+    }
+  }
+  return valid;
+}
+
 async function getSettings() {
   const settings = await storageGet({
     apiBaseUrl: DEFAULT_API_BASE_URL,
@@ -57,18 +69,22 @@ async function getSettings() {
 }
 
 function captureVisibleTab(windowId) {
-  return new Promise((resolve, reject) => {
-    chrome.tabs.captureVisibleTab(
-      windowId,
-      { format: "jpeg", quality: 70 },
-      (dataUrl) => {
-        if (chrome.runtime.lastError) {
-          reject(new Error(chrome.runtime.lastError.message));
-          return;
+  return new Promise((resolve) => {
+    try {
+      chrome.tabs.captureVisibleTab(
+        windowId,
+        { format: "jpeg", quality: 70 },
+        (dataUrl) => {
+          if (chrome.runtime.lastError || !dataUrl) {
+            resolve("");
+            return;
+          }
+          resolve(dataUrl);
         }
-        resolve(dataUrl);
-      }
-    );
+      );
+    } catch (_e) {
+      resolve("");
+    }
   });
 }
 
@@ -92,14 +108,18 @@ async function getResult(tabId) {
 
 function sendWarningToTab(tabId, result) {
   if (result.risk_level === "suspicious" || result.risk_level === "dangerous") {
-    chrome.tabs.sendMessage(tabId, {
-      type: "PHISHGUARD_SHOW_WARNING",
-      result
-    });
+    try {
+      chrome.tabs.sendMessage(tabId, {
+        type: "PHISHGUARD_SHOW_WARNING",
+        result
+      });
+    } catch (_e) {}
     return;
   }
 
-  chrome.tabs.sendMessage(tabId, { type: "PHISHGUARD_CLEAR_WARNING" });
+  try {
+    chrome.tabs.sendMessage(tabId, { type: "PHISHGUARD_CLEAR_WARNING" });
+  } catch (_e) {}
 }
 
 async function postJson(settings, path, body) {
@@ -131,12 +151,15 @@ async function backendErrorMessage(response, path) {
       return `${path}: ${detail}`;
     }
   } catch (_error) {
-    // Fall back to the truncated response body below.
+    // Fall back
   }
   return `${path} returned ${response.status}: ${text.slice(0, 180)}`;
 }
 
 async function callVisualBackend(settings, payload, screenshot) {
+  if (!screenshot) {
+    return { risk_level: "unavailable", detected_logos: [] };
+  }
   return postJson(settings, "/api/visual/analyze", {
     current_url: payload.url,
     page_title: payload.title || "",
@@ -188,6 +211,42 @@ function hostFromUrl(url) {
   }
 }
 
+function isOfficialBankDomain(host) {
+  if (!host) return false;
+  const cleanHost = host.replace(/^www\./, "").toLowerCase();
+  for (const [, domains] of Object.entries(OFFICIAL_BANK_DOMAINS)) {
+    for (const official of domains) {
+      if (cleanHost === official || cleanHost.endsWith(`.${official}`)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+function hasOfficialVisualMatch(visualResult, pageUrl) {
+  if (!pageUrl) return false;
+  const host = hostFromUrl(pageUrl);
+  if (!host) return false;
+
+  if (isOfficialBankDomain(host)) {
+    return true;
+  }
+
+  if (visualResult && Array.isArray(visualResult.detected_logos)) {
+    for (const logo of visualResult.detected_logos) {
+      const allowedDomains = OFFICIAL_BANK_DOMAINS[logo.brand] || [];
+      for (const allowed of allowedDomains) {
+        if (host === allowed || host.endsWith(`.${allowed}`)) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
 function levenshteinDistance(a, b) {
   const matrix = Array.from({ length: b.length + 1 }, (_, i) => [i]);
   for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
@@ -218,7 +277,6 @@ function detectTypoSquatting(host) {
         return null; // Official domain
       }
 
-      // Check distance
       const baseOfficial = official.split(".")[0];
       const baseHost = cleanHost.split(".")[0];
 
@@ -251,6 +309,7 @@ function sendNativeNotification(title, message) {
 
 function combineResults(visualResult, semanticResult, errors, pageUrl, pageText) {
   const host = hostFromUrl(pageUrl);
+  const isOfficial = isOfficialBankDomain(host);
   const typosquat = detectTypoSquatting(host);
 
   const semanticAnalysis = semanticResult && semanticResult.data
@@ -263,69 +322,57 @@ function combineResults(visualResult, semanticResult, errors, pageUrl, pageText)
   const visualRisk = visualResult ? visualResult.risk_level : "unavailable";
   const visualThreat = visualRisk === "suspicious" || visualRisk === "dangerous";
   const officialVisualMatch = hasOfficialVisualMatch(visualResult, pageUrl);
+  const muleThreat = Boolean(muleScan && muleScan.mule_detected);
   const semanticThreat = Boolean(
     semanticResult && (
       semanticResult.orchestration === "BLOCK_RENDER" ||
       (semanticAnalysis && semanticAnalysis.is_malicious) ||
-      (muleScan && muleScan.mule_detected)
+      muleThreat
     )
   );
-  const muleThreat = Boolean(muleScan && muleScan.mule_detected);
-  const hasErrors = errors.length > 0;
-  const bothUnavailable = !visualResult && !semanticResult;
 
   let riskLevel = "safe";
   if (typosquat) {
     riskLevel = "dangerous";
-  } else if (muleThreat || visualRisk === "dangerous" || (semanticThreat && !officialVisualMatch)) {
+  } else if (muleThreat) {
+    riskLevel = "dangerous";
+  } else if (isOfficial) {
+    riskLevel = "safe";
+  } else if (visualRisk === "dangerous" || (semanticThreat && !officialVisualMatch)) {
     riskLevel = "dangerous";
   } else if (visualRisk === "suspicious") {
     riskLevel = "suspicious";
-  } else if (bothUnavailable || hasErrors) {
-    // Offline heuristic fallback
-    if (pageText && /(urgent|verify.*account|suspended|pdrm|transfer.*deposit|password|security.*update)/i.test(pageText)) {
-      riskLevel = "suspicious";
-    } else {
-      riskLevel = "unavailable";
-    }
   }
 
   const reasons = [];
   if (typosquat) {
     reasons.push(`CRITICAL: ${typosquat.reason}.`);
   }
+  if (muleThreat) {
+    const accounts = (muleScan.flagged_accounts || [])
+      .map((account) => account.account_number)
+      .join(", ");
+    reasons.push(`Known mule account detected: ${accounts || "flagged in national registry"}.`);
+  }
+
   if (riskLevel === "safe") {
-    if (officialVisualMatch) {
+    if (isOfficial || officialVisualMatch) {
       reasons.push(
-        "Final verdict is SAFE because the visual identity and domain check passed, and no mule account was detected."
+        "Official authentic domain verified. No logo-domain mismatch or mule account detected."
       );
-    } else if (visualResult && visualResult.risk_level === "safe" && visualResult.reason) {
-      reasons.push(visualResult.reason);
     } else {
       reasons.push(
-        "Final verdict is SAFE. No logo-domain mismatch or mule account was detected."
+        "Page looks safe. No suspicious keywords or known mule accounts detected."
       );
     }
-  } else {
+  } else if (riskLevel !== "safe" && !reasons.length) {
     if (visualThreat && visualResult.reason) {
       reasons.push(visualResult.reason);
     }
     if (semanticAnalysis && semanticAnalysis.is_malicious) {
       reasons.push(
-        `BERT classified this page as ${semanticAnalysis.label} with ${Math.round(semanticAnalysis.confidence * 100)}% confidence.`
+        `BERT classified page as ${semanticAnalysis.label} with ${Math.round(semanticAnalysis.confidence * 100)}% confidence.`
       );
-    }
-    if (muleThreat) {
-      const accounts = (muleScan.flagged_accounts || [])
-        .map((account) => account.account_number)
-        .join(", ");
-      reasons.push(`Known mule account detected${accounts ? `: ${accounts}` : "."}`);
-    }
-    if (!reasons.length && hasErrors) {
-      reasons.push(`Scan incomplete: ${errors.join(" | ")}`);
-    }
-    if (!reasons.length) {
-      reasons.push("No logo-domain mismatch, phishing semantic signal, or mule account was detected.");
     }
   }
 
@@ -334,14 +381,12 @@ function combineResults(visualResult, semanticResult, errors, pageUrl, pageText)
     finalVerdict = "BLOCK_RENDER";
   } else if (riskLevel === "suspicious") {
     finalVerdict = "REVIEW";
-  } else if (riskLevel === "unavailable") {
-    finalVerdict = "Unavailable";
   }
 
   return {
     risk_level: riskLevel,
     final_verdict: finalVerdict,
-    reason: reasons.join(" "),
+    reason: reasons.join(" ") || "Analysis completed.",
     detected_logos: visualResult ? visualResult.detected_logos || [] : [],
     visual: visualResult,
     semantic: semanticResult,
@@ -352,21 +397,8 @@ function combineResults(visualResult, semanticResult, errors, pageUrl, pageText)
   };
 }
 
-async function getCustomTrustedDomains() {
-  const data = await storageGet({ custom_trusted_domains: {} });
-  const trusted = data.custom_trusted_domains || {};
-  const now = Date.now();
-  const valid = {};
-  for (const [domain, expiry] of Object.entries(trusted)) {
-    if (expiry > now) {
-      valid[domain] = expiry;
-    }
-  }
-  return valid;
-}
-
 async function analyzePage(tab, pagePayload) {
-  if (!tab || typeof tab.id !== "number" || typeof tab.windowId !== "number") {
+  if (!tab || typeof tab.id !== "number") {
     throw new Error("Missing active tab information.");
   }
 

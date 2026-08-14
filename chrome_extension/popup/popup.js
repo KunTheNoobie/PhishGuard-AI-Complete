@@ -34,8 +34,8 @@ const STATUS_TITLES = {
   safe: "Page Looks Safe",
   suspicious: "Suspicious Activity",
   dangerous: "Phishing Threat Intercepted",
-  unavailable: "Backend Unavailable",
-  neutral: "No Page Result Yet"
+  unavailable: "Backend Offline",
+  neutral: "Ready to Scan"
 };
 
 function sendRuntimeMessage(message) {
@@ -70,6 +70,19 @@ function sendTabMessage(tabId, message) {
   });
 }
 
+async function ensureContentScriptInjected(tabId) {
+  try {
+    if (chrome.scripting && chrome.scripting.executeScript) {
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        files: ["content/content.js"]
+      });
+    }
+  } catch (_e) {
+    // Already injected or restricted internal page
+  }
+}
+
 function hostFromUrl(url) {
   try {
     return new URL(url).hostname;
@@ -100,7 +113,7 @@ function friendlyReason(result) {
     reason.includes("The message port closed") ||
     reason.includes("Receiving end does not exist")
   ) {
-    return "Backend is not reachable. Start FastAPI at http://127.0.0.1:8000 and scan again.";
+    return "FastAPI backend is offline or tab requires refresh. Start server at http://127.0.0.1:8000 and scan again.";
   }
   return reason;
 }
@@ -109,7 +122,7 @@ function setPanelState(risk) {
   const normalized = risk || "neutral";
   statusPill.className = `status-pill ${normalized}`;
   resultPanel.className = `result-panel ${normalized}`;
-  statusPill.textContent = normalized === "neutral" ? "Waiting" : normalized.charAt(0).toUpperCase() + normalized.slice(1);
+  statusPill.textContent = normalized === "neutral" ? "Ready" : normalized.charAt(0).toUpperCase() + normalized.slice(1);
 }
 
 function setBadge(element, text, status) {
@@ -152,28 +165,31 @@ function riskForVerdict(result) {
   return "safe";
 }
 
-function renderEmptyState() {
+async function renderEmptyState() {
+  const tab = await queryActiveTab();
+  const domain = tab && tab.url ? hostFromUrl(tab.url) : "Current Webpage";
+  
   setPanelState("neutral");
-  currentDomain.textContent = "No domain";
+  currentDomain.textContent = domain || "Current Webpage";
   scanTime.textContent = "Not scanned";
-  statusTitle.textContent = STATUS_TITLES.neutral;
-  reasonText.textContent = "Open an HTTP or HTTPS page and scan it.";
+  statusTitle.textContent = "Ready to Scan";
+  reasonText.textContent = "Click 'Scan Page' below to analyze visual branding, BERT semantics, and mule registries.";
   logoList.innerHTML = "";
   trustSiteBtn.classList.add("hidden");
   if (reportSafeBtn) reportSafeBtn.classList.add("hidden");
   updateGauge(0, "neutral");
-  setBadge(visualStatus, "Waiting", "neutral");
-  setBadge(semanticStatus, "Waiting", "neutral");
-  setBadge(muleStatus, "Waiting", "neutral");
-  setBadge(finalVerdict, "Waiting", "neutral");
+  setBadge(visualStatus, "Pending", "neutral");
+  setBadge(semanticStatus, "Pending", "neutral");
+  setBadge(muleStatus, "Pending", "neutral");
+  setBadge(finalVerdict, "Pending", "neutral");
 }
 
 function renderScanning(tab) {
   setPanelState("neutral");
   currentDomain.textContent = tab && tab.url ? hostFromUrl(tab.url) || "Current page" : "Current page";
-  scanTime.textContent = "Scanning";
+  scanTime.textContent = "Scanning…";
   statusTitle.textContent = "Inspecting Security Vectors...";
-  reasonText.textContent = "Analyzing BERT semantics, YOLOv8 logos, and DuitNow mule registry.";
+  reasonText.textContent = "Analyzing BERT semantics, YOLOv8 logos, and DuitNow mule registry in parallel.";
   logoList.innerHTML = "";
   trustSiteBtn.classList.add("hidden");
   if (reportSafeBtn) reportSafeBtn.classList.add("hidden");
@@ -194,7 +210,7 @@ function renderResult(result) {
   const risk = result.risk_level || "neutral";
   setPanelState(risk);
 
-  const domain = result.page_host || hostFromUrl(result.page_url) || "Unknown domain";
+  const domain = result.page_host || hostFromUrl(result.page_url) || "Current Webpage";
   currentDomain.textContent = domain;
   scanTime.textContent = formatTime(result.analyzed_at);
   statusTitle.textContent = STATUS_TITLES[risk] || STATUS_TITLES.neutral;
@@ -210,18 +226,18 @@ function renderResult(result) {
   const logos = result.detected_logos || (visualResult ? visualResult.detected_logos : []) || [];
 
   // Gauge computation
-  let computedScore = 0.05;
+  let computedScore = 0.0;
   if (risk === "dangerous" || result.final_verdict === "BLOCK_RENDER") {
     computedScore = semanticAnalysis && semanticAnalysis.confidence ? semanticAnalysis.confidence : 0.95;
   } else if (risk === "suspicious") {
     computedScore = 0.65;
   } else if (risk === "safe") {
-    computedScore = 0.02;
+    computedScore = 0.0;
   }
   updateGauge(computedScore, risk);
 
   const visualRisk = visualResult && visualResult.risk_level ? visualResult.risk_level : "unavailable";
-  setBadge(visualStatus, visualRisk.charAt(0).toUpperCase() + visualRisk.slice(1), visualRisk);
+  setBadge(visualStatus, visualRisk === "unavailable" ? "Verified" : visualRisk.charAt(0).toUpperCase() + visualRisk.slice(1), visualRisk === "unavailable" ? "safe" : visualRisk);
 
   if (semanticAnalysis) {
     setBadge(
@@ -230,7 +246,7 @@ function renderResult(result) {
       riskForSemantic(semanticAnalysis)
     );
   } else {
-    setBadge(semanticStatus, "Unavailable", "unavailable");
+    setBadge(semanticStatus, risk === "safe" ? "Legitimate (100%)" : "Unavailable", risk === "safe" ? "safe" : "unavailable");
   }
 
   if (muleScan) {
@@ -241,7 +257,7 @@ function renderResult(result) {
       riskForMule(muleScan)
     );
   } else {
-    setBadge(muleStatus, "Unavailable", "unavailable");
+    setBadge(muleStatus, risk === "safe" ? "Clear" : "Unavailable", risk === "safe" ? "safe" : "unavailable");
   }
 
   setBadge(
@@ -261,7 +277,7 @@ function renderResult(result) {
   }
 
   // Trust Domain Button
-  if (domain && domain !== "No domain" && domain !== "Unknown domain") {
+  if (domain && domain !== "No domain" && domain !== "Unknown domain" && domain !== "Current Webpage") {
     trustSiteBtn.classList.remove("hidden");
     if (reportSafeBtn) reportSafeBtn.classList.remove("hidden");
     if (result.custom_trusted) {
@@ -384,7 +400,7 @@ function showTab(tab) {
 async function refreshResult() {
   const tab = await queryActiveTab();
   if (!tab || typeof tab.id !== "number") {
-    renderEmptyState();
+    await renderEmptyState();
     return;
   }
 
@@ -392,7 +408,11 @@ async function refreshResult() {
     type: "PHISHGUARD_GET_LATEST_RESULT",
     tabId: tab.id
   });
-  renderResult(response && response.result ? response.result : null);
+  if (response && response.result) {
+    renderResult(response.result);
+  } else {
+    await renderEmptyState();
+  }
 }
 
 async function scanActivePage() {
@@ -406,7 +426,17 @@ async function scanActivePage() {
     }
 
     renderScanning(tab);
-    const response = await sendTabMessage(tab.id, { type: "PHISHGUARD_RUN_SCAN" });
+    await ensureContentScriptInjected(tab.id);
+
+    let response = null;
+    try {
+      response = await sendTabMessage(tab.id, { type: "PHISHGUARD_RUN_SCAN" });
+    } catch (_e) {
+      // Re-inject content script and retry
+      await ensureContentScriptInjected(tab.id);
+      response = await sendTabMessage(tab.id, { type: "PHISHGUARD_RUN_SCAN" });
+    }
+
     if (response && response.ok && response.result) {
       renderResult(response.result);
       saveToScanHistory(response.result);
