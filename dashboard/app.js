@@ -5,7 +5,7 @@
  * Fetches aggregate stats, threat telemetry, and mule-registry data
  * from the backend dashboard API and renders them into the UI.
  *
- * Auto-refreshes every 10 seconds via setInterval().
+ * Auto-refreshes every 3 seconds via setInterval().
  */
 
 "use strict";
@@ -25,26 +25,47 @@ let telemetryData = [];
 let muleData = [];
 let currentSort = { table: null, key: null, asc: null };
 
+let telemetryFilterText = "";
+let telemetryScoreFilter = "all";
+let muleFilterText = "";
+
 // ═══════════════════════════════════════════════════════════════════
 // DOM REFERENCES
 // ═══════════════════════════════════════════════════════════════════
 
-const $statThreats      = document.getElementById("statThreats");
-const $statConfidence   = document.getElementById("statConfidence");
-const $statMule         = document.getElementById("statMule");
-const $statReports      = document.getElementById("statReports");
+const $statThreats          = document.getElementById("statThreats");
+const $statConfidence       = document.getElementById("statConfidence");
+const $statMule             = document.getElementById("statMule");
+const $statReports          = document.getElementById("statReports");
 
-const $telemetryBody    = document.getElementById("telemetryBody");
-const $telemetryCount   = document.getElementById("telemetryCount");
+const $telemetryBody        = document.getElementById("telemetryBody");
+const $telemetryCount       = document.getElementById("telemetryCount");
+const $telemetrySearch      = document.getElementById("telemetrySearch");
+const $telemetryScoreFilter = document.getElementById("telemetryScoreFilter");
+const $exportTelemetryCsvBtn= document.getElementById("exportTelemetryCsvBtn");
+const $exportTelemetryJsonBtn= document.getElementById("exportTelemetryJsonBtn");
 
-const $muleBody         = document.getElementById("muleBody");
-const $muleCount        = document.getElementById("muleCount");
+const $muleBody             = document.getElementById("muleBody");
+const $muleCount            = document.getElementById("muleCount");
+const $muleSearch           = document.getElementById("muleSearch");
+const $exportMuleCsvBtn     = document.getElementById("exportMuleCsvBtn");
+const $openAddMuleModalBtn  = document.getElementById("openAddMuleModalBtn");
 
-const $simToggleBtn     = document.getElementById("simToggleBtn");
-const $statusDot        = document.getElementById("statusDot");
-const $statusText       = document.getElementById("statusText");
-const $lastRefresh      = document.getElementById("lastRefresh");
+const $simToggleBtn         = document.getElementById("simToggleBtn");
+const $statusDot            = document.getElementById("statusDot");
+const $statusText           = document.getElementById("statusText");
+const $lastRefresh          = document.getElementById("lastRefresh");
 
+// Modal Elements
+const $addMuleModal         = document.getElementById("addMuleModal");
+const $closeAddMuleModalBtn = document.getElementById("closeAddMuleModalBtn");
+const $cancelAddMuleBtn     = document.getElementById("cancelAddMuleBtn");
+const $addMuleForm          = document.getElementById("addMuleForm");
+const $muleAccountInput     = document.getElementById("muleAccountInput");
+const $muleBankInput        = document.getElementById("muleBankInput");
+const $mulePlatformInput    = document.getElementById("mulePlatformInput");
+const $muleReportsInput     = document.getElementById("muleReportsInput");
+const $saveMuleBtn          = document.getElementById("saveMuleBtn");
 
 // ═══════════════════════════════════════════════════════════════════
 // HELPERS
@@ -53,10 +74,11 @@ const $lastRefresh      = document.getElementById("lastRefresh");
 /**
  * Fetch JSON from a dashboard API endpoint.
  * @param {string} path  Relative path (e.g. "/stats")
+ * @param {RequestInit} [options]
  * @returns {Promise<Object>}
  */
-async function apiFetch(path) {
-    const res = await fetch(`${API_BASE}${path}`);
+async function apiFetch(path, options = {}) {
+    const res = await fetch(`${API_BASE}${path}`, options);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
 }
@@ -103,6 +125,24 @@ function formatTimestamp(ts) {
 }
 
 /**
+ * Trigger browser file download for given content.
+ * @param {string} filename
+ * @param {string} mimeType
+ * @param {string} content
+ */
+function downloadFile(filename, mimeType, content) {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+/**
  * Animate a stat value with a counting effect.
  * @param {HTMLElement} el    Target element
  * @param {string}      value Display value
@@ -126,7 +166,7 @@ function setStatAnimated(el, value) {
  * @returns {Array}
  */
 function sortData(data, key, asc) {
-    if (!key) return data; // Default mode (no client sorting, uses real-time API order)
+    if (!key) return data;
     return [...data].sort((a, b) => {
         let valA = a[key];
         let valB = b[key];
@@ -138,7 +178,6 @@ function sortData(data, key, asc) {
         return 0;
     });
 }
-
 
 // ═══════════════════════════════════════════════════════════════════
 // DATA FETCHING & RENDERING
@@ -161,23 +200,44 @@ async function refreshStats() {
  */
 async function refreshTelemetry() {
     const data = await apiFetch("/telemetry");
-    $telemetryCount.textContent = data.count;
     telemetryData = data.entries;
     renderTelemetry();
 }
 
 /**
- * Render telemetry entries to DOM.
+ * Render telemetry entries to DOM with client-side filtering and sorting.
  */
 function renderTelemetry() {
-    if (telemetryData.length === 0) {
+    let filtered = telemetryData;
+
+    // Apply Search Filter
+    if (telemetryFilterText) {
+        const query = telemetryFilterText.toLowerCase();
+        filtered = filtered.filter(e => 
+            String(e.log_id).includes(query) || 
+            String(e.malicious_url).toLowerCase().includes(query)
+        );
+    }
+
+    // Apply Score Filter
+    if (telemetryScoreFilter === "high") {
+        filtered = filtered.filter(e => e.bert_score >= 0.85);
+    } else if (telemetryScoreFilter === "medium") {
+        filtered = filtered.filter(e => e.bert_score >= 0.60 && e.bert_score < 0.85);
+    } else if (telemetryScoreFilter === "low") {
+        filtered = filtered.filter(e => e.bert_score < 0.60);
+    }
+
+    $telemetryCount.textContent = filtered.length;
+
+    if (filtered.length === 0) {
         $telemetryBody.innerHTML =
-            '<tr class="table-empty"><td colspan="4">No threats detected yet — system is secure.</td></tr>';
+            '<tr class="table-empty"><td colspan="4">No threats match current filter criteria.</td></tr>';
         return;
     }
 
     const displayData = sortData(
-        telemetryData, 
+        filtered, 
         currentSort.table === 'telemetry' ? currentSort.key : null, 
         currentSort.asc
     );
@@ -200,23 +260,36 @@ function renderTelemetry() {
  */
 async function refreshMuleRegistry() {
     const data = await apiFetch("/mule-registry");
-    $muleCount.textContent = data.count;
     muleData = data.accounts;
     renderMuleRegistry();
 }
 
 /**
- * Render mule accounts to DOM.
+ * Render mule accounts to DOM with search filtering and delete buttons.
  */
 function renderMuleRegistry() {
-    if (muleData.length === 0) {
+    let filtered = muleData;
+
+    if (muleFilterText) {
+        const query = muleFilterText.toLowerCase();
+        filtered = filtered.filter(a =>
+            String(a.id).includes(query) ||
+            String(a.account_number).toLowerCase().includes(query) ||
+            String(a.bank_name).toLowerCase().includes(query) ||
+            String(a.platform_flagged).toLowerCase().includes(query)
+        );
+    }
+
+    $muleCount.textContent = filtered.length;
+
+    if (filtered.length === 0) {
         $muleBody.innerHTML =
-            '<tr class="table-empty"><td colspan="6">Registry is empty.</td></tr>';
+            '<tr class="table-empty"><td colspan="7">No mule accounts match current filter.</td></tr>';
         return;
     }
 
     const displayData = sortData(
-        muleData, 
+        filtered, 
         currentSort.table === 'mule' ? currentSort.key : null, 
         currentSort.asc
     );
@@ -231,10 +304,30 @@ function renderMuleRegistry() {
                 <td>${escapeHtml(a.platform_flagged)}</td>
                 <td><span class="${reportBadgeClass(a.report_count)}">${a.report_count}</span></td>
                 <td>${formatTimestamp(a.date_added)}</td>
+                <td>
+                    <button class="action-btn action-btn--delete" onclick="handleDeleteMule(${a.id})" title="Delete mule account">
+                        Delete
+                    </button>
+                </td>
             </tr>`
         )
         .join("");
 }
+
+/**
+ * Delete a mule account.
+ * @param {number} muleId
+ */
+window.handleDeleteMule = async function(muleId) {
+    if (!confirm(`Are you sure you want to remove mule account #${muleId}?`)) return;
+
+    try {
+        await apiFetch(`/mule-registry/${muleId}`, { method: "DELETE" });
+        await refreshAll();
+    } catch (err) {
+        alert("Failed to delete mule account: " + err.message);
+    }
+};
 
 /**
  * Escape HTML entities to prevent XSS in rendered table cells.
@@ -252,24 +345,18 @@ function escapeHtml(str) {
  */
 function handleSortClick(e) {
     const th = e.currentTarget;
-    const tableId = th.closest('table').id; // 'telemetryTable' or 'muleTable'
+    const tableId = th.closest('table').id;
     const tableKey = tableId === 'telemetryTable' ? 'telemetry' : 'mule';
     const sortKey = th.getAttribute('data-sort-key');
     
-    // 1. If clicking a different column, sort ascending
     if (currentSort.table !== tableKey || currentSort.key !== sortKey) {
         currentSort = { table: tableKey, key: sortKey, asc: true };
-    } 
-    // 2. If already ascending, switch to descending
-    else if (currentSort.asc === true) {
+    } else if (currentSort.asc === true) {
         currentSort.asc = false;
-    } 
-    // 3. If already descending, reset to default mode
-    else {
+    } else {
         currentSort = { table: null, key: null, asc: null };
     }
     
-    // Update header classes for UI arrows
     document.querySelectorAll('th.sortable').forEach(el => {
         el.classList.remove('sort-asc', 'sort-desc');
     });
@@ -278,19 +365,88 @@ function handleSortClick(e) {
         th.classList.add(currentSort.asc ? 'sort-asc' : 'sort-desc');
     }
     
-    // Re-render the affected table
     if (tableKey === 'telemetry') renderTelemetry();
     if (tableKey === 'mule') renderMuleRegistry();
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// EXPORT GENERATORS
+// ═══════════════════════════════════════════════════════════════════
+
+function exportTelemetryCsv() {
+    if (!telemetryData.length) return alert("No telemetry data to export.");
+    let csv = "Log ID,Malicious URL,BERT Score,Timestamp\n";
+    for (const row of telemetryData) {
+        csv += `"${row.log_id}","${row.malicious_url.replace(/"/g, '""')}","${(row.bert_score * 100).toFixed(2)}%","${row.timestamp}"\n`;
+    }
+    downloadFile("phishguard_telemetry.csv", "text/csv;charset=utf-8;", csv);
+}
+
+function exportTelemetryJson() {
+    if (!telemetryData.length) return alert("No telemetry data to export.");
+    const json = JSON.stringify(telemetryData, null, 2);
+    downloadFile("phishguard_telemetry.json", "application/json", json);
+}
+
+function exportMuleCsv() {
+    if (!muleData.length) return alert("No mule records to export.");
+    let csv = "ID,Account Number,Bank Name,Platform Flagged,Reports,Date Added\n";
+    for (const row of muleData) {
+        csv += `"${row.id}","${row.account_number}","${row.bank_name}","${row.platform_flagged}","${row.report_count}","${row.date_added}"\n`;
+    }
+    downloadFile("phishguard_mule_registry.csv", "text/csv;charset=utf-8;", csv);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// MODAL HANDLERS
+// ═══════════════════════════════════════════════════════════════════
+
+function openAddMuleModal() {
+    $addMuleModal.classList.remove("hidden");
+    $addMuleModal.setAttribute("aria-hidden", "false");
+    $muleAccountInput.focus();
+}
+
+function closeAddMuleModal() {
+    $addMuleModal.classList.add("hidden");
+    $addMuleModal.setAttribute("aria-hidden", "true");
+    $addMuleForm.reset();
+}
+
+async function handleAddMuleSubmit(e) {
+    e.preventDefault();
+    $saveMuleBtn.disabled = true;
+    $saveMuleBtn.textContent = "Saving...";
+
+    const payload = {
+        account_number: $muleAccountInput.value.trim(),
+        bank_name: $muleBankInput.value.trim(),
+        platform_flagged: $mulePlatformInput.value.trim() || "Manual Admin Entry",
+        report_count: parseInt($muleReportsInput.value, 10) || 1
+    };
+
+    try {
+        await apiFetch("/mule-registry", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        closeAddMuleModal();
+        await refreshAll();
+    } catch (err) {
+        alert("Failed to register mule account: " + err.message);
+    } finally {
+        $saveMuleBtn.disabled = false;
+        $saveMuleBtn.textContent = "Add to Registry";
+    }
+}
 
 // ═══════════════════════════════════════════════════════════════════
 // ORCHESTRATOR
 // ═══════════════════════════════════════════════════════════════════
 
 /**
- * Master refresh — fetches all three data sources in parallel
- * and updates the connection status indicator.
+ * Master refresh — fetches all data sources in parallel.
  */
 async function refreshAll() {
     try {
@@ -301,23 +457,17 @@ async function refreshAll() {
             apiFetch("/simulator/status").catch(() => ({ simulator_running: false })),
         ]);
 
-        // Process stats
         setStatAnimated($statThreats,    stats.total_threats.toLocaleString());
         setStatAnimated($statConfidence, (stats.avg_confidence * 100).toFixed(1) + "%");
         setStatAnimated($statMule,       stats.total_mule_accounts.toLocaleString());
         setStatAnimated($statReports,    stats.total_reports.toLocaleString());
 
-        // Process telemetry
-        $telemetryCount.textContent = telemetry.count;
         telemetryData = telemetry.entries;
         renderTelemetry();
 
-        // Process mule registry
-        $muleCount.textContent = mule.count;
         muleData = mule.accounts;
         renderMuleRegistry();
         
-        // Update Simulator Button
         if (simStatus.simulator_running) {
             $simToggleBtn.classList.replace("off", "on");
             $simToggleBtn.textContent = "Simulation: ON";
@@ -326,7 +476,6 @@ async function refreshAll() {
             $simToggleBtn.textContent = "Simulation: OFF";
         }
 
-        // ── Update status indicator ──
         $statusDot.className = "status-dot live";
         $statusText.textContent = "Live";
         $lastRefresh.textContent = `Updated ${new Date().toLocaleTimeString("en-MY", { hour12: false })}`;
@@ -356,20 +505,43 @@ async function handleSimToggle() {
     }
 }
 
-
 // ═══════════════════════════════════════════════════════════════════
-// BOOTSTRAP
+// BOOTSTRAP & EVENT LISTENERS
 // ═══════════════════════════════════════════════════════════════════
 
-// Attach sorting event listeners
 document.querySelectorAll('th.sortable').forEach(th => {
     th.addEventListener('click', handleSortClick);
 });
 
 $simToggleBtn.addEventListener("click", handleSimToggle);
 
-// Initial load
-refreshAll();
+// Search and Filter Listeners
+$telemetrySearch.addEventListener("input", (e) => {
+    telemetryFilterText = e.target.value;
+    renderTelemetry();
+});
 
-// Auto-refresh every 3 seconds
+$telemetryScoreFilter.addEventListener("change", (e) => {
+    telemetryScoreFilter = e.target.value;
+    renderTelemetry();
+});
+
+$muleSearch.addEventListener("input", (e) => {
+    muleFilterText = e.target.value;
+    renderMuleRegistry();
+});
+
+// Export Listeners
+$exportTelemetryCsvBtn.addEventListener("click", exportTelemetryCsv);
+$exportTelemetryJsonBtn.addEventListener("click", exportTelemetryJson);
+$exportMuleCsvBtn.addEventListener("click", exportMuleCsv);
+
+// Modal Listeners
+$openAddMuleModalBtn.addEventListener("click", openAddMuleModal);
+$closeAddMuleModalBtn.addEventListener("click", closeAddMuleModal);
+$cancelAddMuleBtn.addEventListener("click", closeAddMuleModal);
+$addMuleForm.addEventListener("submit", handleAddMuleSubmit);
+
+// Initial load & timer
+refreshAll();
 setInterval(refreshAll, REFRESH_MS);

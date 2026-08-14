@@ -305,9 +305,47 @@ function combineResults(visualResult, semanticResult, errors, pageUrl) {
   };
 }
 
+async function getCustomTrustedDomains() {
+  const data = await storageGet({ custom_trusted_domains: {} });
+  const trusted = data.custom_trusted_domains || {};
+  const now = Date.now();
+  const valid = {};
+  for (const [domain, expiry] of Object.entries(trusted)) {
+    if (expiry > now) {
+      valid[domain] = expiry;
+    }
+  }
+  return valid;
+}
+
 async function analyzePage(tab, pagePayload) {
   if (!tab || typeof tab.id !== "number" || typeof tab.windowId !== "number") {
     throw new Error("Missing active tab information.");
+  }
+
+  const host = hostFromUrl(pagePayload.url);
+  const customTrusted = await getCustomTrustedDomains();
+
+  if (host && customTrusted[host]) {
+    const result = {
+      risk_level: "safe",
+      final_verdict: "SAFE",
+      reason: `Domain '${host}' is currently in your 24h Custom Trusted Whitelist.`,
+      detected_logos: [],
+      visual: { risk_level: "safe", detected_logos: [] },
+      semantic: null,
+      semantic_analysis: null,
+      mule_scan: null,
+      official_visual_match: true,
+      custom_trusted: true,
+      errors: []
+    };
+    result.page_url = pagePayload.url;
+    result.page_title = pagePayload.title || "";
+    result.page_host = host;
+    const saved = await saveResult(tab.id, result);
+    sendWarningToTab(tab.id, saved);
+    return saved;
   }
 
   const screenshot = await captureVisibleTab(tab.windowId);
@@ -391,6 +429,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       apiToken: message.settings.apiToken || DEFAULT_API_TOKEN
     }).then(() => {
       sendResponse({ ok: true });
+    });
+    return true;
+  }
+
+  if (message.type === "PHISHGUARD_TRUST_DOMAIN") {
+    getCustomTrustedDomains().then(async (current) => {
+      const durationMs = (message.hours || 24) * 60 * 60 * 1000;
+      current[message.domain] = Date.now() + durationMs;
+      await storageSet({ custom_trusted_domains: current });
+      sendResponse({ ok: true, trusted: current });
+    });
+    return true;
+  }
+
+  if (message.type === "PHISHGUARD_GET_TRUSTED_DOMAINS") {
+    getCustomTrustedDomains().then((trusted) => {
+      sendResponse({ ok: true, trusted });
     });
     return true;
   }

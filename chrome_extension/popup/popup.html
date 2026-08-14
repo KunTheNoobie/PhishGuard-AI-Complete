@@ -12,54 +12,78 @@
       <header class="topbar">
         <div>
           <h1>PhishGuard-AI</h1>
-          <p>Multi-Modal Check</p>
+          <p>Multi-Modal Security Engine</p>
         </div>
         <span id="statusPill" class="status-pill neutral">Waiting</span>
       </header>
 
-      <section id="resultPanel" class="result-panel neutral">
-        <div class="scan-meta">
-          <span id="currentDomain">No domain</span>
-          <span id="scanTime">Not scanned</span>
-        </div>
-        <div id="statusTitle" class="status-title">No page result yet</div>
-        <p id="reasonText" class="reason">Open an HTTP or HTTPS page and scan it.</p>
-        <ul id="logoList" class="logo-list"></ul>
-      </section>
+      <!-- ─── Navigation Tabs ─── -->
+      <nav class="popup-tabs">
+        <button id="tabScannerBtn" class="tab-btn active" type="button">Scanner</button>
+        <button id="tabHistoryBtn" class="tab-btn" type="button">Scan History</button>
+      </nav>
 
-      <section class="module-panel" aria-label="Analysis modules">
-        <div class="module-row">
-          <span>Visual</span>
-          <strong id="visualStatus" class="module-value neutral">Waiting</strong>
-        </div>
-        <div class="module-row">
-          <span>BERT Semantic</span>
-          <strong id="semanticStatus" class="module-value neutral">Waiting</strong>
-        </div>
-        <div class="module-row">
-          <span>Mule Account</span>
-          <strong id="muleStatus" class="module-value neutral">Waiting</strong>
-        </div>
-        <div class="module-row">
-          <span>Final Verdict</span>
-          <strong id="finalVerdict" class="module-value neutral">Waiting</strong>
-        </div>
-      </section>
+      <!-- ─── SCANNER VIEW ─── -->
+      <div id="scannerView" class="tab-view active">
+        <section id="resultPanel" class="result-panel neutral">
+          <div class="scan-meta">
+            <span id="currentDomain">No domain</span>
+            <span id="scanTime">Not scanned</span>
+          </div>
+          <div id="statusTitle" class="status-title">No page result yet</div>
+          <p id="reasonText" class="reason">Open an HTTP or HTTPS page and scan it.</p>
+          <ul id="logoList" class="logo-list"></ul>
+          <div class="result-actions">
+            <button id="trustSiteBtn" class="trust-btn hidden" type="button">✓ Trust Domain (24h)</button>
+          </div>
+        </section>
 
-      <button id="scanButton" class="primary-button" type="button">Scan Page</button>
+        <section class="module-panel" aria-label="Analysis modules">
+          <div class="module-row">
+            <span>Visual Match</span>
+            <strong id="visualStatus" class="module-value neutral">Waiting</strong>
+          </div>
+          <div class="module-row">
+            <span>BERT Semantic</span>
+            <strong id="semanticStatus" class="module-value neutral">Waiting</strong>
+          </div>
+          <div class="module-row">
+            <span>Mule Account</span>
+            <strong id="muleStatus" class="module-value neutral">Waiting</strong>
+          </div>
+          <div class="module-row">
+            <span>Final Verdict</span>
+            <strong id="finalVerdict" class="module-value neutral">Waiting</strong>
+          </div>
+        </section>
 
-      <details class="settings">
-        <summary>Backend Settings</summary>
-        <label>
-          API URL
-          <input id="apiBaseUrl" type="text" autocomplete="off">
-        </label>
-        <label>
-          API Token
-          <input id="apiToken" type="password" autocomplete="off">
-        </label>
-        <button id="saveSettingsButton" class="secondary-button" type="button">Save</button>
-      </details>
+        <button id="scanButton" class="primary-button" type="button">Scan Page</button>
+
+        <details class="settings">
+          <summary>Backend Settings</summary>
+          <label>
+            API URL
+            <input id="apiBaseUrl" type="text" autocomplete="off">
+          </label>
+          <label>
+            API Token
+            <input id="apiToken" type="password" autocomplete="off">
+          </label>
+          <button id="saveSettingsButton" class="secondary-button" type="button">Save</button>
+        </details>
+      </div>
+
+      <!-- ─── HISTORY VIEW ─── -->
+      <div id="historyView" class="tab-view">
+        <div class="history-header">
+          <span class="history-title">Recent Scans (Last 10)</span>
+          <button id="clearHistoryBtn" class="clear-btn" type="button">Clear</button>
+        </div>
+        <div id="historyList" class="history-list">
+          <div class="history-empty">No scan history recorded yet.</div>
+        </div>
+      </div>
+
     </main>
 
     <script src="popup.js"></script>

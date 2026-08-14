@@ -89,11 +89,27 @@
         <!-- ─── Live Threat Feed ─── -->
         <section class="panel" aria-label="Recent threat detections">
             <div class="panel__header">
-                <h2 class="panel__title">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 010 8.49m-8.48-.01a6 6 0 010-8.49m11.31-2.82a10 10 0 010 14.14m-14.14 0a10 10 0 010-14.14"/></svg>
-                    Live Threat Feed
-                </h2>
-                <span class="panel__badge" id="telemetryCount">0</span>
+                <div class="panel__header-left">
+                    <h2 class="panel__title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 010 8.49m-8.48-.01a6 6 0 010-8.49m11.31-2.82a10 10 0 010 14.14m-14.14 0a10 10 0 010-14.14"/></svg>
+                        Live Threat Feed
+                    </h2>
+                    <span class="panel__badge" id="telemetryCount">0</span>
+                </div>
+                <div class="panel__actions">
+                    <input type="text" id="telemetrySearch" class="search-input" placeholder="Search by URL / ID…" />
+                    <select id="telemetryScoreFilter" class="filter-select">
+                        <option value="all">All Confidence</option>
+                        <option value="high">High (>85%)</option>
+                        <option value="medium">Medium (60-85%)</option>
+                        <option value="low">Low (<60%)</option>
+                    </select>
+                    <button id="exportTelemetryCsvBtn" class="action-btn" title="Export Threat Telemetry as CSV">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        CSV
+                    </button>
+                    <button id="exportTelemetryJsonBtn" class="action-btn" title="Export Threat Telemetry as JSON">JSON</button>
+                </div>
             </div>
             <div class="panel__body">
                 <div class="table-wrapper">
@@ -117,11 +133,23 @@
         <!-- ─── Mule Account Registry ─── -->
         <section class="panel" aria-label="Mule account registry">
             <div class="panel__header">
-                <h2 class="panel__title">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-                    Mule Account Registry
-                </h2>
-                <span class="panel__badge" id="muleCount">0</span>
+                <div class="panel__header-left">
+                    <h2 class="panel__title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                        Mule Account Registry
+                    </h2>
+                    <span class="panel__badge" id="muleCount">0</span>
+                </div>
+                <div class="panel__actions">
+                    <input type="text" id="muleSearch" class="search-input" placeholder="Search account / bank / platform…" />
+                    <button id="openAddMuleModalBtn" class="action-btn action-btn--primary">
+                        + Add Mule
+                    </button>
+                    <button id="exportMuleCsvBtn" class="action-btn" title="Export Mule Registry as CSV">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        CSV
+                    </button>
+                </div>
             </div>
             <div class="panel__body">
                 <div class="table-wrapper">
@@ -134,15 +162,59 @@
                                 <th class="sortable" data-sort-key="platform_flagged">Platform Flagged <span class="sort-icon"></span></th>
                                 <th class="sortable" data-sort-key="report_count">Reports <span class="sort-icon"></span></th>
                                 <th class="sortable" data-sort-key="date_added">Date Added <span class="sort-icon"></span></th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="muleBody">
-                            <tr class="table-empty"><td colspan="6">Loading registry…</td></tr>
+                            <tr class="table-empty"><td colspan="7">Loading registry…</td></tr>
                         </tbody>
                     </table>
                 </div>
             </div>
         </section>
+
+        <!-- ─── Add Mule Modal Dialog ─── -->
+        <div id="addMuleModal" class="modal-overlay hidden" aria-hidden="true">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <h3 class="modal-title">Register Known Mule Account</h3>
+                    <button id="closeAddMuleModalBtn" class="modal-close-btn">&times;</button>
+                </div>
+                <form id="addMuleForm" class="modal-form">
+                    <div class="form-group">
+                        <label for="muleAccountInput">Bank Account Number *</label>
+                        <input type="text" id="muleAccountInput" required placeholder="e.g. 112233445566" />
+                    </div>
+                    <div class="form-group">
+                        <label for="muleBankInput">Bank Name *</label>
+                        <select id="muleBankInput" required>
+                            <option value="">Select Financial Institution</option>
+                            <option value="Maybank">Maybank</option>
+                            <option value="CIMB Bank">CIMB Bank</option>
+                            <option value="Public Bank">Public Bank</option>
+                            <option value="RHB Bank">RHB Bank</option>
+                            <option value="Hong Leong Bank">Hong Leong Bank</option>
+                            <option value="AmBank">AmBank</option>
+                            <option value="Bank Islam">Bank Islam</option>
+                            <option value="Bank Rakyat">Bank Rakyat</option>
+                            <option value="Other">Other Bank</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="mulePlatformInput">Source Platform Flagged</label>
+                        <input type="text" id="mulePlatformInput" placeholder="e.g. WhatsApp, Facebook, Telegram" value="Manual Admin Entry" />
+                    </div>
+                    <div class="form-group">
+                        <label for="muleReportsInput">Initial Incident Reports</label>
+                        <input type="number" id="muleReportsInput" min="1" max="999" value="1" />
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" id="cancelAddMuleBtn" class="action-btn">Cancel</button>
+                        <button type="submit" id="saveMuleBtn" class="action-btn action-btn--primary">Add to Registry</button>
+                    </div>
+                </form>
+            </div>
+        </div>
 
     </main>
 

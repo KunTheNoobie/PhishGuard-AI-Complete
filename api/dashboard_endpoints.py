@@ -150,6 +150,85 @@ async def get_mule_registry(request: Request) -> dict[str, Any]:
 
 
 # ==============================================================================
+# POST /api/v1/dashboard/mule-registry
+# ==============================================================================
+
+from pydantic import BaseModel, Field
+from fastapi import HTTPException
+from fastapi.responses import Response
+import csv
+import io
+from database.repository import add_mule_account, delete_mule_account
+
+class CreateMuleRequest(BaseModel):
+    account_number: str = Field(..., min_length=8, max_length=20)
+    bank_name: str = Field(..., min_length=2, max_length=50)
+    platform_flagged: str = Field(default="dashboard_entry", max_length=50)
+    report_count: int = Field(default=1, ge=1)
+
+
+@router.post(
+    "/mule-registry",
+    summary="Add or update a mule account",
+    response_description="Created or updated mule record.",
+)
+async def create_mule(payload: CreateMuleRequest, request: Request) -> dict[str, Any]:
+    """Add a new mule account or increment existing report count."""
+    db = request.app.state.db
+    record = await add_mule_account(
+        account_number=payload.account_number,
+        bank_name=payload.bank_name,
+        platform_flagged=payload.platform_flagged,
+        report_count=payload.report_count,
+        db=db,
+    )
+    return {"success": True, "record": record}
+
+
+@router.delete(
+    "/mule-registry/{mule_id}",
+    summary="Delete a mule account",
+)
+async def remove_mule(mule_id: int, request: Request) -> dict[str, Any]:
+    """Delete a mule account by ID."""
+    db = request.app.state.db
+    deleted = await delete_mule_account(mule_id=mule_id, db=db)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Mule account not found")
+    return {"success": True, "deleted_id": mule_id}
+
+
+# ==============================================================================
+# GET /api/v1/dashboard/telemetry/export (CSV)
+# ==============================================================================
+
+@router.get(
+    "/telemetry/export",
+    summary="Export threat telemetry as CSV",
+)
+async def export_telemetry_csv(request: Request) -> Response:
+    """Stream threat telemetry entries as a downloadable CSV file."""
+    db = request.app.state.db
+    cursor = await db.execute(
+        "SELECT log_id, malicious_url, bert_score, timestamp "
+        "FROM threat_telemetry ORDER BY log_id DESC;"
+    )
+    rows = await cursor.fetchall()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Log ID", "Malicious URL", "BERT Score", "Timestamp"])
+    for r in rows:
+        writer.writerow([r[0], r[1], f"{r[2]:.4f}", r[3]])
+
+    return Response(
+        content=output.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=phishguard_threat_telemetry.csv"},
+    )
+
+
+# ==============================================================================
 # SIMULATOR TOGGLE
 # ==============================================================================
 
@@ -171,3 +250,4 @@ async def toggle_simulator(request: Request) -> dict[str, Any]:
 async def simulator_status(request: Request) -> dict[str, Any]:
     """Check if the simulator is currently running."""
     return {"simulator_running": getattr(request.app.state, "simulator_running", False)}
+

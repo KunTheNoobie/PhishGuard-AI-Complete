@@ -128,6 +128,12 @@ def _is_trusted_domain(url: str) -> bool:
     response_description="Unified analysis envelope with orchestration verdict.",
     status_code=200,
 )
+@router.post(
+    "/analyse/semantics",
+    response_model=AnalysisResponse,
+    include_in_schema=False,
+    status_code=200,
+)
 @limiter.limit(RATE_LIMIT)
 async def analyse_semantics(
     payload: WebPayload,
@@ -198,6 +204,7 @@ async def analyse_semantics(
     semantic_engine = request.app.state.semantic_engine
     mule_scanner = request.app.state.mule_scanner
     db = request.app.state.db
+    cache = getattr(request.app.state, "cache", None)
 
     # ── 4. Trusted Domain Whitelist Check ──
     #
@@ -231,11 +238,7 @@ async def analyse_semantics(
         mule_result = await mule_scanner.scan_and_verify(sanitized_text, db)
     else:
         # ── Non-whitelisted: inject URL context into model input ──
-        #   Prepending the URL gives the BERT model domain-level signal
-        #   alongside the page content, improving classification accuracy.
         if semantic_engine is None:
-            # Engine disabled — fall back to a neutral classification
-            # and still run the mule scan for defence-in-depth.
             logger.warning(
                 "[%s] Semantic engine is disabled — returning neutral "
                 "classification for non-whitelisted URL '%s'.",
@@ -250,11 +253,20 @@ async def analyse_semantics(
             mule_result = await mule_scanner.scan_and_verify(sanitized_text, db)
         else:
             model_input: str = f"URL: {url_str} | {sanitized_text}"
+            cache_key = cache.hash_key(model_input) if cache else None
+            cached_bert = cache.get(cache_key) if cache and cache_key else None
 
-            bert_result, mule_result = await asyncio.gather(
-                semantic_engine.predict(model_input),
-                mule_scanner.scan_and_verify(sanitized_text, db),
-            )
+            if cached_bert is not None:
+                logger.info("[%s] Returning cached BERT inference result (hash=%s)", transaction_id, cache_key[:12])
+                bert_result = cached_bert
+                mule_result = await mule_scanner.scan_and_verify(sanitized_text, db)
+            else:
+                bert_result, mule_result = await asyncio.gather(
+                    semantic_engine.predict(model_input),
+                    mule_scanner.scan_and_verify(sanitized_text, db),
+                )
+                if cache and cache_key:
+                    cache.set(cache_key, bert_result)
 
     elapsed_ms: float = round(
         (time.perf_counter_ns() - start_ns) / 1_000_000, 2

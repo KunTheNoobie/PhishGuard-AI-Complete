@@ -56,6 +56,7 @@ from core.config import (
     RATE_LIMIT,
 )
 from database.init_db import initialize_database
+from services.cache_service import SemanticResultCache
 from services.mule_scanner import MuleScanner
 from services.nlp_engine import SemanticEngine
 
@@ -187,8 +188,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.semantic_engine = None
 
     # 4. Mule Scanner
-    logger.info("[4/5] Initialising Mule Scanner …")
+    logger.info("[4/5] Initialising Mule Scanner & Semantic Cache …")
     app.state.mule_scanner = MuleScanner()
+    app.state.cache = SemanticResultCache(ttl_seconds=600)
 
     # 5. Start Live Threat Simulator background task
     logger.info("[5/5] Starting Live Threat Simulator …")

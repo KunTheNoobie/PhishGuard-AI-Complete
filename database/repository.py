@@ -123,3 +123,59 @@ async def log_threat_telemetry(
         url,
         score,
     )
+
+
+# ==============================================================================
+# 3. Mule-Account Management (CRUD)
+# ==============================================================================
+
+async def add_mule_account(
+    account_number: str,
+    bank_name: str,
+    platform_flagged: str,
+    report_count: int,
+    db: aiosqlite.Connection,
+) -> dict[str, Any]:
+    """Insert or update a mule account record in the registry."""
+    query = """
+    INSERT INTO mule_registry (account_number, bank_name, platform_flagged, report_count)
+    VALUES (?, ?, ?, ?)
+    ON CONFLICT(account_number) DO UPDATE SET
+        report_count = report_count + excluded.report_count,
+        bank_name = excluded.bank_name,
+        platform_flagged = excluded.platform_flagged;
+    """
+    await db.execute(
+        query,
+        (account_number.strip(), bank_name.strip(), platform_flagged.strip(), max(1, report_count)),
+    )
+    await db.commit()
+
+    cursor = await db.execute(
+        "SELECT id, account_number, bank_name, platform_flagged, report_count, date_added "
+        "FROM mule_registry WHERE account_number = ?;",
+        (account_number.strip(),),
+    )
+    row = await cursor.fetchone()
+    return {
+        "id": row[0],
+        "account_number": row[1],
+        "bank_name": row[2],
+        "platform_flagged": row[3],
+        "report_count": row[4],
+        "date_added": row[5],
+    }
+
+
+async def delete_mule_account(
+    mule_id: int,
+    db: aiosqlite.Connection,
+) -> bool:
+    """Delete a mule account record by ID."""
+    cursor = await db.execute(
+        "DELETE FROM mule_registry WHERE id = ?;",
+        (mule_id,),
+    )
+    await db.commit()
+    return cursor.rowcount > 0
+

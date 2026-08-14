@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  phishguard-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: phishguard-ai-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - PHISHGUARD_API_KEY=phishguard_secret_key_2026
+      - PHISHGUARD_RATE_LIMIT=30/minute
+      - PHISHGUARD_MALICIOUS_THRESHOLD=0.75
+      - PHISHGUARD_ENABLE_SEMANTIC=true
+      - PHISHGUARD_DB_PATH=/app/data/phishguard.db
+    volumes:
+      - phishguard-db:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  phishguard-db:
+    driver: local
