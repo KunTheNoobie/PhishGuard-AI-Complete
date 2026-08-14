@@ -479,6 +479,14 @@ async function saveSettings() {
   }, 1000);
 }
 
+const openDashboardBtn = document.getElementById("openDashboardBtn");
+if (openDashboardBtn) {
+  openDashboardBtn.addEventListener("click", () => {
+    const base = (apiBaseUrl.value || "http://127.0.0.1:8000").replace(/\/$/, "");
+    chrome.tabs.create({ url: `${base}/dashboard/` });
+  });
+}
+
 // Event Listeners
 tabScannerBtn.addEventListener("click", () => showTab("scanner"));
 tabHistoryBtn.addEventListener("click", () => showTab("history"));
@@ -491,3 +499,4 @@ saveSettingsButton.addEventListener("click", saveSettings);
 loadSettings();
 refreshResult();
 renderHistory();
+

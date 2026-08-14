@@ -113,11 +113,48 @@ body {
     font-weight: 500;
 }
 
+/* ─── Multi-Page Navigation Bar ─── */
+.header__nav {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(15, 23, 42, 0.6);
+    padding: 0.3rem 0.4rem;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-subtle);
+}
+
+.nav-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.45rem 1rem;
+    border-radius: var(--radius-full);
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: all var(--transition);
+}
+
+.nav-tab:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.nav-tab.active {
+    color: #fff;
+    background: linear-gradient(135deg, var(--accent-indigo), #4338ca);
+    box-shadow: 0 0 16px rgba(99, 102, 241, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
 .header__status {
     display: flex;
     align-items: center;
     gap: var(--space-md);
 }
+
 
 .status-dot {
     width: 8px;
