@@ -485,6 +485,15 @@ function exportTelemetryJson() {
     downloadFile("phishguard_telemetry.json", "application/json", json);
 }
 
+async function exportStixBundle() {
+    try {
+        const bundle = await apiFetch("/export/stix");
+        downloadFile("phishguard_stix21_bundle.json", "application/json", JSON.stringify(bundle, null, 2));
+    } catch (err) {
+        alert("Failed to generate STIX 2.1 bundle: " + err.message);
+    }
+}
+
 function exportMuleCsv() {
     if (!muleData.length) return alert("No mule records to export.");
     let csv = "ID,Account Number,Bank Name,Platform Flagged,Reports,Date Added\n";
@@ -493,6 +502,7 @@ function exportMuleCsv() {
     }
     downloadFile("phishguard_mule_registry.csv", "text/csv;charset=utf-8;", csv);
 }
+
 
 // ═══════════════════════════════════════════════════════════════════
 // MODAL HANDLERS
@@ -752,7 +762,10 @@ $muleSearch.addEventListener("input", (e) => {
 // Export Listeners
 $exportTelemetryCsvBtn.addEventListener("click", exportTelemetryCsv);
 $exportTelemetryJsonBtn.addEventListener("click", exportTelemetryJson);
+const exportStixBtn = document.getElementById("exportStixBtn");
+if (exportStixBtn) exportStixBtn.addEventListener("click", exportStixBundle);
 $exportMuleCsvBtn.addEventListener("click", exportMuleCsv);
+
 
 // Modal Listeners
 $openAddMuleModalBtn.addEventListener("click", openAddMuleModal);

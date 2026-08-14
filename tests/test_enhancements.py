@@ -221,6 +221,44 @@ class TestDashboardEnhancements:
         res_puny = analyze_url_heuristics("http://xn--mybank2u-9ya.com")
         assert res_puny["is_punycode"] is True
 
+    @pytest.mark.asyncio
+    async def test_stix_21_cti_bundle_export(self, test_client: AsyncClient) -> None:
+        resp = await test_client.get("/api/v1/dashboard/export/stix")
+        assert resp.status_code == 200
+        bundle = resp.json()
+        assert bundle["type"] == "bundle"
+        assert bundle["spec_version"] == "2.1"
+        assert "objects" in bundle
+        assert any(o["type"] == "identity" for o in bundle["objects"])
+
+    def test_brand_impersonation_profiler(self) -> None:
+        from services.brand_profiler import profile_brand_impersonation
+
+        # Test spoofed Maybank site
+        res_spoof = profile_brand_impersonation(
+            "http://maybank2u-verify.top/login", "Please login with your Maybank username."
+        )
+        assert res_spoof["is_impersonation"] is True
+        assert res_spoof["target_brand"] == "Maybank"
+        assert res_spoof["impersonation_index"] >= 0.90
+
+        # Test authentic Maybank site
+        res_auth = profile_brand_impersonation(
+            "https://www.maybank2u.com.my/home/login", "Official Maybank Login"
+        )
+        assert res_auth["is_impersonation"] is False
+        assert res_auth["is_official_domain"] is True
+        assert res_auth["impersonation_index"] == 0.0
+
+    @pytest.mark.asyncio
+    async def test_webhook_notifier_dispatch(self) -> None:
+        from services.webhook_notifier import dispatch_threat_webhook
+
+        # When no webhook is configured, returns False cleanly without exception
+        res = await dispatch_threat_webhook("test_threat", {"url": "http://scam.test", "score": 0.95})
+        assert res is False
+
+
 
 
 

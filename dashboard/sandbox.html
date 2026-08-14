@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhishGuard-AI — Threat Simulation Sandbox</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .sandbox-container { max-width: 1200px; margin: 2rem auto; padding: 0 1.5rem; }
+        .scenario-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+        .scenario-card {
+            background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
+            padding: 1.25rem; cursor: pointer; transition: all var(--transition); display: flex; flex-direction: column; justify-content: space-between;
+        }
+        .scenario-card:hover { transform: translateY(-3px); border-color: var(--accent-cyan); box-shadow: 0 8px 24px rgba(6,182,212,0.15); }
+        .scenario-card.active { border-color: var(--accent-indigo); background: rgba(99, 102, 241, 0.08); box-shadow: 0 0 0 2px var(--accent-indigo); }
+        .scenario-badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: var(--radius-full); font-size: 0.7rem; font-weight: 700; margin-bottom: 0.5rem; width: fit-content; }
+        .badge--phish { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .badge--quish { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .badge--safe { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .sandbox-viewport {
+            background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
+            padding: 1.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;
+        }
+        @media (max-width: 900px) { .sandbox-viewport { grid-template-columns: 1fr; } }
+        .code-preview { background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 1rem; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; height: 260px; overflow-y: auto; color: #cbd5e1; white-space: pre-wrap; }
+        .result-panel { background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; }
+        .verdict-banner { padding: 1rem; border-radius: 6px; font-weight: 800; font-size: 1.1rem; text-align: center; margin-bottom: 1rem; }
+        .verdict-banner--block { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 2px solid #ef4444; }
+        .verdict-banner--safe { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 2px solid #10b981; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header__inner">
+            <div class="header__brand">
+                <img src="logo.png" alt="PhishGuard-AI Logo" class="header__logo" />
+                <div class="header__title-group">
+                    <h1 class="header__title">PhishGuard-AI</h1>
+                    <span class="header__subtitle">Threat Simulation Sandbox</span>
+                </div>
+            </div>
+            <div class="header__status">
+                <a href="index.html" class="action-btn action-btn--primary" style="text-decoration: none;">
+                    ← Back to SOC Dashboard
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="sandbox-container">
+        <h2 style="font-size: 1.3rem; margin-bottom: 0.5rem;">Select Real-World Malaysian Threat Scenario</h2>
+        <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.5rem;">
+            Test PhishGuard's multi-modal AI pipeline (BERT Semantics + DuitNow Mule Registry + Brand Impersonation Index) against realistic attack vectors.
+        </p>
+
+        <div class="scenario-grid">
+            <div class="scenario-card active" onclick="loadScenario(0)">
+                <div>
+                    <span class="scenario-badge badge--phish">Scenario 1 • Phishing</span>
+                    <h3 style="font-size: 1rem; margin-bottom: 0.4rem;">Maybank2u TAC Phishing</h3>
+                    <p style="font-size: 0.78rem; color: var(--text-secondary);">Deceptive Maybank credential harvesting clone requesting instant login and TAC authorization.</p>
+                </div>
+                <div style="font-size: 0.72rem; color: var(--accent-cyan); margin-top: 0.8rem; font-family: monospace;">maybank2u-verify.top</div>
+            </div>
+
+            <div class="scenario-card" onclick="loadScenario(1)">
+                <div>
+                    <span class="scenario-badge badge--phish">Scenario 2 • Mule Account</span>
+                    <h3 style="font-size: 1rem; margin-bottom: 0.4rem;">PDRM Traffic Summon</h3>
+                    <p style="font-size: 0.78rem; color: var(--text-secondary);">Fake police summon demand claiming arrest unless instant transfer is paid to Maybank mule account 112233445566.</p>
+                </div>
+                <div style="font-size: 0.72rem; color: var(--accent-cyan); margin-top: 0.8rem; font-family: monospace;">pdrm-saman-online.xyz</div>
+            </div>
+
+            <div class="scenario-card" onclick="loadScenario(2)">
+                <div>
+                    <span class="scenario-badge badge--quish">Scenario 3 • Quishing (QR)</span>
+                    <h3 style="font-size: 1rem; margin-bottom: 0.4rem;">DuitNow Aid Quishing</h3>
+                    <p style="font-size: 0.78rem; color: var(--text-secondary);">Fake government cash aid portal with embedded PayNet EMVCo QR payload stealing deposit transfers.</p>
+                </div>
+                <div style="font-size: 0.72rem; color: var(--accent-cyan); margin-top: 0.8rem; font-family: monospace;">bantuan-tunai-rakyat.club</div>
+            </div>
+
+            <div class="scenario-card" onclick="loadScenario(3)">
+                <div>
+                    <span class="scenario-badge badge--safe">Scenario 4 • Benchmark</span>
+                    <h3 style="font-size: 1rem; margin-bottom: 0.4rem;">Official Bank Portal</h3>
+                    <p style="font-size: 0.78rem; color: var(--text-secondary);">Authentic Malayan Banking Berhad online portal for false-positive validation benchmark.</p>
+                </div>
+                <div style="font-size: 0.72rem; color: #34d399; margin-top: 0.8rem; font-family: monospace;">www.maybank2u.com.my</div>
+            </div>
+        </div>
+
+        <div class="sandbox-viewport">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <strong style="font-size: 0.9rem;">Target DOM & Content Payload:</strong>
+                    <span id="targetUrlLabel" style="font-family: monospace; font-size: 0.78rem; color: var(--accent-cyan);"></span>
+                </div>
+                <div id="payloadPreview" class="code-preview"></div>
+                <button id="detonateBtn" class="action-btn action-btn--primary" style="width: 100%; margin-top: 1rem; padding: 0.8rem;" onclick="runInspection()">
+                    ⚡ Run Multi-Modal AI Inspection
+                </button>
+            </div>
+
+            <div class="result-panel">
+                <div>
+                    <div style="font-size: 0.9rem; font-weight: 700; margin-bottom: 0.8rem;">Inspection Diagnostics</div>
+                    <div id="verdictBanner" class="verdict-banner verdict-banner--safe">Click "Run Multi-Modal AI Inspection"</div>
+                    <div id="diagnosticsList" style="font-size: 0.82rem; line-height: 1.8; color: var(--text-secondary);">
+                        <div>• <strong>BERT Semantic Probability:</strong> <span id="bertScore">-</span></div>
+                        <div>• <strong>Brand Impersonation Target:</strong> <span id="brandTarget">-</span></div>
+                        <div>• <strong>Mule / DuitNow Interception:</strong> <span id="muleAlert">-</span></div>
+                        <div>• <strong>Domain Structural Risk:</strong> <span id="domainRisk">-</span></div>
+                    </div>
+                </div>
+                <div style="font-size: 0.72rem; color: var(--text-muted); border-top: 1px solid rgba(255,255,255,0.06); padding-top: 0.8rem; margin-top: 0.8rem;">
+                    PhishGuard Autonomous Enforcement Engine • Deterministic Safety Shield
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const SCENARIOS = [
+            {
+                url: "http://maybank2u-verify.top/login",
+                content: "Maybank2u Online Banking Security Update. Urgent Verification Required! Your account has been temporarily frozen due to suspicious activity. Sila log masuk dan sahkan nombor TAC anda segera untuk elak akaun digantung.",
+                isPhish: true
+            },
+            {
+                url: "http://pdrm-saman-online.xyz/bayar",
+                content: "Polis Diraja Malaysia (PDRM) Notis Saman Tertunggak. Tindakan mahkamah akan diambil dalam 24 jam sekiranya bayaran deposit keselamatan RM150 tidak dipindahkan ke akaun Maybank 112233445566 segera.",
+                isPhish: true
+            },
+            {
+                url: "http://bantuan-tunai-rakyat.club/claim",
+                content: "Tuntutan Bantuan e-Wallet RM500 2026. Imbas Kod DuitNow QR PayNet: 00020101021126330013my.com.paynet011211223344556652045311 untuk pengesahan identiti dan penerimaan bantuan segera.",
+                isPhish: true
+            },
+            {
+                url: "https://www.maybank2u.com.my/home/m2u/common/login.do",
+                content: "Maybank2u Official Secure Banking Portal. Welcome to Maybank Malaysia. Please enter your username to proceed with secure login.",
+                isPhish: false
+            }
+        ];
+
+        let activeIndex = 0;
+
+        function loadScenario(idx) {
+            activeIndex = idx;
+            document.querySelectorAll('.scenario-card').forEach((card, i) => {
+                card.classList.toggle('active', i === idx);
+            });
+            const s = SCENARIOS[idx];
+            document.getElementById('targetUrlLabel').textContent = s.url;
+            document.getElementById('payloadPreview').textContent = `URL: ${s.url}\n\n[PAGE BODY CONTENT]:\n${s.content}`;
+            document.getElementById('verdictBanner').className = "verdict-banner";
+            document.getElementById('verdictBanner').textContent = "Ready for Inspection";
+            document.getElementById('bertScore').textContent = "-";
+            document.getElementById('brandTarget').textContent = "-";
+            document.getElementById('muleAlert').textContent = "-";
+            document.getElementById('domainRisk').textContent = "-";
+        }
+
+        async function runInspection() {
+            const btn = document.getElementById('detonateBtn');
+            btn.disabled = true;
+            btn.textContent = "Analyzing Multi-Modal Vectors...";
+            const s = SCENARIOS[activeIndex];
+
+            try {
+                const resp = await fetch("/api/v1/dashboard/quick-scan", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ url: s.url, text_content: s.content })
+                });
+                const res = await resp.json();
+
+                const isBlock = res.verdict === "BLOCK_RENDER" || res.mule_detected;
+                const banner = document.getElementById('verdictBanner');
+                banner.className = "verdict-banner " + (isBlock ? "verdict-banner--block" : "verdict-banner--safe");
+                banner.textContent = `Verdict: ${res.verdict} (${(res.score * 100).toFixed(1)}% Risk)`;
+
+                document.getElementById('bertScore').textContent = `${(res.score * 100).toFixed(1)}% (${isBlock ? 'High-Confidence Phishing' : 'Legitimate / Clean'})`;
+                document.getElementById('brandTarget').textContent = s.url.includes("maybank") ? "Maybank (Malayan Banking Berhad)" : (s.url.includes("pdrm") ? "PDRM / Maybank Mule" : "PayNet / DuitNow");
+                document.getElementById('muleAlert').textContent = res.mule_detected
+                    ? `⚠️ Mule Intercepted: ${res.flagged_accounts.map(a => a.account_number + ' (' + a.bank_name + ')').join(', ')}`
+                    : "✅ No Mule Accounts Flagged";
+                document.getElementById('domainRisk').textContent = s.url.includes(".top") || s.url.includes(".xyz") || s.url.includes(".club")
+                    ? "⚠️ High-Risk Disposable TLD (.top / .xyz / .club)"
+                    : "✅ Authentic Official Domain Hierarchy";
+            } catch (err) {
+                alert("Inspection error: " + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "⚡ Run Multi-Modal AI Inspection";
+            }
+        }
+
+        loadScenario(0);
+    </script>
+</body>
+</html>

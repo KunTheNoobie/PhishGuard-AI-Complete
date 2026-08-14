@@ -88,6 +88,23 @@ function captureVisibleTab(windowId) {
   });
 }
 
+function updateActionBadge(tabId, result) {
+  if (!tabId || !chrome.action) return;
+  const isBlock = result.final_verdict === "BLOCK_RENDER" || result.risk_level === "dangerous" || (result.mule_scan && result.mule_scan.mule_detected);
+  const isSuspicious = result.risk_level === "suspicious";
+
+  if (isBlock) {
+    chrome.action.setBadgeText({ tabId, text: "!" });
+    chrome.action.setBadgeBackgroundColor({ tabId, color: "#ef4444" });
+  } else if (isSuspicious) {
+    chrome.action.setBadgeText({ tabId, text: "?" });
+    chrome.action.setBadgeBackgroundColor({ tabId, color: "#f59e0b" });
+  } else {
+    chrome.action.setBadgeText({ tabId, text: "OK" });
+    chrome.action.setBadgeBackgroundColor({ tabId, color: "#10b981" });
+  }
+}
+
 async function saveResult(tabId, result) {
   const payload = {
     ...result,
@@ -95,8 +112,10 @@ async function saveResult(tabId, result) {
   };
   memoryResults.set(tabId, payload);
   await sessionSet({ [`phishguard_result_${tabId}`]: payload });
+  updateActionBadge(tabId, payload);
   return payload;
 }
+
 
 async function getResult(tabId) {
   if (memoryResults.has(tabId)) {
@@ -496,6 +515,37 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message.type === "PHISHGUARD_RESCAN_ACTIVE_TAB") {
+    chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
+      const activeTab = tabs && tabs[0];
+      if (!activeTab || !activeTab.id) {
+        sendResponse({ ok: false, error: "No active tab found" });
+        return;
+      }
+      try {
+        const injected = await chrome.scripting.executeScript({
+          target: { tabId: activeTab.id },
+          func: () => ({
+            url: location.href,
+            title: document.title || "",
+            visibleText: document.body ? document.body.innerText.slice(0, 30000) : "",
+            domContent: document.documentElement.outerHTML.slice(0, 3000000)
+          })
+        });
+        const pageData = injected && injected[0] && injected[0].result;
+        if (pageData) {
+          const res = await analyzePage(activeTab, pageData);
+          sendResponse({ ok: true, result: res });
+        } else {
+          sendResponse({ ok: false, error: "Could not read page context" });
+        }
+      } catch (err) {
+        sendResponse({ ok: false, error: err.message });
+      }
+    });
+    return true;
+  }
+
   if (message.type === "PHISHGUARD_GET_LATEST_RESULT") {
     getResult(message.tabId).then((result) => {
       sendResponse({ ok: true, result });
@@ -539,3 +589,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   return false;
 });
+
+// Update badge whenever user switches active tabs
+chrome.tabs.onActivated.addListener(async (activeInfo) => {
+  const result = await getResult(activeInfo.tabId);
+  if (result) {
+    updateActionBadge(activeInfo.tabId, result);
+  } else {
+    chrome.action.setBadgeText({ tabId: activeInfo.tabId, text: "" });
+  }
+});
+

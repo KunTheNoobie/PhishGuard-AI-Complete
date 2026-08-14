@@ -436,6 +436,20 @@ async def export_telemetry_csv(request: Request) -> Response:
     )
 
 
+@router.get(
+    "/export/stix",
+    summary="Export threat intelligence in OASIS STIX 2.1 format",
+    response_description="OASIS STIX 2.1 Threat Intelligence Bundle JSON.",
+)
+async def export_stix_intel(request: Request) -> dict[str, Any]:
+    """Generate and return a full STIX 2.1 Threat Intelligence Bundle."""
+    from services.stix_exporter import generate_stix_bundle
+    db = request.app.state.db
+    bundle = await generate_stix_bundle(db)
+    return bundle
+
+
+
 # ==============================================================================
 # GET /api/v1/dashboard/distributions (Analytics Charts)
 # ==============================================================================
