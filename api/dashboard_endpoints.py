@@ -129,10 +129,15 @@ class QuickScanRequest(BaseModel):
     summary="Immediate URL / text heuristic analysis directly from dashboard",
 )
 async def quick_scan_url(request: Request, payload: QuickScanRequest) -> dict[str, Any]:
-    """Run an instant heuristic & mule scanner scan on any URL or text payload."""
+    """Run an instant multi-modal heuristic, brand profiling & mule scanner scan."""
     import pathlib
     import httpx
     from urllib.parse import urlparse
+    from services.brand_profiler import profile_brand_impersonation
+    from services.heuristic_engine import analyze_url_heuristics
+    from core.config import BILINGUAL_SCAM_KEYWORDS, GLOBAL_SAFE_DOMAINS, TRUSTED_DOMAINS
+
+
 
     db = request.app.state.db
     mule_scanner = request.app.state.mule_scanner
@@ -165,34 +170,51 @@ async def quick_scan_url(request: Request, payload: QuickScanRequest) -> dict[st
     # 1. Run Mule & DuitNow Scanner
     mule_result = await mule_scanner.scan_and_verify(combined_text, db)
 
-    # 2. Run BERT Semantic Engine if available
+    # 2. Run Brand Impersonation Profiler
+    brand_result = profile_brand_impersonation(target_url, combined_text)
+
+    # 3. Run Domain & Network Heuristics
+    heur_result = analyze_url_heuristics(target_url)
+
+    # 4. Check for Social Engineering Phrasing
+    lower_text = combined_text.lower()
+    has_scam_keywords = any(kw.lower() in lower_text for kw in BILINGUAL_SCAM_KEYWORDS)
+
+    # 5. Run BERT Semantic Engine if available
     bert_score = 0.05
     is_phishing_semantic = False
-    if semantic_engine and len(combined_text.strip()) > 20:
+    if semantic_engine and len(combined_text.strip()) > 15:
         try:
-            sem_result = semantic_engine.predict_proba(combined_text)
-            bert_score = float(sem_result.get("phishing_probability", 0.05))
-            is_phishing_semantic = bert_score >= 0.70
+            sem_result = await semantic_engine.predict(combined_text)
+            if sem_result.get("label") == "PHISHING":
+                bert_score = float(sem_result.get("confidence", 0.95))
+                is_phishing_semantic = True
+            else:
+                bert_score = round(1.0 - float(sem_result.get("confidence", 0.95)), 4)
         except Exception:
             pass
 
-    # 3. Typo-squatting & keywords
-    parsed = urlparse(target_url if "://" in target_url else f"http://{target_url}")
-    host = (parsed.hostname or target_url).lower()
-    has_scam_keywords = any(
-        kw in combined_text.lower()
-        for kw in ["verify", "suspended", "urgent", "security update", "pdrm", "bank login", "transfer", "deposit"]
+    # 6. Synthesize Multi-Modal Verdict
+    is_official = brand_result["is_official_domain"]
+    is_threat = (
+        mule_result["mule_detected"]
+        or brand_result["is_impersonation"]
+        or (has_scam_keywords and heur_result["is_suspicious"])
+        or (has_scam_keywords and not is_official)
+        or is_phishing_semantic
     )
 
-    is_threat = mule_result["mule_detected"] or is_phishing_semantic or (has_scam_keywords and "scam" in target_url)
-    if mule_result["mule_detected"]:
+    if is_official:
+        score = 0.02
+        verdict = "SAFE"
+    elif mule_result["mule_detected"]:
         score = max(0.99, bert_score)
         verdict = "BLOCK_RENDER"
     elif is_threat:
-        score = max(0.85, bert_score)
+        score = max(0.95, bert_score, brand_result["impersonation_index"])
         verdict = "BLOCK_RENDER"
     else:
-        score = bert_score if bert_score < 0.5 else 0.05
+        score = bert_score if bert_score < 0.40 else 0.05
         verdict = "SAFE"
 
     # Broadcast event if threat detected so dashboard counters immediately update
@@ -209,15 +231,19 @@ async def quick_scan_url(request: Request, payload: QuickScanRequest) -> dict[st
         except Exception:
             pass
 
-
     return {
         "url": target_url,
         "verdict": verdict,
         "score": score,
         "mule_detected": mule_result["mule_detected"],
         "flagged_accounts": mule_result["flagged_accounts"],
+        "target_brand": brand_result["target_brand"],
+        "is_impersonation": brand_result["is_impersonation"],
+        "impersonation_index": brand_result["impersonation_index"],
+        "domain_indicators": heur_result["indicators"],
         "scanned_at": "Just now",
     }
+
 
 
 

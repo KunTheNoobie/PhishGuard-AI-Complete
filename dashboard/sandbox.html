@@ -188,14 +188,15 @@
                 banner.textContent = `Verdict: ${res.verdict} (${(res.score * 100).toFixed(1)}% Risk)`;
 
                 document.getElementById('bertScore').textContent = `${(res.score * 100).toFixed(1)}% (${isBlock ? 'High-Confidence Phishing' : 'Legitimate / Clean'})`;
-                document.getElementById('brandTarget').textContent = s.url.includes("maybank") ? "Maybank (Malayan Banking Berhad)" : (s.url.includes("pdrm") ? "PDRM / Maybank Mule" : "PayNet / DuitNow");
+                document.getElementById('brandTarget').textContent = res.target_brand + (res.is_impersonation ? ` ⚠️ (Spoofing Index: ${(res.impersonation_index * 100).toFixed(0)}%)` : " (Authentic)");
                 document.getElementById('muleAlert').textContent = res.mule_detected
                     ? `⚠️ Mule Intercepted: ${res.flagged_accounts.map(a => a.account_number + ' (' + a.bank_name + ')').join(', ')}`
                     : "✅ No Mule Accounts Flagged";
-                document.getElementById('domainRisk').textContent = s.url.includes(".top") || s.url.includes(".xyz") || s.url.includes(".club")
-                    ? "⚠️ High-Risk Disposable TLD (.top / .xyz / .club)"
-                    : "✅ Authentic Official Domain Hierarchy";
+                document.getElementById('domainRisk').textContent = res.domain_indicators && res.domain_indicators.length
+                    ? `⚠️ ${res.domain_indicators.join("; ")}`
+                    : "✅ Authentic Domain Structure";
             } catch (err) {
+
                 alert("Inspection error: " + err.message);
             } finally {
                 btn.disabled = false;
