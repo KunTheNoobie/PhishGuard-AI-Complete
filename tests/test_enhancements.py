@@ -377,9 +377,77 @@ class TestDashboardEnhancements:
         assert "mean_time_to_detect_seconds" in data["executive_summary"]
         assert len(data["strategic_recommendations"]) > 0
 
+    def test_xai_token_attribution_service(self) -> None:
+        from services.xai_engine import explain_text_threat
+        res = explain_text_threat("http://maybank2u-verify-tac.top/login", base_score=0.92)
+        assert "tokens" in res
+        assert len(res["tokens"]) > 0
+        assert any(t["token"].lower() == "tac" for t in res["tokens"])
+        assert any(t["category"] == "credential" for t in res["tokens"])
+        assert "top_drivers" in res
+        assert res["base_score"] == 0.92
 
+    @pytest.mark.asyncio
+    async def test_xai_endpoints(self, test_client: AsyncClient) -> None:
+        # Test explain endpoint
+        e_resp = await test_client.post(
+            "/api/v1/dashboard/telemetry/explain",
+            json={"text_or_url": "URGENT: Your CIMB account is frozen. Enter TAC.", "base_score": 0.88}
+        )
+        assert e_resp.status_code == 200
+        e_data = e_resp.json()
+        assert len(e_data["tokens"]) > 0
+        assert any(t["category"] == "urgency" for t in e_data["tokens"])
 
+        # Test telemetry XAI for log_id 1
+        t_resp = await test_client.get("/api/v1/dashboard/telemetry/1/xai")
+        assert t_resp.status_code in [200, 404]
 
+    @pytest.mark.asyncio
+    async def test_siem_cef_syslog_export_endpoints(self, test_client: AsyncClient) -> None:
+        from database.repository import log_threat_telemetry
+        db = test_client._transport.app.state.db
+        await log_threat_telemetry("http://maybank2u-verify.top/auth", 0.95, db)
 
+        # CEF
+        cef_resp = await test_client.get("/api/v1/dashboard/export/cef")
+        assert cef_resp.status_code == 200
+        assert "CEF:0|PhishGuard-AI" in cef_resp.text
 
+        # Syslog
+        sys_resp = await test_client.get("/api/v1/dashboard/export/syslog")
+        assert sys_resp.status_code == 200
+        assert "phishguard-soc" in sys_resp.text
 
+    @pytest.mark.asyncio
+    async def test_sinkhole_rules_export(self, test_client: AsyncClient) -> None:
+        for fmt in ["pihole", "hosts", "bind", "suricata"]:
+            resp = await test_client.get(f"/api/v1/dashboard/export/sinkhole-rules?format={fmt}")
+            assert resp.status_code == 200
+            assert len(resp.text) > 0
+
+    @pytest.mark.asyncio
+    async def test_brand_campaign_matrix_endpoint(self, test_client: AsyncClient) -> None:
+        resp = await test_client.get("/api/v1/dashboard/brand-campaign-matrix")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["total_tracked_institutions"] == 10
+        assert len(data["brands"]) == 10
+        assert any(b["brand"] == "Maybank" for b in data["brands"])
+        assert any(b["brand"] == "Touch 'n Go eWallet" for b in data["brands"])
+
+    @pytest.mark.asyncio
+    async def test_ssl_intel_analyzer_and_endpoint(self, test_client: AsyncClient) -> None:
+        from services.ssl_analyzer import analyze_target_ssl
+        res = analyze_target_ssl("http://maybank-fake.top/login")
+        assert res["protocol"] == "HTTP (Insecure)"
+        assert res["spoof_risk_score"] > 80
+
+        ep_resp = await test_client.post(
+            "/api/v1/dashboard/ssl-intel",
+            json={"url": "https://maybank2u-update.xyz"}
+        )
+        assert ep_resp.status_code == 200
+        data = ep_resp.json()
+        assert "certificate_issuer" in data
+        assert "trust_tier" in data

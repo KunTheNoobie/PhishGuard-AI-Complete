@@ -1138,5 +1138,187 @@ async def generate_executive_ciso_report(request: Request) -> dict[str, Any]:
     }
 
 
+# ==============================================================================
+# PHASE 8: ENTERPRISE CYBER INTELLIGENCE SUITE
+# ==============================================================================
+
+@router.get(
+    "/telemetry/{log_id}/xai",
+    summary="Get Explainable AI (XAI) token semantic feature attribution for a threat",
+)
+async def get_threat_xai_attribution(log_id: int, request: Request) -> dict[str, Any]:
+    """Returns token-level importance weights and semantic categorization for a threat."""
+    from services.xai_engine import explain_text_threat
+    db = request.app.state.db
+    cursor = await db.execute("SELECT log_id, malicious_url, bert_score FROM threat_telemetry WHERE log_id = ?;", (log_id,))
+    row = await cursor.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Threat telemetry event not found")
+    
+    url = row[1]
+    score = float(row[2])
+    xai_res = explain_text_threat(url, base_score=score)
+    xai_res["log_id"] = log_id
+    return xai_res
+
+
+class ExplainTextRequest(BaseModel):
+    text_or_url: str
+    base_score: float = 0.85
+
+@router.post(
+    "/telemetry/explain",
+    summary="Generate on-demand Explainable AI (XAI) feature attribution for text or URL",
+)
+async def explain_text_endpoint(payload: ExplainTextRequest) -> dict[str, Any]:
+    """Evaluates arbitrary text or URL and returns token-level XAI feature attribution."""
+    from services.xai_engine import explain_text_threat
+    return explain_text_threat(payload.text_or_url, base_score=payload.base_score)
+
+
+@router.get(
+    "/export/cef",
+    summary="Export threat telemetry in ArcSight / Splunk Common Event Format (CEF:0)",
+)
+async def export_cef_telemetry(request: Request) -> Response:
+    """Stream telemetry events as standard CEF text file for SIEM ingest."""
+    from services.siem_exporter import generate_cef_export
+    db = request.app.state.db
+    cursor = await db.execute("SELECT log_id, malicious_url, bert_score, timestamp FROM threat_telemetry ORDER BY log_id DESC LIMIT 500;")
+    rows = await cursor.fetchall()
+    logs = [{"log_id": r[0], "malicious_url": r[1], "bert_score": r[2], "timestamp": r[3]} for r in rows]
+    cef_content = generate_cef_export(logs)
+    
+    return Response(
+        content=cef_content,
+        media_type="text/plain",
+        headers={"Content-Disposition": 'attachment; filename="phishguard_telemetry.cef"'}
+    )
+
+
+@router.get(
+    "/export/syslog",
+    summary="Export threat telemetry in Syslog RFC 5424 format",
+)
+async def export_syslog_telemetry(request: Request) -> Response:
+    """Stream telemetry events as Syslog RFC 5424 log entries."""
+    from services.siem_exporter import generate_syslog_export
+    db = request.app.state.db
+    cursor = await db.execute("SELECT log_id, malicious_url, bert_score, timestamp FROM threat_telemetry ORDER BY log_id DESC LIMIT 500;")
+    rows = await cursor.fetchall()
+    logs = [{"log_id": r[0], "malicious_url": r[1], "bert_score": r[2], "timestamp": r[3]} for r in rows]
+    syslog_content = generate_syslog_export(logs)
+    
+    return Response(
+        content=syslog_content,
+        media_type="text/plain",
+        headers={"Content-Disposition": 'attachment; filename="phishguard_syslog.log"'}
+    )
+
+
+@router.get(
+    "/export/sinkhole-rules",
+    summary="Export DNS sinkhole & firewall blocklists (Pi-hole, BIND RPZ, Suricata, Hosts)",
+)
+async def export_sinkhole_rules(format: str = "pihole", request: Request = None) -> Response:
+    """Export blocked domains as Pi-hole blocklist, BIND RPZ zone, Suricata rules, or Windows Hosts file."""
+    import urllib.parse
+    from services.siem_exporter import generate_sinkhole_rules
+    db = request.app.state.db
+    cursor = await db.execute("SELECT malicious_url FROM threat_telemetry LIMIT 500;")
+    rows = await cursor.fetchall()
+    
+    domains = []
+    for r in rows:
+        url = r[0]
+        try:
+            p = urllib.parse.urlparse(url if url.startswith("http") else f"http://{url}")
+            d = p.netloc or url.split('/')[0]
+            if d:
+                domains.append(d)
+        except Exception:
+            continue
+            
+    rules_text = generate_sinkhole_rules(domains, format_type=format)
+    ext = "rules" if format == "suricata" else "zone" if format == "bind" else "txt"
+    
+    return Response(
+        content=rules_text,
+        media_type="text/plain",
+        headers={"Content-Disposition": f'attachment; filename="phishguard_sinkhole_{format}.{ext}"'}
+    )
+
+
+@router.get(
+    "/brand-campaign-matrix",
+    summary="Get 10-Bank Malaysian Cyber Threat Campaign Matrix",
+)
+async def get_brand_campaign_matrix(request: Request) -> dict[str, Any]:
+    """Aggregates active phishing clones and threat volume across 10 top Malaysian financial entities."""
+    db = request.app.state.db
+    cursor = await db.execute("SELECT malicious_url, bert_score FROM threat_telemetry;")
+    threats = await cursor.fetchall()
+    
+    mule_cur = await db.execute("SELECT bank_name, COUNT(*) FROM mule_registry GROUP BY bank_name;")
+    mule_counts = dict(await mule_cur.fetchall())
+
+    # 10 Major Malaysian Financial Brands
+    target_brands = [
+        {"brand": "Maybank", "aliases": ["maybank", "m2u", "maybank2u"], "color": "#fbbf24", "logo": "🦁"},
+        {"brand": "CIMB Bank", "aliases": ["cimb", "cimbclicks", "octo"], "color": "#ef4444", "logo": "🔴"},
+        {"brand": "Public Bank", "aliases": ["publicbank", "pbe", "pbb"], "color": "#f87171", "logo": "🏢"},
+        {"brand": "RHB Bank", "aliases": ["rhb", "rhbnow"], "color": "#38bdf8", "logo": "🔷"},
+        {"brand": "Hong Leong Bank", "aliases": ["hongleong", "hlb", "hlconnect"], "color": "#3b82f6", "logo": "🔵"},
+        {"brand": "AmBank", "aliases": ["ambank", "amonline"], "color": "#f97316", "logo": "🦅"},
+        {"brand": "Bank Islam", "aliases": ["bankislam", "go-islam"], "color": "#10b981", "logo": "🟢"},
+        {"brand": "Touch 'n Go eWallet", "aliases": ["touchngo", "tng", "tngdigital"], "color": "#06b6d4", "logo": "📱"},
+        {"brand": "GrabPay Malaysia", "aliases": ["grab", "grabpay"], "color": "#22c55e", "logo": "🚗"},
+        {"brand": "ShopeePay", "aliases": ["shopee", "shopeepay"], "color": "#ea580c", "logo": "🛍️"},
+    ]
+
+    brand_matrix = []
+    for b in target_brands:
+        threat_count = 0
+        high_risk_count = 0
+        for t in threats:
+            url_str = str(t[0]).lower()
+            if any(alias in url_str for alias in b["aliases"]):
+                threat_count += 1
+                if float(t[1]) >= 0.85:
+                    high_risk_count += 1
+                    
+        mules = mule_counts.get(b["brand"], 0)
+        risk_level = "CRITICAL" if (threat_count > 15 or mules > 10) else "ELEVATED" if threat_count > 5 else "MONITORED"
+        
+        brand_matrix.append({
+            "brand": b["brand"],
+            "logo": b["logo"],
+            "color": b["color"],
+            "active_threats": threat_count,
+            "high_risk_threats": high_risk_count,
+            "flagged_mules": mules,
+            "risk_level": risk_level
+        })
+
+    return {
+        "total_tracked_institutions": len(target_brands),
+        "brands": brand_matrix
+    }
+
+
+class SslIntelRequest(BaseModel):
+    url: str
+
+@router.post(
+    "/ssl-intel",
+    summary="Perform Deep SSL/TLS Certificate and Domain Intelligence inspection",
+)
+async def get_ssl_intel(payload: SslIntelRequest) -> dict[str, Any]:
+    """Inspects SSL certificate issuer, cipher strength, and domain lifespan."""
+    from services.ssl_analyzer import analyze_target_ssl
+    return analyze_target_ssl(payload.url)
+
+
+
 
 

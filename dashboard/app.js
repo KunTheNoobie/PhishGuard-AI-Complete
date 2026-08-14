@@ -604,9 +604,14 @@ function renderTelemetry() {
                 <td class="${scoreClass(e.bert_score)}">${(e.bert_score * 100).toFixed(1)}%</td>
                 <td>${formatTimestamp(e.timestamp)}</td>
                 <td>
-                    <button class="action-btn" style="padding: 2px 8px; font-size: 0.72rem;" onclick="openIncidentReport(${e.log_id})">
-                        📄 Dossier
-                    </button>
+                    <div style="display: flex; gap: 4px;">
+                        <button class="action-btn" style="padding: 2px 8px; font-size: 0.72rem;" onclick="openIncidentReport(${e.log_id})">
+                            📄 Dossier
+                        </button>
+                        <button class="action-btn action-btn--primary" style="padding: 2px 8px; font-size: 0.72rem;" onclick="openXaiAttribution(${e.log_id})">
+                            🧠 XAI
+                        </button>
+                    </div>
                 </td>
             </tr>`
         )
@@ -645,6 +650,27 @@ async function openIncidentReport(logId) {
             </li>
         `).join("");
 
+        // Query Deep SSL/TLS Intelligence
+        let sslHtml = "";
+        try {
+            const ssl = await apiFetch("/ssl-intel", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url: report.target_url })
+            });
+            sslHtml = `
+                <div style="background: rgba(15, 23, 42, 0.6); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 12px; font-size: 0.8rem;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                        <strong style="color: #fff;">🔒 SSL/TLS Certificate Provenance:</strong>
+                        <span style="color: ${ssl.spoof_risk_score > 70 ? '#f87171' : '#34d399'}; font-weight: 700;">${escapeHtml(ssl.verdict)}</span>
+                    </div>
+                    <div>• <strong>CA Authority:</strong> ${escapeHtml(ssl.certificate_issuer)} (${escapeHtml(ssl.trust_tier)})</div>
+                    <div>• <strong>Cipher Suite:</strong> <code>${escapeHtml(ssl.cipher_suite)}</code></div>
+                    <div>• <strong>Est. Domain Lifespan:</strong> ${ssl.estimated_domain_age_days} days &nbsp;|&nbsp; <strong>SPF/MX Valid:</strong> ${ssl.dns_spf_record_present ? '✅ Yes' : '❌ Failed'}</div>
+                </div>
+            `;
+        } catch (_err) {}
+
         body.innerHTML = `
             <div style="background: rgba(15, 23, 42, 0.6); padding: 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 14px;">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
@@ -657,6 +683,8 @@ async function openIncidentReport(logId) {
                 <div style="margin-bottom: 6px;"><strong>AI Threat Probability:</strong> <span class="score-high">${report.bert_confidence}%</span></div>
                 <div><strong>Jurisdiction:</strong> ${escapeHtml(report.jurisdiction)}</div>
             </div>
+
+            ${sslHtml}
 
             <div style="margin-bottom: 12px;">
                 <strong>Associated High-Risk Mule Accounts:</strong>
@@ -962,43 +990,6 @@ async function handleSimToggle() {
     }
 }
 
-// Audio Alert Synthesizer (Web Audio API)
-let soundAlertEnabled = false;
-const $audioToggleBtn = document.getElementById("audioToggleBtn");
-const $audioStatusText = document.getElementById("audioStatusText");
-
-function playThreatAlertSound() {
-    if (!soundAlertEnabled) return;
-    try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(880, ctx.currentTime); // A5
-        osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.25);
-        gain.gain.setValueAtTime(0.15, ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.25);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.25);
-    } catch (_e) {}
-}
-
-if ($audioToggleBtn) {
-    $audioToggleBtn.addEventListener("click", () => {
-        soundAlertEnabled = !soundAlertEnabled;
-        if (soundAlertEnabled) {
-            $audioToggleBtn.classList.add("active");
-            $audioStatusText.textContent = "Sound: ON";
-            playThreatAlertSound();
-        } else {
-            $audioToggleBtn.classList.remove("active");
-            $audioStatusText.textContent = "Sound: OFF";
-        }
-    });
-}
-
 // Quick URL Scanner Handler
 const $quickScanForm = document.getElementById("quickScanForm");
 const $quickScanInput = document.getElementById("quickScanInput");
@@ -1046,7 +1037,7 @@ if ($quickScanForm) {
                 </div>
                 <button class="action-btn" onclick="document.getElementById('quickScanResult').classList.add('hidden')">Dismiss</button>
             `;
-            if (isDanger) playThreatAlertSound();
+            if (isDanger) playAlertSound();
         } catch (err) {
             alert("Scan failed: " + err.message);
         } finally {
@@ -1377,13 +1368,220 @@ async function openCisoReport() {
 
 if ($openCisoReportBtn) $openCisoReportBtn.addEventListener("click", openCisoReport);
 if ($closeCisoModalBtn) $closeCisoModalBtn.addEventListener("click", () => $cisoReportModal.classList.add("hidden"));
-if ($dismissCisoBtn) $dismissCisoBtn.addEventListener("click", () => $cisoReportModal.classList.add("hidden"));
+// ═══════════════════════════════════════════════════════════════════
+// PHASE 8: BRAND CAMPAIGN MATRIX & XAI TOKEN ATTRIBUTION
+// ═══════════════════════════════════════════════════════════════════
+
+async function refreshBrandMatrix() {
+    try {
+        const res = await apiFetch("/brand-campaign-matrix");
+        const container = document.getElementById("brandMatrixGrid");
+        if (!container) return;
+
+        const countBadge = document.getElementById("brandMatrixCount");
+        if (countBadge) countBadge.textContent = `${res.total_tracked_institutions} Tracked`;
+
+        container.innerHTML = (res.brands || []).map(b => {
+            const riskClass = b.risk_level === "CRITICAL" ? "brand-risk-badge--critical" :
+                              b.risk_level === "ELEVATED" ? "brand-risk-badge--elevated" : "brand-risk-badge--monitored";
+            return `
+                <div class="brand-matrix-card" onclick="filterFeedByBrand('${escapeHtml(b.brand)}')">
+                    <div class="brand-matrix-header">
+                        <span class="brand-matrix-title">
+                            <span>${b.logo}</span> ${escapeHtml(b.brand)}
+                        </span>
+                        <span class="brand-risk-badge ${riskClass}">${b.risk_level}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.76rem; color: var(--text-muted); margin-top: 4px;">
+                        <span>Active Clones: <strong style="color: #fff;">${b.active_threats}</strong></span>
+                        <span>Mules: <strong style="color: #f87171;">${b.flagged_mules}</strong></span>
+                    </div>
+                    <div style="font-size: 0.7rem; color: var(--accent-cyan); text-align: right; margin-top: 2px;">
+                        Filter Stream &rarr;
+                    </div>
+                </div>
+            `;
+        }).join("");
+    } catch (_e) {}
+}
+
+function filterFeedByBrand(brand) {
+    telemetryFilterText = `bank:${brand}`;
+    const searchInput = document.getElementById("telemetrySearch");
+    if (searchInput) searchInput.value = telemetryFilterText;
+    telemetryPagination.page = 1;
+    renderTelemetry();
+    document.getElementById("telemetryTable")?.scrollIntoView({ behavior: "smooth" });
+}
+
+// XAI Modal Attributions
+async function openXaiAttribution(logId) {
+    const modal = document.getElementById("xaiModal");
+    const body = document.getElementById("xaiModalBody");
+    if (!modal || !body) return;
+
+    modal.classList.remove("hidden");
+    body.innerHTML = "Generating Explainable AI (XAI) feature attribution heatmap...";
+
+    try {
+        const data = await apiFetch(`/telemetry/${logId}/xai`);
+        
+        const tokenChipsHtml = (data.tokens || []).map(t => {
+            return `<span class="xai-token-chip category-${t.category}" title="Category: ${t.category} | Weight: ${t.weight}">${escapeHtml(t.token)}</span>`;
+        }).join(" ");
+
+        const driversHtml = (data.top_drivers || []).map(d => `
+            <span style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); padding: 2px 8px; border-radius: 4px; font-size: 0.78rem; font-family: monospace;">${escapeHtml(d)}</span>
+        `).join(" ");
+
+        body.innerHTML = `
+            <div style="background: rgba(15, 23, 42, 0.7); padding: 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 14px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <strong>Threat Target:</strong> <code style="color: var(--accent-cyan); word-break: break-all;">${escapeHtml(data.text)}</code>
+                </div>
+                <div style="font-size: 0.82rem; color: var(--text-muted);">
+                    AI Phishing Confidence: <strong style="color: #f87171;">${(data.base_score * 100).toFixed(1)}%</strong>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <strong style="color: #fff;">Interactive Semantic Heatmap (Hover for Weights):</strong>
+                <div class="xai-heatmap-container" style="margin-top: 8px;">
+                    ${tokenChipsHtml}
+                </div>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <strong style="color: #fff;">Top Contributing Threat Drivers:</strong>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px;">
+                    ${driversHtml || '<span>No high-weight single token.</span>'}
+                </div>
+            </div>
+
+            <div style="background: rgba(99, 102, 241, 0.12); border-left: 3px solid #6366f1; padding: 10px; border-radius: 4px; font-size: 0.8rem; line-height: 1.5;">
+                <strong>Explainable AI Summary:</strong> ${escapeHtml(data.explanation)}
+            </div>
+        `;
+    } catch (err) {
+        body.innerHTML = `<span style="color: #f87171;">Failed to generate XAI attribution: ${escapeHtml(err.message)}</span>`;
+    }
+}
+
+// Sinkhole & SIEM Modal Listeners
+const $sinkholeModal = document.getElementById("sinkholeModal");
+const $openSinkholeModalBtn = document.getElementById("openSinkholeModalBtn");
+const $closeSinkholeModalBtn = document.getElementById("closeSinkholeModalBtn");
+const $dismissSinkholeBtn = document.getElementById("dismissSinkholeBtn");
+
+if ($openSinkholeModalBtn) $openSinkholeModalBtn.addEventListener("click", () => $sinkholeModal?.classList.remove("hidden"));
+if ($closeSinkholeModalBtn) $closeSinkholeModalBtn.addEventListener("click", () => $sinkholeModal?.classList.add("hidden"));
+if ($dismissSinkholeBtn) $dismissSinkholeBtn.addEventListener("click", () => $sinkholeModal?.classList.add("hidden"));
+
+const $closeXaiModalBtn = document.getElementById("closeXaiModalBtn");
+const $dismissXaiBtn = document.getElementById("dismissXaiBtn");
+if ($closeXaiModalBtn) $closeXaiModalBtn.addEventListener("click", () => document.getElementById("xaiModal")?.classList.add("hidden"));
+if ($dismissXaiBtn) $dismissXaiBtn.addEventListener("click", () => document.getElementById("xaiModal")?.classList.add("hidden"));
+
+// Multi-Tone Audio Synthesizer Engine
+let audioContext = null;
+let isAudioEnabled = false;
+let currentTone = "tactical";
+
+const $audioToggleBtn = document.getElementById("audioToggleBtn");
+const $audioStatusText = document.getElementById("audioStatusText");
+const $audioToneSelect = document.getElementById("audioToneSelect");
+
+if ($audioToneSelect) {
+    $audioToneSelect.addEventListener("change", (e) => {
+        currentTone = e.target.value;
+        if (isAudioEnabled) playAlertSound();
+    });
+}
+
+if ($audioToggleBtn) {
+    $audioToggleBtn.addEventListener("click", () => {
+        isAudioEnabled = !isAudioEnabled;
+        if ($audioStatusText) $audioStatusText.textContent = isAudioEnabled ? "Sound: ON" : "Sound: OFF";
+        $audioToggleBtn.classList.toggle("active", isAudioEnabled);
+        if (isAudioEnabled) {
+            playAlertSound();
+        }
+    });
+}
+
+function playAlertSound() {
+    if (!isAudioEnabled) return;
+    try {
+        if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioContext.state === "suspended") {
+            audioContext.resume();
+        }
+
+        const now = audioContext.currentTime;
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+
+        if (currentTone === "warhorn") {
+            // Low sawtooth war horn
+            osc.type = "sawtooth";
+            osc.frequency.setValueAtTime(140, now);
+            osc.frequency.exponentialRampToValueAtTime(80, now + 0.6);
+            gain.gain.setValueAtTime(0.35, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            osc.start(now);
+            osc.stop(now + 0.65);
+        } else if (currentTone === "sonar") {
+            // Pure sine sonar ping
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(920, now);
+            gain.gain.setValueAtTime(0.4, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            osc.start(now);
+            osc.stop(now + 0.8);
+        } else if (currentTone === "matrix") {
+            // Fast frequency modulation chirp
+            osc.type = "square";
+            osc.frequency.setValueAtTime(440, now);
+            osc.frequency.setValueAtTime(880, now + 0.08);
+            osc.frequency.setValueAtTime(1760, now + 0.16);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            osc.start(now);
+            osc.stop(now + 0.35);
+        } else {
+            // Tactical bleep default
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(880, now);
+            osc.frequency.setValueAtTime(1760, now + 0.08);
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            osc.start(now);
+            osc.stop(now + 0.25);
+        }
+    } catch (_err) {}
+}
 
 
 // Initial load & stream
-refreshAll();
+async function masterRefresh() {
+    await refreshAll();
+    await refreshBrandMatrix();
+}
+
+masterRefresh();
 refreshSystemHealth();
 initSseStream();
-setInterval(refreshAll, REFRESH_MS);
+setInterval(masterRefresh, REFRESH_MS);
 setInterval(refreshSystemHealth, 10_000);
+
 

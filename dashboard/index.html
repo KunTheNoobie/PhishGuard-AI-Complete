@@ -397,11 +397,20 @@
                 <option value="matrix">Matrix Emerald</option>
                 <option value="abyss">OLED Abyss</option>
             </select>
+            <select id="audioToneSelect" class="page-size-select" title="Select SOC Alert Audio Tone">
+                <option value="tactical" selected>⚡ Tactical</option>
+                <option value="warhorn">📯 War Horn</option>
+                <option value="sonar">📡 Sonar</option>
+                <option value="matrix">🟢 Matrix</option>
+            </select>
             <button id="openWebhookModalBtn" class="action-btn" type="button" title="Configure Discord / Slack / Telegram Alerts">
                 ⚙️ Alerts
             </button>
             <button id="openCisoReportBtn" class="action-btn" type="button" title="Generate Executive CISO Briefing Report">
                 📑 CISO Briefing
+            </button>
+            <button id="openSinkholeModalBtn" class="action-btn" type="button" title="Export DNS Sinkhole & SIEM Firewall Rules">
+                🛡️ Sinkhole / SIEM
             </button>
             <button id="audioToggleBtn" class="action-btn" type="button" title="Toggle Threat Sound Alert">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
@@ -637,6 +646,28 @@
         </section>
 
 
+        <!-- ─── 10-Bank Malaysian Cyber Threat Campaign Matrix ─── -->
+        <section class="panel" aria-label="Malaysian financial brand threat matrix">
+            <div class="panel__header">
+                <div class="panel__header-left">
+                    <h2 class="panel__title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v4M12 14v4M16 14v4"/></svg>
+                        10-Bank Malaysian Impersonation & Threat Campaign Matrix
+                    </h2>
+                    <span class="panel__badge" id="brandMatrixCount">10 Tracked</span>
+                </div>
+                <div class="panel__actions">
+                    <span style="font-size: 0.78rem; color: var(--text-muted);">Real-time financial clone & mule syndicate tracking</span>
+                </div>
+            </div>
+            <div class="panel__body" style="padding: 1.25rem;">
+                <div id="brandMatrixGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem;">
+                    <!-- Populated dynamically via renderBrandMatrix() -->
+                </div>
+            </div>
+        </section>
+
+
         <!-- ─── Live Threat Feed ─── -->
         <section class="panel" aria-label="Recent threat detections">
             <div class="panel__header">
@@ -660,9 +691,15 @@
                         CSV
                     </button>
                     <button id="exportTelemetryJsonBtn" class="action-btn" type="button">JSON</button>
-                    <button id="exportStixBtn" class="action-btn action-btn--primary" type="button" title="Export structured STIX 2.1 Threat Intelligence JSON Bundle">
+                    <button id="exportStixBtn" class="action-btn" type="button" title="Export structured STIX 2.1 Threat Intelligence JSON Bundle">
                         STIX 2.1
                     </button>
+                    <a href="/api/v1/dashboard/export/cef" download="phishguard_telemetry.cef" class="action-btn" title="Export Splunk / ArcSight Common Event Format logs">
+                        CEF
+                    </a>
+                    <a href="/api/v1/dashboard/export/syslog" download="phishguard_syslog.log" class="action-btn" title="Export standard Syslog RFC 5424 logs">
+                        Syslog
+                    </a>
                 </div>
             </div>
 
@@ -674,7 +711,7 @@
                             <th class="sortable" data-table="telemetry" data-key="malicious_url">Targeted Phishing URL</th>
                             <th class="sortable" data-table="telemetry" data-key="bert_score">BERT Score</th>
                             <th class="sortable" data-table="telemetry" data-key="timestamp">Timestamp</th>
-                            <th>Forensics</th>
+                            <th>Forensics & XAI</th>
                         </tr>
                     </thead>
                     <tbody id="telemetryBody">
@@ -918,6 +955,56 @@
                         🖨️ Print / Save PDF
                     </button>
                     <button type="button" id="dismissCisoBtn" class="action-btn" onclick="document.getElementById('cisoReportModal').classList.add('hidden')">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── Explainable AI (XAI) Token Attribution Modal Dialog ─── -->
+        <div id="xaiModal" class="modal-overlay hidden" aria-hidden="true">
+            <div class="modal-card" style="max-width: 680px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">🧠 Explainable AI (XAI) Token Semantic Attribution</h3>
+                    <button id="closeXaiModalBtn" class="modal-close-btn" type="button">&times;</button>
+                </div>
+                <div id="xaiModalBody" style="font-size: 0.85rem; line-height: 1.6; color: var(--text-secondary);">
+                    Evaluating token feature weights and semantic heatmaps...
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="dismissXaiBtn" class="action-btn action-btn--primary" onclick="document.getElementById('xaiModal').classList.add('hidden')">
+                        Done / Close
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── DNS Sinkhole & SIEM Firewall Exporter Modal ─── -->
+        <div id="sinkholeModal" class="modal-overlay hidden" aria-hidden="true">
+            <div class="modal-card" style="max-width: 620px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">🛡️ Automated DNS Sinkhole & SIEM Firewall Exporter</h3>
+                    <button id="closeSinkholeModalBtn" class="modal-close-btn" type="button">&times;</button>
+                </div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.25rem;">
+                    <p style="margin-bottom: 0.75rem;">Export real-time blocklists and IDS threat signatures generated from active quarantined domains:</p>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                        <a href="/api/v1/dashboard/export/sinkhole-rules?format=pihole" download="phishguard_pihole.txt" class="action-btn" style="padding: 0.75rem; justify-content: center;">
+                            🍓 Pi-hole / AdGuard (.txt)
+                        </a>
+                        <a href="/api/v1/dashboard/export/sinkhole-rules?format=hosts" download="phishguard_hosts.txt" class="action-btn" style="padding: 0.75rem; justify-content: center;">
+                            💻 Windows / Linux Hosts
+                        </a>
+                        <a href="/api/v1/dashboard/export/sinkhole-rules?format=bind" download="phishguard_bind_rpz.zone" class="action-btn" style="padding: 0.75rem; justify-content: center;">
+                            🌐 BIND 9 RPZ Zone (.zone)
+                        </a>
+                        <a href="/api/v1/dashboard/export/sinkhole-rules?format=suricata" download="phishguard_suricata.rules" class="action-btn" style="padding: 0.75rem; justify-content: center;">
+                            🛡️ Suricata / Snort IDS (.rules)
+                        </a>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="dismissSinkholeBtn" class="action-btn action-btn--primary" onclick="document.getElementById('sinkholeModal').classList.add('hidden')">
                         Close
                     </button>
                 </div>
