@@ -9,11 +9,20 @@
 "use strict";
 
 // ═══════════════════════════════════════════════════════════════════
-// CONFIGURATION
+// THEME INITIALIZATION
 // ═══════════════════════════════════════════════════════════════════
+const savedTheme = localStorage.getItem("phishguard_theme") || "cyberpunk";
+document.documentElement.setAttribute("data-theme", savedTheme);
+const $themeSelector = document.getElementById("themeSelector");
+if ($themeSelector) {
+    $themeSelector.value = savedTheme;
+    $themeSelector.addEventListener("change", (e) => {
+        const t = e.target.value;
+        document.documentElement.setAttribute("data-theme", t);
+        localStorage.setItem("phishguard_theme", t);
+    });
+}
 
-const API_BASE      = location.protocol === "file:" ? "http://127.0.0.1:8000/api/v1/dashboard" : "/api/v1/dashboard";
-const REFRESH_MS    = 3_000;
 
 // ═══════════════════════════════════════════════════════════════════
 // STATE
@@ -322,6 +331,50 @@ async function refreshStats() {
     setStatAnimated($statReports,    data.total_reports.toLocaleString());
 }
 
+function renderGeoRadar(nodes) {
+    const group = document.getElementById("geoRadarNodesGroup");
+    const legend = document.getElementById("geoNodesLegend");
+    if (!group || !legend) return;
+
+    if (!nodes || !nodes.length) {
+        nodes = [
+            { city: "Kuala Lumpur", country_code: "MY", lat: 3.139, lng: 101.6869, threats: 84, asn: "TM Net (AS4788)", status: "critical" },
+            { city: "Singapore", country_code: "SG", lat: 1.3521, lng: 103.8198, threats: 42, asn: "Singtel (AS7473)", status: "high" },
+            { city: "San Jose", country_code: "US", lat: 37.3382, lng: -121.8863, threats: 38, asn: "Cloudflare (AS13335)", status: "medium" },
+            { city: "Frankfurt", country_code: "DE", lat: 50.1109, lng: 8.6821, threats: 26, asn: "DigitalOcean (AS14061)", status: "medium" },
+        ];
+    }
+
+    let svgHtml = "";
+    let legendHtml = "";
+
+    nodes.forEach(n => {
+        const x = Math.round(((n.lng + 180) / 360) * 720 + 40);
+        const y = Math.round(((90 - n.lat) / 180) * 140 + 20);
+        const isPulse = n.status === "critical" || n.status === "high";
+        const color = n.status === "critical" ? "#ef4444" : n.status === "high" ? "#f59e0b" : "#3b82f6";
+
+        if (isPulse) {
+            svgHtml += `<circle cx="${x}" cy="${y}" r="6" fill="none" stroke="${color}" stroke-width="1.5" class="radar-pulse-node" />`;
+        }
+        svgHtml += `<circle cx="${x}" cy="${y}" r="4" fill="${color}" stroke="#ffffff" stroke-width="1" />`;
+        svgHtml += `<text x="${x + 7}" y="${y + 3}" fill="#e2e8f0" font-size="10" font-family="'JetBrains Mono', monospace">${escapeHtml(n.city)} (${n.threats})</text>`;
+
+        legendHtml += `
+            <div style="background: rgba(15, 23, 42, 0.6); padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.06); font-size: 0.78rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                    <strong style="color: ${color};">${escapeHtml(n.city)}, ${n.country_code}</strong>
+                    <span class="report-badge" style="font-size: 0.7rem;">${n.threats} attacks</span>
+                </div>
+                <div style="color: var(--text-muted); font-size: 0.72rem;">${escapeHtml(n.asn)}</div>
+            </div>
+        `;
+    });
+
+    group.innerHTML = svgHtml;
+    legend.innerHTML = legendHtml;
+}
+
 async function refreshDistributions() {
     try {
         const data = await apiFetch("/distributions");
@@ -330,8 +383,12 @@ async function refreshDistributions() {
         renderTimelineBars(data.timeline);
         renderPlatformBars(data.platforms);
         renderInfraBars(data.infrastructure);
+
+        const geo = await apiFetch("/geo-threats");
+        renderGeoRadar(geo.nodes);
     } catch (_err) {}
 }
+
 
 
 async function refreshTelemetry() {
@@ -397,16 +454,45 @@ function renderPaginationControls(container, infoEl, totalItems, currentPage, pa
     });
 }
 
+function evaluateHuntingFilter(entry, query) {
+    if (!query) return true;
+    const lowerQ = query.toLowerCase().trim();
+
+    // Support field syntax: bank:maybank, score:>0.85, score:<0.60, id:>50, url:.top
+    const tokens = lowerQ.split(/\s+and\s+/i);
+    return tokens.every(tok => {
+        tok = tok.trim();
+        if (tok.startsWith("bank:")) {
+            const val = tok.replace("bank:", "").trim();
+            return String(entry.malicious_url).toLowerCase().includes(val);
+        }
+        if (tok.startsWith("score:>")) {
+            const val = parseFloat(tok.replace("score:>", "").trim());
+            return !isNaN(val) ? entry.bert_score >= val : true;
+        }
+        if (tok.startsWith("score:<")) {
+            const val = parseFloat(tok.replace("score:<", "").trim());
+            return !isNaN(val) ? entry.bert_score <= val : true;
+        }
+        if (tok.startsWith("id:>")) {
+            const val = parseInt(tok.replace("id:>", "").trim(), 10);
+            return !isNaN(val) ? entry.log_id >= val : true;
+        }
+        if (tok.startsWith("url:")) {
+            const val = tok.replace("url:", "").trim();
+            return String(entry.malicious_url).toLowerCase().includes(val);
+        }
+        return String(entry.log_id).includes(tok) || String(entry.malicious_url).toLowerCase().includes(tok);
+    });
+}
+
 function renderTelemetry() {
     let filtered = telemetryData;
 
     if (telemetryFilterText) {
-        const query = telemetryFilterText.toLowerCase();
-        filtered = filtered.filter(e => 
-            String(e.log_id).includes(query) || 
-            String(e.malicious_url).toLowerCase().includes(query)
-        );
+        filtered = filtered.filter(e => evaluateHuntingFilter(e, telemetryFilterText));
     }
+
 
     if (telemetryScoreFilter === "high") {
         filtered = filtered.filter(e => e.bert_score >= 0.85);
@@ -1069,19 +1155,167 @@ if ($copyTakedownBtn) {
     });
 }
 
-const closeForensicModalBtn = document.getElementById("closeForensicModalBtn");
-if (closeForensicModalBtn) {
-    closeForensicModalBtn.addEventListener("click", () => {
-        const modal = document.getElementById("forensicReportModal");
-        if (modal) modal.classList.add("hidden");
+// Webhook Modal Listeners & Test Pinger
+const $webhookModal = document.getElementById("webhookModal");
+const $openWebhookModalBtn = document.getElementById("openWebhookModalBtn");
+const $closeWebhookModalBtn = document.getElementById("closeWebhookModalBtn");
+const $cancelWebhookBtn = document.getElementById("cancelWebhookBtn");
+const $webhookForm = document.getElementById("webhookForm");
+const $webhookStatusMsg = document.getElementById("webhookStatusMsg");
+
+function openWebhookModal() {
+    if ($webhookModal) {
+        $webhookModal.classList.remove("hidden");
+        if ($webhookStatusMsg) $webhookStatusMsg.style.display = "none";
+    }
+}
+
+function closeWebhookModal() {
+    if ($webhookModal) $webhookModal.classList.add("hidden");
+}
+
+if ($openWebhookModalBtn) $openWebhookModalBtn.addEventListener("click", openWebhookModal);
+if ($closeWebhookModalBtn) $closeWebhookModalBtn.addEventListener("click", closeWebhookModal);
+if ($cancelWebhookBtn) $cancelWebhookBtn.addEventListener("click", closeWebhookModal);
+
+async function handleTestPing(channel, urlInputId, chatInputId = null) {
+    const url = document.getElementById(urlInputId)?.value.trim();
+    const chat = chatInputId ? document.getElementById(chatInputId)?.value.trim() : null;
+    if (!url) {
+        alert("Please enter a webhook URL or token first.");
+        return;
+    }
+
+    if ($webhookStatusMsg) {
+        $webhookStatusMsg.style.display = "block";
+        $webhookStatusMsg.style.background = "rgba(6, 182, 212, 0.15)";
+        $webhookStatusMsg.style.color = "var(--accent-cyan)";
+        $webhookStatusMsg.textContent = `Dispatching test ping to ${channel}...`;
+    }
+
+    try {
+        const res = await apiFetch("/webhooks/test-ping", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ channel, target_url: url, chat_id: chat })
+        });
+
+        if ($webhookStatusMsg) {
+            if (res.success) {
+                $webhookStatusMsg.style.background = "rgba(16, 185, 129, 0.15)";
+                $webhookStatusMsg.style.color = "#34d399";
+                $webhookStatusMsg.textContent = `✅ ${channel} Test Ping Succeeded! (${res.status_code || 200})`;
+            } else {
+                $webhookStatusMsg.style.background = "rgba(239, 68, 68, 0.15)";
+                $webhookStatusMsg.style.color = "#f87171";
+                $webhookStatusMsg.textContent = `❌ Test Ping Failed: ${res.error || 'HTTP ' + res.status_code}`;
+            }
+        }
+    } catch (err) {
+        if ($webhookStatusMsg) {
+            $webhookStatusMsg.style.background = "rgba(239, 68, 68, 0.15)";
+            $webhookStatusMsg.style.color = "#f87171";
+            $webhookStatusMsg.textContent = "Error: " + err.message;
+        }
+    }
+}
+
+document.getElementById("testDiscordBtn")?.addEventListener("click", () => handleTestPing("discord", "discordWebhookInput"));
+document.getElementById("testSlackBtn")?.addEventListener("click", () => handleTestPing("slack", "slackWebhookInput"));
+document.getElementById("testTelegramBtn")?.addEventListener("click", () => handleTestPing("telegram", "telegramTokenInput", "telegramChatInput"));
+
+if ($webhookForm) {
+    $webhookForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const payload = {
+            discord_webhook: document.getElementById("discordWebhookInput")?.value || "",
+            slack_webhook: document.getElementById("slackWebhookInput")?.value || "",
+            telegram_token: document.getElementById("telegramTokenInput")?.value || "",
+            telegram_chat_id: document.getElementById("telegramChatInput")?.value || "",
+            enabled: true
+        };
+
+        try {
+            await apiFetch("/webhooks/save", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            alert("✅ Webhook configuration saved successfully!");
+            closeWebhookModal();
+        } catch (err) {
+            alert("Failed to save webhook settings: " + err.message);
+        }
     });
 }
+
+// Executive CISO Report Modal
+const $cisoReportModal = document.getElementById("cisoReportModal");
+const $openCisoReportBtn = document.getElementById("openCisoReportBtn");
+const $closeCisoModalBtn = document.getElementById("closeCisoModalBtn");
+const $dismissCisoBtn = document.getElementById("dismissCisoBtn");
+const $cisoReportContent = document.getElementById("cisoReportContent");
+
+async function openCisoReport() {
+    if (!$cisoReportModal || !$cisoReportContent) return;
+    $cisoReportModal.classList.remove("hidden");
+    $cisoReportContent.innerHTML = "Generating live CISO threat intelligence briefing...";
+
+    try {
+        const r = await apiFetch("/export/executive-report");
+        const banksHtml = (r.top_targeted_entities || []).map(b => `
+            <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.04);">
+                <span>${escapeHtml(b.brand)}</span>
+                <strong>${b.mules} Flagged Mules</strong>
+            </div>
+        `).join("");
+
+        const recsHtml = (r.strategic_recommendations || []).map(rec => `
+            <li style="margin-bottom: 6px;">${escapeHtml(rec)}</li>
+        `).join("");
+
+        $cisoReportContent.innerHTML = `
+            <div style="background: rgba(15, 23, 42, 0.7); padding: 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 14px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <strong>Document Reference:</strong> <code>${escapeHtml(r.report_id)}</code>
+                    <span style="color: #34d399; font-weight: 700;">Uptime: ${r.executive_summary.system_uptime}</span>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.82rem;">
+                    <div>• <strong>Mean Time to Detect (MTTD):</strong> <span style="color: var(--accent-cyan); font-weight: 700;">${r.executive_summary.mean_time_to_detect_seconds}s</span></div>
+                    <div>• <strong>Threats Intercepted:</strong> <span style="color: #f87171; font-weight: 700;">${r.executive_summary.total_phishing_intercepted}</span></div>
+                    <div>• <strong>Average AI Confidence:</strong> ${r.executive_summary.average_ai_confidence}%</div>
+                    <div>• <strong>Active Mule Accounts:</strong> ${r.executive_summary.active_mule_syndicates}</div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 14px;">
+                <strong style="color: #fff;">Top Targeted Malaysian Institutions:</strong>
+                <div style="margin-top: 6px; font-size: 0.82rem;">
+                    ${banksHtml || '<div>No bank syndicates recorded.</div>'}
+                </div>
+            </div>
+
+            <div>
+                <strong style="color: #fff;">Strategic CISO Recommendations:</strong>
+                <ul style="margin-top: 6px; padding-left: 20px; font-size: 0.8rem; line-height: 1.6;">
+                    ${recsHtml}
+                </ul>
+            </div>
+        `;
+    } catch (err) {
+        $cisoReportContent.innerHTML = `<span style="color: #f87171;">Failed to generate CISO briefing: ${escapeHtml(err.message)}</span>`;
+    }
+}
+
+if ($openCisoReportBtn) $openCisoReportBtn.addEventListener("click", openCisoReport);
+if ($closeCisoModalBtn) $closeCisoModalBtn.addEventListener("click", () => $cisoReportModal.classList.add("hidden"));
+if ($dismissCisoBtn) $dismissCisoBtn.addEventListener("click", () => $cisoReportModal.classList.add("hidden"));
 
 
 // Initial load & stream
 refreshAll();
-
 refreshSystemHealth();
 initSseStream();
 setInterval(refreshAll, REFRESH_MS);
 setInterval(refreshSystemHealth, 10_000);
+

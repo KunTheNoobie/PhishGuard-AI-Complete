@@ -392,6 +392,17 @@
         </nav>
 
         <div class="header__status">
+            <select id="themeSelector" class="page-size-select" title="Switch Theme">
+                <option value="cyberpunk">Cyber Neon</option>
+                <option value="matrix">Matrix Emerald</option>
+                <option value="abyss">OLED Abyss</option>
+            </select>
+            <button id="openWebhookModalBtn" class="action-btn" type="button" title="Configure Discord / Slack / Telegram Alerts">
+                ⚙️ Alerts
+            </button>
+            <button id="openCisoReportBtn" class="action-btn" type="button" title="Generate Executive CISO Briefing Report">
+                📑 CISO Briefing
+            </button>
             <button id="audioToggleBtn" class="action-btn" type="button" title="Toggle Threat Sound Alert">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
                 <span id="audioStatusText">Sound: OFF</span>
@@ -402,6 +413,7 @@
             <span class="header__refresh" id="lastRefresh"></span>
         </div>
     </header>
+
 
 
     <!-- ═══════════════════ MAIN ═══════════════════ -->
@@ -534,7 +546,30 @@
                     <div class="platform-bars" id="infraBars"></div>
                 </div>
             </article>
+
+            <!-- Geographic Attack Radar & Origin Nodes -->
+            <article class="chart-card" style="grid-column: 1 / -1;">
+                <div class="chart-card__header">
+                    <h3 class="chart-card__title">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                        Live SOC Geographic Attack Radar & Infrastructure Nodes
+                    </h3>
+                    <span class="chart-tag chart-tag--pulse">Global Geo-Intel</span>
+                </div>
+                <div class="chart-container" style="flex-direction: column; gap: 0.75rem;">
+                    <svg class="radar-map-svg" id="geoRadarSvg" viewBox="0 0 800 180">
+                        <line x1="0" y1="90" x2="800" y2="90" stroke="rgba(255,255,255,0.06)" stroke-dasharray="4"/>
+                        <line x1="400" y1="0" x2="400" y2="180" stroke="rgba(255,255,255,0.06)" stroke-dasharray="4"/>
+                        <circle cx="400" cy="90" r="35" fill="none" stroke="rgba(99,102,241,0.12)" stroke-dasharray="3"/>
+                        <circle cx="400" cy="90" r="75" fill="none" stroke="rgba(99,102,241,0.08)"/>
+                        <circle cx="400" cy="90" r="130" fill="none" stroke="rgba(99,102,241,0.04)"/>
+                        <g id="geoRadarNodesGroup"></g>
+                    </svg>
+                    <div id="geoNodesLegend" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.6rem;"></div>
+                </div>
+            </article>
         </section>
+
 
         <!-- ─── Live Threat Feed ─── -->
         <section class="panel" aria-label="Recent threat detections">
@@ -763,9 +798,69 @@
                             Close
                         </button>
                     </div>
+        <!-- ─── Webhook Alert Settings Modal Dialog ─── -->
+        <div id="webhookModal" class="modal-overlay hidden" aria-hidden="true">
+            <div class="modal-card" style="max-width: 580px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">⚙️ Multi-Channel SOC Alert Webhooks</h3>
+                    <button id="closeWebhookModalBtn" class="modal-close-btn" type="button">&times;</button>
+                </div>
+                <form id="webhookForm" class="modal-form">
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                        Real-time push notifications will be dispatched when high-confidence phishing threats or mule accounts are intercepted.
+                    </p>
+                    <div class="form-group">
+                        <label for="discordWebhookInput">Discord Webhook URL</label>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <input type="url" id="discordWebhookInput" placeholder="https://discord.com/api/webhooks/..." />
+                            <button type="button" class="action-btn" id="testDiscordBtn" style="white-space: nowrap;">Test Ping</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="slackWebhookInput">Slack Incoming Webhook URL</label>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <input type="url" id="slackWebhookInput" placeholder="https://hooks.slack.com/services/..." />
+                            <button type="button" class="action-btn" id="testSlackBtn" style="white-space: nowrap;">Test Ping</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="telegramTokenInput">Telegram Bot Token & Chat ID</label>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 0.5rem;">
+                            <input type="text" id="telegramTokenInput" placeholder="Bot Token (e.g. 123456:ABC...)" />
+                            <input type="text" id="telegramChatInput" placeholder="Chat ID (e.g. -10012345678)" />
+                            <button type="button" class="action-btn" id="testTelegramBtn" style="white-space: nowrap;">Test Ping</button>
+                        </div>
+                    </div>
+                    <div id="webhookStatusMsg" style="font-size: 0.8rem; padding: 0.4rem; border-radius: 4px; display: none;"></div>
+                    <div class="modal-actions">
+                        <button type="button" id="cancelWebhookBtn" class="action-btn">Cancel</button>
+                        <button type="submit" id="saveWebhookBtn" class="action-btn action-btn--primary">Save Configuration</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- ─── Executive CISO Briefing Modal Dialog ─── -->
+        <div id="cisoReportModal" class="modal-overlay hidden" aria-hidden="true">
+            <div class="modal-card" style="max-width: 680px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">📑 Executive CISO Security Briefing</h3>
+                    <button id="closeCisoModalBtn" class="modal-close-btn" type="button">&times;</button>
+                </div>
+                <div id="cisoReportContent" style="font-size: 0.85rem; line-height: 1.6; color: var(--text-secondary);">
+                    Generating executive CISO threat summary...
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="action-btn action-btn--primary" onclick="window.print()">
+                        🖨️ Print / Save PDF
+                    </button>
+                    <button type="button" id="dismissCisoBtn" class="action-btn" onclick="document.getElementById('cisoReportModal').classList.add('hidden')">
+                        Close
+                    </button>
                 </div>
             </div>
         </div>
+
 
 
     </main>

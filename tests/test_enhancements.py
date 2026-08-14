@@ -335,6 +335,49 @@ class TestDashboardEnhancements:
         assert len(data["infrastructure"]) > 0
         assert any("Cloudflare" in item["provider"] or "Namecheap" in item["provider"] for item in data["infrastructure"])
 
+    @pytest.mark.asyncio
+    async def test_geo_threats_endpoint(self, test_client: AsyncClient) -> None:
+        resp = await test_client.get("/api/v1/dashboard/geo-threats")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "nodes" in data
+        assert len(data["nodes"]) >= 4
+        assert any(n["city"] == "Kuala Lumpur" for n in data["nodes"])
+
+    @pytest.mark.asyncio
+    async def test_webhook_test_ping_and_save(self, test_client: AsyncClient) -> None:
+        # 1. Test ping on empty URL returns error
+        p_resp = await test_client.post(
+            "/api/v1/dashboard/webhooks/test-ping",
+            json={"channel": "discord", "target_url": ""}
+        )
+        assert p_resp.status_code == 200
+        assert p_resp.json()["success"] is False
+
+        # 2. Save settings
+        s_resp = await test_client.post(
+            "/api/v1/dashboard/webhooks/save",
+            json={"discord_webhook": "https://discord.com/api/webhooks/123/abc", "enabled": True}
+        )
+        assert s_resp.status_code == 200
+        assert s_resp.json()["success"] is True
+
+        # 3. Check status
+        st_resp = await test_client.get("/api/v1/dashboard/webhooks/status")
+        assert st_resp.status_code == 200
+        assert st_resp.json()["discord_configured"] is True
+
+    @pytest.mark.asyncio
+    async def test_executive_ciso_report_generator(self, test_client: AsyncClient) -> None:
+        resp = await test_client.get("/api/v1/dashboard/export/executive-report")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "report_id" in data
+        assert "executive_summary" in data
+        assert "mean_time_to_detect_seconds" in data["executive_summary"]
+        assert len(data["strategic_recommendations"]) > 0
+
+
 
 
 
