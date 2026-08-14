@@ -8,8 +8,11 @@
     <title>PhishGuard-AI | Threat Intelligence Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/dashboard/styles.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+        .hidden { display: none !important; }
+    </style>
 </head>
 <body>
     <!-- ═══════════════════ HEADER ═══════════════════ -->
@@ -33,13 +36,13 @@
             </div>
         </div>
         <div class="header__status">
-            <button id="audioToggleBtn" class="action-btn" title="Toggle Threat Sound Alert">
+            <button id="audioToggleBtn" class="action-btn" type="button" title="Toggle Threat Sound Alert">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
                 <span id="audioStatusText">Sound: OFF</span>
             </button>
-            <button id="simToggleBtn" class="sim-toggle-btn off">Simulation: OFF</button>
-            <span class="status-dot" id="statusDot"></span>
-            <span class="status-text" id="statusText">Connecting…</span>
+            <button id="simToggleBtn" class="sim-toggle-btn off" type="button">Simulation: OFF</button>
+            <span class="status-dot live" id="statusDot"></span>
+            <span class="status-text" id="statusText">Live</span>
             <span class="header__refresh" id="lastRefresh"></span>
         </div>
     </header>
@@ -47,7 +50,7 @@
     <!-- ═══════════════════ MAIN ═══════════════════ -->
     <main class="main">
 
-        <!-- ─── Quick URL Threat Analyzer ─── -->
+        <!-- ─── Quick URL Threat Inspector ─── -->
         <section class="quick-scanner-card" aria-label="Quick URL scanner">
             <div class="quick-scanner-header">
                 <div class="quick-scanner-title">
@@ -74,7 +77,7 @@
         <section class="stats-grid" aria-label="Aggregate statistics">
             <article class="stat-card stat-card--threats" id="cardThreats">
                 <div class="stat-card__icon">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
                 </div>
                 <div class="stat-card__body">
                     <p class="stat-card__value" id="statThreats">—</p>
@@ -84,7 +87,7 @@
 
             <article class="stat-card stat-card--confidence" id="cardConfidence">
                 <div class="stat-card__icon">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
                 </div>
                 <div class="stat-card__body">
                     <p class="stat-card__value" id="statConfidence">—</p>
@@ -94,7 +97,7 @@
 
             <article class="stat-card stat-card--mule" id="cardMule">
                 <div class="stat-card__icon">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
                 </div>
                 <div class="stat-card__body">
                     <p class="stat-card__value" id="statMule">—</p>
@@ -104,7 +107,7 @@
 
             <article class="stat-card stat-card--reports" id="cardReports">
                 <div class="stat-card__icon">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
                 </div>
                 <div class="stat-card__body">
                     <p class="stat-card__value" id="statReports">—</p>
@@ -178,13 +181,13 @@
                         <option value="all">All Confidence</option>
                         <option value="high">High (>85%)</option>
                         <option value="medium">Medium (60-85%)</option>
-                        <option value="low">Low (<60%)</option>
+                        <option value="low">Low (&lt;60%)</option>
                     </select>
-                    <button id="exportTelemetryCsvBtn" class="action-btn" title="Export Threat Telemetry as CSV">
+                    <button id="exportTelemetryCsvBtn" class="action-btn" type="button" title="Export Threat Telemetry as CSV">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                         CSV
                     </button>
-                    <button id="exportTelemetryJsonBtn" class="action-btn" title="Export Threat Telemetry as JSON">JSON</button>
+                    <button id="exportTelemetryJsonBtn" class="action-btn" type="button" title="Export Threat Telemetry as JSON">JSON</button>
                 </div>
             </div>
             <div class="panel__body">
@@ -218,10 +221,10 @@
                 </div>
                 <div class="panel__actions">
                     <input type="text" id="muleSearch" class="search-input" placeholder="Search account / bank / platform…" />
-                    <button id="openAddMuleModalBtn" class="action-btn action-btn--primary">
+                    <button id="openAddMuleModalBtn" class="action-btn action-btn--primary" type="button">
                         + Add Mule
                     </button>
-                    <button id="exportMuleCsvBtn" class="action-btn" title="Export Mule Registry as CSV">
+                    <button id="exportMuleCsvBtn" class="action-btn" type="button" title="Export Mule Registry as CSV">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                         CSV
                     </button>
@@ -254,12 +257,12 @@
             <div class="modal-card">
                 <div class="modal-header">
                     <h3 class="modal-title">Register Known Mule Account</h3>
-                    <button id="closeAddMuleModalBtn" class="modal-close-btn">&times;</button>
+                    <button id="closeAddMuleModalBtn" class="modal-close-btn" type="button">&times;</button>
                 </div>
                 <form id="addMuleForm" class="modal-form">
                     <div class="form-group">
-                        <label for="muleAccountInput">Bank Account Number *</label>
-                        <input type="text" id="muleAccountInput" required placeholder="e.g. 112233445566" />
+                        <label for="muleAccountInput">Bank Account / DuitNow Number *</label>
+                        <input type="text" id="muleAccountInput" required placeholder="e.g. 112233445566 or 012-3456789" />
                     </div>
                     <div class="form-group">
                         <label for="muleBankInput">Bank Name *</label>
@@ -273,6 +276,8 @@
                             <option value="AmBank">AmBank</option>
                             <option value="Bank Islam">Bank Islam</option>
                             <option value="Bank Rakyat">Bank Rakyat</option>
+                            <option value="DuitNow Mobile">DuitNow Mobile</option>
+                            <option value="DuitNow NRIC">DuitNow NRIC</option>
                             <option value="Other">Other Bank</option>
                         </select>
                     </div>
@@ -296,10 +301,10 @@
 
     <!-- ═══════════════════ FOOTER ═══════════════════ -->
     <footer class="footer">
-        <p>&copy; 2026 PhishGuard-AI — Semantic Threat Intelligence Engine v2.0</p>
-        <p class="footer__sub">Faculty of Computing &amp; Information Technology, TAR UMT</p>
+        <p>&copy; 2026 PhishGuard-AI &mdash; Semantic Threat Intelligence Engine v3.0<br/>
+        <small>Faculty of Computing & Information Technology, TAR UMT</small></p>
     </footer>
 
-    <script src="/dashboard/app.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>

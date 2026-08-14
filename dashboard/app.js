@@ -12,7 +12,7 @@
 // CONFIGURATION
 // ═══════════════════════════════════════════════════════════════════
 
-const API_BASE      = "/api/v1/dashboard";
+const API_BASE      = location.protocol === "file:" ? "http://127.0.0.1:8000/api/v1/dashboard" : "/api/v1/dashboard";
 const REFRESH_MS    = 3_000;
 
 // ═══════════════════════════════════════════════════════════════════
