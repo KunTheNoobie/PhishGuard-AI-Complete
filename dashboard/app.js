@@ -464,7 +464,68 @@ async function refreshStats() {
     setStatAnimated($statReports,    data.total_reports.toLocaleString());
 }
 
-let activeGeoFilter = null; // { city, countryCode }
+// ═══════════════════════════════════════════════════════════════════
+// MULTI-DIMENSIONAL THREAT FILTER ENGINE
+// ═══════════════════════════════════════════════════════════════════
+
+const selectedBrandFilters = new Set();
+const selectedGeoFilters = new Set();
+const geoMetadataMap = {
+    "my": { city: "Kuala Lumpur", code: "MY" },
+    "sg": { city: "Singapore", code: "SG" },
+    "us": { city: "San Jose", code: "US" },
+    "de": { city: "Frankfurt", code: "DE" },
+    "hk": { city: "Hong Kong", code: "HK" },
+    "jp": { city: "Tokyo", code: "JP" },
+};
+
+const BANK_ALIASES = {
+    "maybank": ["maybank", "maybank2u", "maybznk2u", "mae"],
+    "cimb bank": ["cimb", "cimbclicks", "cimb-clicks"],
+    "cimb": ["cimb", "cimbclicks", "cimb-clicks"],
+    "public bank": ["public", "pbb", "pbebank", "pbe"],
+    "public": ["public", "pbb", "pbebank", "pbe"],
+    "rhb bank": ["rhb", "rhbgroup", "rhbnow"],
+    "rhb": ["rhb", "rhbgroup", "rhbnow"],
+    "hong leong bank": ["hongleong", "hlb", "hlbb"],
+    "hong leong": ["hongleong", "hlb", "hlbb"],
+    "ambank": ["ambank", "ambankgroup", "amonline"],
+    "bank islam": ["islam", "bankislam", "bimb"],
+    "touch 'n go ewallet": ["touch", "tng", "tngdigital", "ewallet"],
+    "touch 'n go": ["touch", "tng", "tngdigital", "ewallet"],
+    "touch n go": ["touch", "tng", "tngdigital", "ewallet"],
+    "grabpay malaysia": ["grab", "grabpay"],
+    "grabpay": ["grab", "grabpay"],
+    "shopeepay": ["shopee", "shopeepay"]
+};
+
+function matchesAnyBrand(entryUrl, brandsSet) {
+    if (!brandsSet || brandsSet.size === 0) return true;
+    const urlLower = String(entryUrl).toLowerCase();
+    for (const brand of brandsSet) {
+        const brandKey = brand.toLowerCase();
+        const aliases = BANK_ALIASES[brandKey] || [brandKey];
+        if (aliases.some(alias => urlLower.includes(alias))) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function matchesAnyGeo(entry, geosSet) {
+    if (!geosSet || geosSet.size === 0) return true;
+    const cCode = (entry.country_code || "").toLowerCase();
+    const cCity = (entry.city || "").toLowerCase();
+    const cCountry = (entry.country || "").toLowerCase();
+
+    for (const geo of geosSet) {
+        const gLower = geo.toLowerCase();
+        if (cCode === gLower || cCity.includes(gLower) || cCountry.includes(gLower)) {
+            return true;
+        }
+    }
+    return false;
+}
 
 function renderGeoRadar(nodes) {
     const group = document.getElementById("geoRadarNodesGroup");
@@ -501,7 +562,7 @@ function renderGeoRadar(nodes) {
         const isHigh = n.status === "high";
         const color = isCritical ? "#ef4444" : isHigh ? "#f59e0b" : "#06b6d4";
         const text = `${n.city} (${n.threats})`;
-        const isSelected = activeGeoFilter && (activeGeoFilter.countryCode.toLowerCase() === n.country_code.toLowerCase() || activeGeoFilter.city.toLowerCase() === key);
+        const isSelected = selectedGeoFilters.has((n.country_code || '').toUpperCase()) || selectedGeoFilters.has((n.city || '').toUpperCase());
 
         if (conf.leader) {
             svgHtml += `<polyline points="${conf.leader}" fill="none" stroke="${color}" stroke-width="1.2" stroke-dasharray="2 2" opacity="0.75" />`;
@@ -514,21 +575,21 @@ function renderGeoRadar(nodes) {
             }
         }
 
-        svgHtml += `<circle cx="${conf.x}" cy="${conf.y}" r="4.5" fill="${color}" stroke="#ffffff" stroke-width="1.5" style="cursor: pointer;" onclick="filterFeedByCity('${escapeHtml(n.city)}', '${escapeHtml(n.country_code)}')" />`;
+        svgHtml += `<circle cx="${conf.x}" cy="${conf.y}" r="4.5" fill="${color}" stroke="#ffffff" stroke-width="1.5" style="cursor: pointer;" onclick="toggleGeoFilter('${escapeHtml(n.city)}', '${escapeHtml(n.country_code)}')" />`;
 
         const badgeWidth = text.length * 7.2 + 12;
         const rectX = conf.align === "end" ? conf.labelX - badgeWidth : conf.labelX - 4;
         const textAnchor = conf.align === "end" ? "end" : "start";
 
         svgHtml += `
-            <g style="cursor: pointer;" onclick="filterFeedByCity('${escapeHtml(n.city)}', '${escapeHtml(n.country_code)}')">
+            <g style="cursor: pointer;" onclick="toggleGeoFilter('${escapeHtml(n.city)}', '${escapeHtml(n.country_code)}')">
                 <rect x="${rectX}" y="${conf.labelY - 12}" width="${badgeWidth}" height="16" rx="4" fill="${isSelected ? color : 'rgba(10, 15, 30, 0.88)'}" stroke="${color}" stroke-width="${isSelected ? 2 : 0.8}" />
                 <text x="${conf.labelX}" y="${conf.labelY}" fill="#ffffff" font-size="10.5" font-weight="600" font-family="'JetBrains Mono', monospace" text-anchor="${textAnchor}">${escapeHtml(text)}</text>
             </g>
         `;
 
         legendHtml += `
-            <div class="geo-node-card ${isSelected ? 'active-geo-node' : ''}" onclick="filterFeedByCity('${escapeHtml(n.city)}', '${escapeHtml(n.country_code)}')">
+            <div class="geo-node-card ${isSelected ? 'active-geo-node' : ''}" onclick="toggleGeoFilter('${escapeHtml(n.city)}', '${escapeHtml(n.country_code)}')">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div style="display: flex; align-items: center; gap: 6px;">
                         <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${color}; box-shadow: 0 0 8px ${color};"></span>
@@ -548,32 +609,63 @@ function renderGeoRadar(nodes) {
     legend.innerHTML = legendHtml;
 }
 
-function filterFeedByCity(city, countryCode) {
-    activeGeoFilter = { city, countryCode: countryCode || city };
-    const $search = document.getElementById("telemetrySearch");
-    if ($search) {
-        $search.value = `country:${countryCode || city}`;
-        telemetryFilterText = `country:${countryCode || city}`;
-        telemetryPagination.page = 1;
-        renderTelemetry();
-        showCyberToast("info", "Geographic Filter Applied", `Filtered threats for ${city} (${countryCode || ''}).`);
-        $search.scrollIntoView({ behavior: "smooth", block: "center" });
+function toggleGeoFilter(city, countryCode) {
+    const code = (countryCode || city).toUpperCase();
+    if (selectedGeoFilters.has(code)) {
+        selectedGeoFilters.delete(code);
+        showCyberToast("info", "Filter Removed", `Removed ${city} (${code}) from active filters.`);
+    } else {
+        selectedGeoFilters.add(code);
+        geoMetadataMap[code.toLowerCase()] = { city, code };
+        showCyberToast("info", "Location Filter Added", `Added ${city} (${code}) (${selectedGeoFilters.size} location(s) active).`);
     }
-    // Update radar selection highlight
-    apiFetch("/geo-threats").then(geo => renderGeoRadar(geo.nodes)).catch(() => {});
+    syncFilterQuery();
+    renderTelemetry();
+    if (distributionsData) {
+        apiFetch("/geo-threats").then(geo => renderGeoRadar(geo.nodes)).catch(() => {});
+    }
 }
 
-function clearGeoFilter() {
-    activeGeoFilter = null;
+function removeGeoFilter(code) {
+    selectedGeoFilters.delete(code.toUpperCase());
+    syncFilterQuery();
+    renderTelemetry();
+    if (distributionsData) {
+        apiFetch("/geo-threats").then(geo => renderGeoRadar(geo.nodes)).catch(() => {});
+    }
+    showCyberToast("info", "Filter Removed", `Removed location filter.`);
+}
+
+function clearAllThreatFilters() {
+    selectedBrandFilters.clear();
+    selectedGeoFilters.clear();
+    telemetryFilterText = "";
+    const $search = document.getElementById("telemetrySearch");
+    if ($search) $search.value = "";
+    telemetryPagination.page = 1;
+    renderTelemetry();
+    refreshBrandMatrix();
+    if (distributionsData) {
+        apiFetch("/geo-threats").then(geo => renderGeoRadar(geo.nodes)).catch(() => {});
+    }
+    showCyberToast("info", "All Filters Cleared", "Displaying all live threat telemetry.");
+}
+
+function syncFilterQuery() {
+    telemetryPagination.page = 1;
+    const parts = [];
+    if (selectedBrandFilters.size > 0) {
+        parts.push(`bank:${Array.from(selectedBrandFilters).join(",")}`);
+    }
+    if (selectedGeoFilters.size > 0) {
+        parts.push(`country:${Array.from(selectedGeoFilters).join(",")}`);
+    }
+    const queryStr = parts.join(" ");
     const $search = document.getElementById("telemetrySearch");
     if ($search) {
-        $search.value = "";
-        telemetryFilterText = "";
-        telemetryPagination.page = 1;
-        renderTelemetry();
-        showCyberToast("info", "Filter Cleared", "Displaying all live threat telemetry.");
+        $search.value = queryStr;
     }
-    apiFetch("/geo-threats").then(geo => renderGeoRadar(geo.nodes)).catch(() => {});
+    telemetryFilterText = queryStr;
 }
 
 
@@ -728,32 +820,68 @@ function evaluateHuntingFilter(entry, query) {
 function renderTelemetry() {
     let filtered = telemetryData;
 
-    if (telemetryFilterText) {
+    // 1. Multi-selected Brands (OR filter across all selected institutions)
+    if (selectedBrandFilters.size > 0) {
+        filtered = filtered.filter(e => matchesAnyBrand(e.malicious_url, selectedBrandFilters));
+    }
+
+    // 2. Multi-selected Geos (OR filter across all selected locations)
+    if (selectedGeoFilters.size > 0) {
+        filtered = filtered.filter(e => matchesAnyGeo(e, selectedGeoFilters));
+    }
+
+    // 3. Custom Search Query (if manual text entered)
+    if (telemetryFilterText && !telemetryFilterText.startsWith("bank:") && !telemetryFilterText.startsWith("country:")) {
         filtered = filtered.filter(e => evaluateHuntingFilter(e, telemetryFilterText));
     }
 
+    // 4. Score filter
+    if (telemetryScoreFilter === "high") {
+        filtered = filtered.filter(e => e.bert_score >= 0.85);
+    } else if (telemetryScoreFilter === "medium") {
+        filtered = filtered.filter(e => e.bert_score >= 0.60 && e.bert_score < 0.85);
+    } else if (telemetryScoreFilter === "low") {
+        filtered = filtered.filter(e => e.bert_score < 0.60);
+    }
+
+    $telemetryCount.textContent = filtered.length;
+
+    // Render Active Multi-Filter Bar with individual removable chips!
     const $activeFilterBar = document.getElementById("activeGeoFilterContainer");
     if ($activeFilterBar) {
-        if (activeBrandFilter) {
+        const hasFilters = selectedBrandFilters.size > 0 || selectedGeoFilters.size > 0;
+        if (hasFilters) {
             $activeFilterBar.style.display = "flex";
-            $activeFilterBar.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                    <span class="geo-filter-pill">
-                        🏦 Active Institution Filter: <strong>${escapeHtml(activeBrandFilter)}</strong>
-                        <button class="geo-filter-pill__clear" onclick="clearBrandFilter()" title="Clear institution filter">✕ Clear</button>
+            const brandChips = Array.from(selectedBrandFilters).map(b => `
+                <span class="geo-filter-pill geo-filter-pill--brand">
+                    🏛️ <strong>${escapeHtml(b)}</strong>
+                    <button class="geo-filter-pill__clear" onclick="removeBrandFilter('${escapeHtml(b)}')" title="Remove ${escapeHtml(b)}">✕</button>
+                </span>
+            `).join("");
+
+            const geoChips = Array.from(selectedGeoFilters).map(g => {
+                const meta = geoMetadataMap[g.toLowerCase()] || { city: g, code: g };
+                return `
+                    <span class="geo-filter-pill geo-filter-pill--geo">
+                        📍 <strong>${escapeHtml(meta.city)} (${escapeHtml(meta.code)})</strong>
+                        <button class="geo-filter-pill__clear" onclick="removeGeoFilter('${escapeHtml(meta.code)}')" title="Remove ${escapeHtml(meta.city)}">✕</button>
                     </span>
-                    <span style="font-size: 0.74rem; color: var(--text-muted);">${filtered.length} matching incident(s)</span>
-                </div>
-            `;
-        } else if (activeGeoFilter) {
-            $activeFilterBar.style.display = "flex";
+                `;
+            }).join("");
+
             $activeFilterBar.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                    <span class="geo-filter-pill">
-                        📍 Active Geographic Filter: <strong>${escapeHtml(activeGeoFilter.city)} (${escapeHtml(activeGeoFilter.countryCode)})</strong>
-                        <button class="geo-filter-pill__clear" onclick="clearGeoFilter()" title="Clear geographic filter">✕ Clear</button>
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 0.5rem;">
+                    <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+                        <span style="font-size: 0.74rem; color: var(--text-muted); font-weight: 600;">Active Multi-Filters:</span>
+                        ${brandChips}
+                        ${geoChips}
+                        <button class="action-btn action-btn--delete" style="padding: 2px 8px; font-size: 0.7rem;" onclick="clearAllThreatFilters()" title="Clear all active filters">
+                            ✕ Clear All
+                        </button>
+                    </div>
+                    <span style="font-size: 0.74rem; color: var(--text-muted); font-weight: 600;">
+                        ${filtered.length} matching incident(s)
                     </span>
-                    <span style="font-size: 0.74rem; color: var(--text-muted);">${filtered.length} matching incident(s)</span>
                 </div>
             `;
         } else {
@@ -1593,8 +1721,6 @@ if ($closeCisoModalBtn) $closeCisoModalBtn.addEventListener("click", () => $ciso
 // PHASE 8: BRAND CAMPAIGN MATRIX & XAI TOKEN ATTRIBUTION
 // ═══════════════════════════════════════════════════════════════════
 
-let activeBrandFilter = null;
-
 async function refreshBrandMatrix() {
     try {
         const res = await apiFetch("/brand-campaign-matrix");
@@ -1605,11 +1731,11 @@ async function refreshBrandMatrix() {
         if (countBadge) countBadge.textContent = `${res.total_tracked_institutions} Tracked`;
 
         container.innerHTML = (res.brands || []).map(b => {
-            const isSelected = activeBrandFilter && (activeBrandFilter.toLowerCase() === b.brand.toLowerCase());
+            const isSelected = selectedBrandFilters.has(b.brand);
             const riskClass = b.risk_level === "CRITICAL" ? "brand-risk-badge--critical" :
                               b.risk_level === "ELEVATED" ? "brand-risk-badge--elevated" : "brand-risk-badge--monitored";
             return `
-                <div class="brand-matrix-card ${isSelected ? 'active-brand-card' : ''}" onclick="filterFeedByBrand('${escapeHtml(b.brand)}')">
+                <div class="brand-matrix-card ${isSelected ? 'active-brand-card' : ''}" onclick="toggleBrandFilter('${escapeHtml(b.brand)}')">
                     <div class="brand-matrix-header">
                         <span class="brand-matrix-title">
                             <span>${b.logo}</span> ${escapeHtml(b.brand)}
@@ -1629,37 +1755,25 @@ async function refreshBrandMatrix() {
     } catch (_e) {}
 }
 
-function filterFeedByBrand(brand) {
-    if (activeBrandFilter && activeBrandFilter.toLowerCase() === brand.toLowerCase()) {
-        clearBrandFilter();
-        return;
+function toggleBrandFilter(brand) {
+    if (selectedBrandFilters.has(brand)) {
+        selectedBrandFilters.delete(brand);
+        showCyberToast("info", "Filter Removed", `Removed ${brand} from active filters.`);
+    } else {
+        selectedBrandFilters.add(brand);
+        showCyberToast("info", "Institution Filter Added", `Added ${brand} (${selectedBrandFilters.size} bank(s) active).`);
     }
-
-    activeBrandFilter = brand;
-    activeGeoFilter = null; // Clear geo filter when brand filter is chosen
-
-    telemetryFilterText = `bank:${brand}`;
-    const searchInput = document.getElementById("telemetrySearch");
-    if (searchInput) searchInput.value = telemetryFilterText;
-    telemetryPagination.page = 1;
+    syncFilterQuery();
     renderTelemetry();
     refreshBrandMatrix();
-    showCyberToast("info", "Institution Filter Applied", `Filtered live threats targeting ${brand}.`);
-    document.getElementById("telemetryTable")?.scrollIntoView({ behavior: "smooth", block: "center" });
-
-    // Refresh geo radar to clear selected geo node
-    apiFetch("/geo-threats").then(geo => renderGeoRadar(geo.nodes)).catch(() => {});
 }
 
-function clearBrandFilter() {
-    activeBrandFilter = null;
-    const searchInput = document.getElementById("telemetrySearch");
-    if (searchInput) searchInput.value = "";
-    telemetryFilterText = "";
-    telemetryPagination.page = 1;
+function removeBrandFilter(brand) {
+    selectedBrandFilters.delete(brand);
+    syncFilterQuery();
     renderTelemetry();
     refreshBrandMatrix();
-    showCyberToast("info", "Filter Cleared", "Displaying all live threat telemetry.");
+    showCyberToast("info", "Filter Removed", `Removed ${brand}.`);
 }
 
 // XAI Modal Attributions

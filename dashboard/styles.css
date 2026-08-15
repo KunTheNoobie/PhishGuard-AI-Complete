@@ -369,20 +369,32 @@ body {
     50% { box-shadow: 0 0 22px rgba(16, 185, 129, 0.75); }
 }
 
-/* ─── Active Country / Geo Filter Pill ─── */
+/* ─── Active Country / Geo / Brand Filter Pills ─── */
 .geo-filter-pill {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.45rem;
     background: rgba(6, 182, 212, 0.15);
     color: #38bdf8;
     border: 1px solid rgba(6, 182, 212, 0.4);
     border-radius: var(--radius-full);
-    padding: 0.25rem 0.75rem;
-    font-size: 0.76rem;
+    padding: 0.2rem 0.65rem;
+    font-size: 0.75rem;
     font-weight: 600;
-    margin-bottom: 0.75rem;
-    animation: toastSlideIn 0.25s ease forwards;
+    animation: toastSlideIn 0.2s ease forwards;
+    transition: all 0.2s ease;
+}
+
+.geo-filter-pill--brand {
+    background: rgba(99, 102, 241, 0.18);
+    color: #a5b4fc;
+    border-color: rgba(99, 102, 241, 0.45);
+}
+
+.geo-filter-pill--geo {
+    background: rgba(6, 182, 212, 0.18);
+    color: #38bdf8;
+    border-color: rgba(6, 182, 212, 0.45);
 }
 
 .geo-filter-pill__clear {
@@ -394,12 +406,18 @@ body {
     font-size: 0.85rem;
     line-height: 1;
     padding: 0 2px;
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.geo-filter-pill__clear:hover {
+    color: #ef4444;
+    transform: scale(1.25);
 }
 
 .geo-node-card.active-geo-node {
     border-color: var(--accent-cyan) !important;
-    background: rgba(6, 182, 212, 0.12) !important;
-    box-shadow: 0 0 16px rgba(6, 182, 212, 0.3) !important;
+    background: rgba(6, 182, 212, 0.14) !important;
+    box-shadow: 0 0 16px rgba(6, 182, 212, 0.35) !important;
 }
 
 .status-dot {
