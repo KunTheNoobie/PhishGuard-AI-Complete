@@ -770,18 +770,24 @@
                         <option value="medium">Medium Risk (60–84%)</option>
                         <option value="low">Low Risk (&lt;60%)</option>
                     </select>
-                    <button id="exportTelemetryCsvBtn" class="action-btn" type="button">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                    <button id="exportTelemetryCsvBtn" class="action-btn export-action-btn" type="button" title="Export CSV Spreadsheet">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
                         CSV
                     </button>
-                    <button id="exportTelemetryJsonBtn" class="action-btn" type="button">JSON</button>
-                    <button id="exportStixBtn" class="action-btn" type="button" title="Export structured STIX 2.1 Threat Intelligence JSON Bundle">
+                    <button id="exportTelemetryJsonBtn" class="action-btn export-action-btn" type="button" title="Export Raw JSON">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                        JSON
+                    </button>
+                    <button id="exportStixBtn" class="action-btn export-action-btn" type="button" title="Export STIX 2.1 JSON Threat Bundle">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
                         STIX 2.1
                     </button>
-                    <a href="/api/v1/dashboard/export/cef" download="phishguard_telemetry.cef" class="action-btn" title="Export Splunk / ArcSight Common Event Format logs">
+                    <a href="/api/v1/dashboard/export/cef" download="phishguard_telemetry.cef" class="action-btn export-action-btn" title="Export Splunk / ArcSight CEF Logs">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
                         CEF
                     </a>
-                    <a href="/api/v1/dashboard/export/syslog" download="phishguard_syslog.log" class="action-btn" title="Export standard Syslog RFC 5424 logs">
+                    <a href="/api/v1/dashboard/export/syslog" download="phishguard_syslog.log" class="action-btn export-action-btn" title="Export RFC 5424 Syslog">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
                         Syslog
                     </a>
                 </div>
@@ -835,15 +841,15 @@
                 </div>
                 <div class="panel__actions">
                     <input type="text" id="muleSearch" class="search-input" placeholder="Search account / bank / platform…" />
-                    <button id="openBulkMuleModalBtn" class="action-btn" type="button" title="Import multiple mule accounts via CSV">
+                    <button id="openBulkMuleModalBtn" class="action-btn export-action-btn" type="button" title="Import multiple mule accounts via CSV">
                         📥 Bulk Import
                     </button>
-                    <button id="openAddMuleModalBtn" class="action-btn action-btn--primary" type="button">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <button id="openAddMuleModalBtn" class="action-btn action-btn--primary export-action-btn" type="button">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                         Add Mule
                     </button>
-                    <button id="exportMuleCsvBtn" class="action-btn" type="button">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                    <button id="exportMuleCsvBtn" class="action-btn export-action-btn" type="button" title="Export Mule Registry CSV">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
                         CSV
                     </button>
                 </div>
@@ -890,7 +896,10 @@
             <div class="modal-card">
                 <div class="modal-header">
                     <h3 class="modal-title">Flag Suspicious Mule Account</h3>
-                    <button id="closeAddMuleModalBtn" class="modal-close-btn" type="button">&times;</button>
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                        <button type="button" class="action-btn" id="muleInsertDemoBtn" style="font-size: 0.74rem; padding: 3px 8px;">📋 Insert Demo Sample</button>
+                        <button id="closeAddMuleModalBtn" class="modal-close-btn" type="button">&times;</button>
+                    </div>
                 </div>
                 <form id="addMuleForm" class="modal-form">
                     <div class="form-group">
@@ -932,7 +941,10 @@
             <div class="modal-card" style="max-width: 560px;">
                 <div class="modal-header">
                     <h3 class="modal-title">📥 Bulk Import Mule Accounts</h3>
-                    <button id="closeBulkMuleModalBtn" class="modal-close-btn" type="button">&times;</button>
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                        <button type="button" class="action-btn" id="bulkMuleInsertDemoBtn" style="font-size: 0.74rem; padding: 3px 8px;">📋 Insert Demo Sample</button>
+                        <button id="closeBulkMuleModalBtn" class="modal-close-btn" type="button">&times;</button>
+                    </div>
                 </div>
                 <form id="bulkMuleForm" class="modal-form">
                     <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
@@ -1154,10 +1166,19 @@
                     <div style="display: flex; flex-direction: column; gap: 1rem; overflow-y: auto;">
                         <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1rem;">
                             <h4 style="margin: 0 0 0.5rem 0; font-size: 0.85rem; color: #fff;">🚨 DEFCON Cyber Readiness Level</h4>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;">
-                                <button type="button" class="action-btn" onclick="setDefconLevel(3)" id="defcon3Btn">DEFCON 3<br/><small style="font-size: 0.65rem;">Normal</small></button>
-                                <button type="button" class="action-btn action-btn--primary" onclick="setDefconLevel(2)" id="defcon2Btn">DEFCON 2<br/><small style="font-size: 0.65rem;">Elevated</small></button>
-                                <button type="button" class="action-btn" style="background: rgba(239, 68, 68, 0.2); border-color: #ef4444; color: #f87171;" onclick="setDefconLevel(1)" id="defcon1Btn">DEFCON 1<br/><small style="font-size: 0.65rem;">LOCKDOWN</small></button>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                                <button type="button" class="action-btn" onclick="setDefconLevel(3)" id="defcon3Btn" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 6px 4px; height: 50px; border-radius: 6px; text-align: center;">
+                                    <span style="font-weight: 700; font-size: 0.78rem;">DEFCON 3</span>
+                                    <span style="font-size: 0.65rem; opacity: 0.85;">Normal</span>
+                                </button>
+                                <button type="button" class="action-btn action-btn--primary" onclick="setDefconLevel(2)" id="defcon2Btn" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 6px 4px; height: 50px; border-radius: 6px; text-align: center;">
+                                    <span style="font-weight: 700; font-size: 0.78rem;">DEFCON 2</span>
+                                    <span style="font-size: 0.65rem; opacity: 0.85;">Elevated</span>
+                                </button>
+                                <button type="button" class="action-btn" onclick="setDefconLevel(1)" id="defcon1Btn" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 6px 4px; height: 50px; border-radius: 6px; text-align: center; background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.4); color: #f87171;">
+                                    <span style="font-weight: 700; font-size: 0.78rem;">DEFCON 1</span>
+                                    <span style="font-size: 0.65rem; opacity: 0.85;">Lockdown</span>
+                                </button>
                             </div>
                         </div>
 

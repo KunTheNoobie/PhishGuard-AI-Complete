@@ -1532,6 +1532,26 @@ if ($openBulkMuleModalBtn) $openBulkMuleModalBtn.addEventListener("click", openB
 if ($closeBulkMuleModalBtn) $closeBulkMuleModalBtn.addEventListener("click", closeBulkMuleModal);
 if ($cancelBulkMuleBtn) $cancelBulkMuleBtn.addEventListener("click", closeBulkMuleModal);
 
+document.getElementById("muleInsertDemoBtn")?.addEventListener("click", () => {
+    const acc = document.getElementById("muleAccountInput");
+    const bank = document.getElementById("muleBankInput");
+    const plat = document.getElementById("mulePlatformInput");
+    const reps = document.getElementById("muleReportsInput");
+    if (acc) acc.value = "112233445566";
+    if (bank) bank.value = "Maybank";
+    if (plat) plat.value = "WhatsApp Syndicate (P2P DuitNow)";
+    if (reps) reps.value = "8";
+    showCyberToast("info", "Demo Account Loaded", "Populated Maybank mule account sample.");
+});
+
+document.getElementById("bulkMuleInsertDemoBtn")?.addEventListener("click", () => {
+    const txt = document.getElementById("bulkMuleText");
+    if (txt) {
+        txt.value = `112233445566, Maybank, WhatsApp, 5\n558844887979, CIMB Bank, Telegram, 12\n988812259332, Hong Leong Bank, ShopeePay, 4\n334455667788, Public Bank, Facebook Marketplace, 7\n778899001122, Touch n Go eWallet, Mudah.my, 6`;
+        showCyberToast("info", "Demo Mule Accounts Loaded", "Populated 5 Malaysian syndicate mule records.");
+    }
+});
+
 if ($bulkMuleForm) {
     $bulkMuleForm.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -2562,6 +2582,34 @@ function initWarRoomTrajectoryCanvas() {
 
 function setDefconLevel(level) {
     currentDefconLevel = level;
+    const b1 = document.getElementById("defcon1Btn");
+    const b2 = document.getElementById("defcon2Btn");
+    const b3 = document.getElementById("defcon3Btn");
+
+    if (b1) {
+        if (level === 1) {
+            b1.className = "action-btn";
+            b1.style.background = "rgba(239, 68, 68, 0.35)";
+            b1.style.borderColor = "#ef4444";
+            b1.style.color = "#fca5a5";
+            b1.style.boxShadow = "0 0 14px rgba(239, 68, 68, 0.5)";
+        } else {
+            b1.className = "action-btn";
+            b1.style.background = "rgba(239, 68, 68, 0.12)";
+            b1.style.borderColor = "rgba(239, 68, 68, 0.3)";
+            b1.style.color = "#f87171";
+            b1.style.boxShadow = "none";
+        }
+    }
+    if (b2) {
+        b2.className = level === 2 ? "action-btn action-btn--primary" : "action-btn";
+        b2.style.boxShadow = level === 2 ? "0 0 14px rgba(6, 182, 212, 0.5)" : "none";
+    }
+    if (b3) {
+        b3.className = level === 3 ? "action-btn action-btn--primary" : "action-btn";
+        b3.style.boxShadow = level === 3 ? "0 0 14px rgba(16, 185, 129, 0.5)" : "none";
+    }
+
     if (!$warRoomDefconBadge) return;
     if (level === 1) {
         $warRoomDefconBadge.className = "brand-risk-badge brand-risk-badge--critical";

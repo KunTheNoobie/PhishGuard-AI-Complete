@@ -1021,6 +1021,27 @@ body {
     flex-wrap: wrap;
 }
 
+.panel__actions a.action-btn,
+.panel__actions button.action-btn,
+.export-action-btn {
+    text-decoration: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    font-size: 0.76rem !important;
+    height: 32px !important;
+    line-height: 1 !important;
+    vertical-align: middle !important;
+    white-space: nowrap !important;
+}
+
+.panel__actions a.action-btn:hover,
+.panel__actions button.action-btn:hover,
+.export-action-btn:hover {
+    text-decoration: none !important;
+}
+
 .search-input {
     background: var(--bg-input);
     border: 1px solid var(--border-subtle);
