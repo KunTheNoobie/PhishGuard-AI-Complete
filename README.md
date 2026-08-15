@@ -6,7 +6,7 @@
   <p>Real-time financial scam, quishing, and money-mule detection powered by fine-tuned BERT NLP, Computer Vision (YOLOv8), DuitNow EMVCo QR scanning, Brand Impersonation Profiling, and STIX 2.1 CTI Sharing.</p>
 
   [![CI/CD Test Pipeline](https://github.com/KunTheNoobie/PhishGuard-AI-Complete/actions/workflows/test.yml/badge.svg)](https://github.com/KunTheNoobie/PhishGuard-AI-Complete/actions)
-  [![Tests: 117 Passed](https://img.shields.io/badge/Tests-117%20Passed-brightgreen)](https://github.com/KunTheNoobie/PhishGuard-AI-Complete)
+  [![Tests: 120 Passed](https://img.shields.io/badge/Tests-120%20Passed-brightgreen)](https://github.com/KunTheNoobie/PhishGuard-AI-Complete)
   [![PhishGuard-AI](https://img.shields.io/badge/Version-v3.0.0-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
   [![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue.svg?logo=python&logoColor=white)](https://python.org)
   [![Manifest V3](https://img.shields.io/badge/Chrome%20Extension-Manifest%20V3-4285F4?logo=googlechrome&logoColor=white)](https://developer.chrome.com/docs/extensions/mv3/intro/)

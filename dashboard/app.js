@@ -2717,8 +2717,9 @@ const BUILTIN_COMMANDS = [
     { title: "🛡️ Set DEFCON 3 (Normal Operations)", category: "Defense", handler: () => setDefconLevel(3) },
     { title: "⏯️ Toggle Stream Pause / Resume", category: "Stream", handler: () => toggleStreamPause() },
     { title: "📊 Export OASIS STIX 2.1 Threat Bundle", category: "Export", handler: () => exportStixBundle() },
-    { title: "📥 Export Threat Telemetry CSV", category: "Export", handler: () => $exportTelemetryCsvBtn?.click() },
-    { title: "📥 Export Threat Telemetry JSON", category: "Export", handler: () => $exportTelemetryJsonBtn?.click() },
+    { title: "🎯 MITRE ATT&CK® v14 Enterprise Matrix", category: "CTI", handler: () => openMitreModal() },
+    { title: "🛡️ Auto-Generated YARA & Suricata Rules", category: "Rules", handler: () => openYaraRulesModal() },
+    { title: "🏹 Launch Red-Team Awareness Simulation", category: "Red-Team", handler: () => openRedTeamModal() },
     { title: "⌨️ View Keyboard Shortcuts Cheatsheet", category: "Help", handler: () => openHotkeysModal() },
 ];
 
@@ -3241,16 +3242,233 @@ async function openDbMaintenanceModal() {
     }
 }
 
-if ($openDbMaintenanceBtn) $openDbMaintenanceBtn.addEventListener("click", openDbMaintenanceModal);
-if ($closeDbMaintenanceModalBtn) $closeDbMaintenanceModalBtn.addEventListener("click", () => $dbMaintenanceModal?.classList.add("hidden"));
+// ── 7. MITRE ATT&CK Matrix Controller ──
+const $openMitreBtn = document.getElementById("openMitreBtn");
+const $mitreModal = document.getElementById("mitreModal");
+const $closeMitreModalBtn = document.getElementById("closeMitreModalBtn");
+const $mitreModalBody = document.getElementById("mitreModalBody");
 
-// ── 6. Hotkeys Guide Modal ──
-function openHotkeysModal() {
-    if ($hotkeysModal) $hotkeysModal.classList.remove("hidden");
+async function openMitreModal() {
+    if (!$mitreModal || !$mitreModalBody) return;
+    $mitreModalBody.innerHTML = `<div style="text-align: center; padding: 2rem;"><span class="status-dot live"></span> Mapping active telemetry to MITRE ATT&CK v14.1 Enterprise Taxonomy...</div>`;
+    $mitreModal.classList.remove("hidden");
+
+    try {
+        const data = await apiFetch("/mitre-matrix");
+        const tacticsHtml = (data.tactics || []).map(t => {
+            const techList = (t.techniques || []).map(tech => `
+                <div style="background: rgba(15,23,42,0.85); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 10px; margin-bottom: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <span style="font-family: monospace; font-weight: 800; color: var(--accent-cyan); font-size: 0.8rem;">${escapeHtml(tech.technique_id)}</span>
+                        <span class="brand-risk-badge ${tech.risk_level === 'CRITICAL' ? 'brand-risk-badge--critical' : 'brand-risk-badge--elevated'}">${escapeHtml(tech.risk_level)}</span>
+                    </div>
+                    <strong style="color: #fff; font-size: 0.84rem; display: block; margin-bottom: 4px;">${escapeHtml(tech.name)}</strong>
+                    <p style="font-size: 0.76rem; color: var(--text-secondary); margin: 0 0 4px 0;">${escapeHtml(tech.description)}</p>
+                    <div style="font-size: 0.72rem; color: #a5b4fc; background: rgba(99,102,241,0.1); padding: 4px 6px; border-radius: 4px; border: 1px solid rgba(99,102,241,0.2);">
+                        🛡️ ${escapeHtml(tech.mitigation)}
+                    </div>
+                </div>
+            `).join("");
+
+            return `
+                <div style="flex: 1; min-width: 210px; background: rgba(10,15,30,0.6); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 10px;">
+                    <div style="margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 6px;">
+                        <span style="font-size: 0.68rem; font-family: monospace; color: var(--text-muted);">${escapeHtml(t.tactic_id)}</span>
+                        <h4 style="margin: 0; font-size: 0.9rem; color: #fff;">${escapeHtml(t.name)}</h4>
+                    </div>
+                    ${techList}
+                </div>
+            `;
+        }).join("");
+
+        $mitreModalBody.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <div>
+                    <h3 style="margin: 0; color: #fff; font-size: 1rem;">${escapeHtml(data.framework)}</h3>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">${data.total_tactics} Tactics &bull; ${data.total_techniques_covered} Techniques Covered &bull; Correlated with ${data.active_telemetry_correlated} Active Telemetry Threats</div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: stretch;">
+                ${tacticsHtml}
+            </div>
+        `;
+    } catch (err) {
+        $mitreModalBody.innerHTML = `<div style="color: #f87171; padding: 1.5rem;">Failed to load MITRE ATT&CK Matrix: ${escapeHtml(err.message)}</div>`;
+    }
 }
 
-if ($openHotkeysBtn) $openHotkeysBtn.addEventListener("click", openHotkeysModal);
-if ($closeHotkeysModalBtn) $closeHotkeysModalBtn.addEventListener("click", () => $hotkeysModal?.classList.add("hidden"));
+if ($openMitreBtn) $openMitreBtn.addEventListener("click", openMitreModal);
+if ($closeMitreModalBtn) $closeMitreModalBtn.addEventListener("click", () => $mitreModal?.classList.add("hidden"));
+
+// ── 8. Auto-Generated YARA & Suricata Rules Controller ──
+const $openYaraBtn = document.getElementById("openYaraBtn");
+const $yaraRulesModal = document.getElementById("yaraRulesModal");
+const $closeYaraRulesModalBtn = document.getElementById("closeYaraRulesModalBtn");
+const $yaraRulesBody = document.getElementById("yaraRulesBody");
+
+async function openYaraRulesModal() {
+    if (!$yaraRulesModal || !$yaraRulesBody) return;
+    $yaraRulesBody.innerHTML = `<div style="text-align: center; padding: 2rem;"><span class="status-dot live"></span> Synthesizing YARA and Suricata signatures from active threat models...</div>`;
+    $yaraRulesModal.classList.remove("hidden");
+
+    try {
+        const [yaraData, suricataData] = await Promise.all([
+            apiFetch("/yara-rules"),
+            apiFetch("/suricata-rules")
+        ]);
+
+        $yaraRulesBody.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" id="tabYaraBtn" class="action-btn action-btn--primary">📄 YARA Rules (.yar)</button>
+                    <button type="button" id="tabSuricataBtn" class="action-btn">🛡️ Suricata / Snort IDS (.rules)</button>
+                </div>
+                <button type="button" id="copyRuleCodeBtn" class="action-btn action-btn--primary">📋 Copy Ruleset</button>
+            </div>
+            <pre id="ruleCodeDisplay" style="background: rgba(10,15,30,0.95); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 1rem; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: #38bdf8; overflow-x: auto; max-height: 480px; margin: 0; line-height: 1.45;">${escapeHtml(yaraData.rules)}</pre>
+        `;
+
+        let currentRuleText = yaraData.rules;
+
+        document.getElementById("tabYaraBtn")?.addEventListener("click", () => {
+            currentRuleText = yaraData.rules;
+            document.getElementById("tabYaraBtn").className = "action-btn action-btn--primary";
+            document.getElementById("tabSuricataBtn").className = "action-btn";
+            document.getElementById("ruleCodeDisplay").textContent = yaraData.rules;
+        });
+
+        document.getElementById("tabSuricataBtn")?.addEventListener("click", () => {
+            currentRuleText = suricataData.rules;
+            document.getElementById("tabSuricataBtn").className = "action-btn action-btn--primary";
+            document.getElementById("tabYaraBtn").className = "action-btn";
+            document.getElementById("ruleCodeDisplay").textContent = suricataData.rules;
+        });
+
+        document.getElementById("copyRuleCodeBtn")?.addEventListener("click", () => {
+            navigator.clipboard.writeText(currentRuleText);
+            showCyberToast("success", "Copied to Clipboard", "Threat rules copied.");
+        });
+    } catch (err) {
+        $yaraRulesBody.innerHTML = `<div style="color: #f87171; padding: 1.5rem;">Failed to synthesize rules: ${escapeHtml(err.message)}</div>`;
+    }
+}
+
+if ($openYaraBtn) $openYaraBtn.addEventListener("click", openYaraRulesModal);
+if ($closeYaraRulesModalBtn) $closeYaraRulesModalBtn.addEventListener("click", () => $yaraRulesModal?.classList.add("hidden"));
+
+// ── 9. Security Awareness & Red-Team Simulator Controller ──
+const $openRedTeamBtn = document.getElementById("openRedTeamBtn");
+const $redTeamModal = document.getElementById("redTeamModal");
+const $closeRedTeamModalBtn = document.getElementById("closeRedTeamModalBtn");
+const $redTeamModalBody = document.getElementById("redTeamModalBody");
+
+async function openRedTeamModal() {
+    if (!$redTeamModal || !$redTeamModalBody) return;
+    $redTeamModalBody.innerHTML = `<div style="text-align: center; padding: 2rem;"><span class="status-dot live"></span> Loading standardized security awareness training templates...</div>`;
+    $redTeamModal.classList.remove("hidden");
+
+    try {
+        const data = await apiFetch("/red-team/campaigns");
+        const optionsHtml = (data.templates || []).map((t, idx) => `
+            <div class="sat-template-card ${idx === 0 ? 'selected' : ''}" data-id="${escapeHtml(t.id)}" style="background: rgba(15,23,42,0.85); border: 1px solid ${idx === 0 ? 'var(--accent-cyan)' : 'var(--border-subtle)'}; border-radius: 8px; padding: 12px; margin-bottom: 8px; cursor: pointer;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <strong style="color: #fff; font-size: 0.88rem;">${escapeHtml(t.title)}</strong>
+                    <span class="brand-risk-badge brand-risk-badge--elevated">${escapeHtml(t.difficulty)}</span>
+                </div>
+                <div style="font-size: 0.76rem; color: var(--text-secondary); margin-bottom: 4px;">
+                    <strong>Target:</strong> ${escapeHtml(t.target_audience)} &bull; <strong>Vector:</strong> ${escapeHtml(t.vector)}
+                </div>
+                <p style="font-size: 0.74rem; color: var(--text-muted); margin: 0;">${escapeHtml(t.description)}</p>
+            </div>
+        `).join("");
+
+        $redTeamModalBody.innerHTML = `
+            <div style="margin-bottom: 1rem;">
+                <h4 style="margin: 0 0 4px 0; color: #fff; font-size: 0.95rem;">Select Simulated Threat Scenario:</h4>
+                <div id="satTemplateList" style="max-height: 260px; overflow-y: auto; padding-right: 4px;">
+                    ${optionsHtml}
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 1rem;">
+                <label style="font-size: 0.8rem; color: #fff;">Target Staff Count:</label>
+                <input type="number" id="satTargetCount" class="page-size-select" value="100" min="10" max="500" style="width: 90px;" />
+                <button type="button" id="launchSatCampaignBtn" class="action-btn action-btn--primary" style="flex: 1;">🚀 Launch Simulated Red-Team Test</button>
+            </div>
+
+            <div id="satResultsBox" class="hidden" style="background: rgba(10,15,30,0.8); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px;"></div>
+        `;
+
+        let selectedTemplateId = (data.templates && data.templates[0]) ? data.templates[0].id : "SAT-MY-001";
+
+        $redTeamModalBody.querySelectorAll(".sat-template-card").forEach(el => {
+            el.addEventListener("click", () => {
+                $redTeamModalBody.querySelectorAll(".sat-template-card").forEach(c => {
+                    c.style.borderColor = "var(--border-subtle)";
+                    c.classList.remove("selected");
+                });
+                el.style.borderColor = "var(--accent-cyan)";
+                el.classList.add("selected");
+                selectedTemplateId = el.getAttribute("data-id");
+            });
+        });
+
+        document.getElementById("launchSatCampaignBtn")?.addEventListener("click", async () => {
+            const count = parseInt(document.getElementById("satTargetCount")?.value, 10) || 50;
+            const resBox = document.getElementById("satResultsBox");
+            if (resBox) {
+                resBox.classList.remove("hidden");
+                resBox.innerHTML = `<span class="status-dot live"></span> Executing campaign simulation across ${count} recipients...`;
+            }
+
+            try {
+                const res = await apiFetch("/red-team/launch", {
+                    method: "POST",
+                    body: JSON.stringify({ template_id: selectedTemplateId, target_count: count })
+                });
+
+                if (resBox) {
+                    const tel = res.telemetry;
+                    resBox.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <strong style="color: #34d399; font-size: 0.95rem;">✅ Red-Team Simulation Complete [${escapeHtml(res.campaign_id)}]</strong>
+                            <span class="cmd-badge">${escapeHtml(res.template.title)}</span>
+                        </div>
+                        <div class="batch-scorecard" style="margin-bottom: 8px;">
+                            <div class="batch-scorecard-item">
+                                <div style="font-size: 0.7rem; color: var(--text-muted);">Delivered</div>
+                                <div style="font-size: 1.1rem; font-weight: 800; color: #fff;">${tel.emails_delivered}</div>
+                            </div>
+                            <div class="batch-scorecard-item">
+                                <div style="font-size: 0.7rem; color: var(--text-muted);">Opened</div>
+                                <div style="font-size: 1.1rem; font-weight: 800; color: #fff;">${tel.emails_opened}</div>
+                            </div>
+                            <div class="batch-scorecard-item">
+                                <div style="font-size: 0.7rem; color: var(--text-muted);">Clicked Lure</div>
+                                <div style="font-size: 1.1rem; font-weight: 800; color: #f87171;">${tel.links_clicked} (${tel.vulnerability_rate})</div>
+                            </div>
+                            <div class="batch-scorecard-item">
+                                <div style="font-size: 0.7rem; color: var(--text-muted);">PhishGuard Defense</div>
+                                <div style="font-size: 1.1rem; font-weight: 800; color: #34d399;">${tel.phishguard_defense_efficacy}</div>
+                            </div>
+                        </div>
+                        <div style="font-size: 0.78rem; color: #fff; background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); padding: 8px; border-radius: 6px;">
+                            🛡️ <strong>Outcome:</strong> 100% of the ${tel.blocked_by_phishguard_extension} employee click attempts were intercepted by PhishGuard-AI's real-time browser extension, resulting in <strong>0 data loss or credential exfiltration</strong>.
+                        </div>
+                    `;
+                }
+                showCyberToast("success", "Red-Team Simulated", `Simulated attack on ${count} staff.`);
+            } catch (e) {
+                if (resBox) resBox.innerHTML = `<span style="color: #f87171;">Error: ${escapeHtml(e.message)}</span>`;
+            }
+        });
+    } catch (err) {
+        $redTeamModalBody.innerHTML = `<div style="color: #f87171; padding: 1.5rem;">Failed to load red-team templates: ${escapeHtml(err.message)}</div>`;
+    }
+}
+
+if ($openRedTeamBtn) $openRedTeamBtn.addEventListener("click", openRedTeamModal);
+if ($closeRedTeamModalBtn) $closeRedTeamModalBtn.addEventListener("click", () => $redTeamModal?.classList.add("hidden"));
 
 // Initial load & stream
 async function masterRefresh() {

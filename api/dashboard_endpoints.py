@@ -1785,6 +1785,85 @@ async def diagnostics_benchmark_endpoint(request: Request) -> dict[str, Any]:
     }
 
 
+# ── MITRE ATT&CK Matrix & CTI Taxonomy ──
+@router.get(
+    "/mitre-matrix",
+    summary="MITRE ATT&CK v14 Enterprise Matrix Mapping",
+    tags=["Threat Intelligence & Syndication"],
+)
+async def get_mitre_attack_matrix_endpoint(request: Request) -> dict[str, Any]:
+    """Retrieve full MITRE ATT&CK Enterprise & Mobile v14.1 tactics and techniques mapping."""
+    from services.mitre_mapper import generate_mitre_attack_matrix
+    db = request.app.state.db
+    cursor = await db.execute("SELECT COUNT(*) FROM threat_telemetry;")
+    row = await cursor.fetchone()
+    count = row[0] if row else 141
+    return generate_mitre_attack_matrix(active_telemetry_count=count)
+
+
+# ── YARA & Suricata / Snort Rules ──
+@router.get(
+    "/yara-rules",
+    summary="Auto-Generated YARA Threat Ruleset",
+    tags=["Threat Intelligence & Syndication"],
+)
+async def get_yara_rules_endpoint() -> dict[str, Any]:
+    """Return synthesized YARA file and memory detection rules."""
+    from services.yara_generator import generate_phishguard_yara_rules
+    return {
+        "format": "YARA",
+        "rules": generate_phishguard_yara_rules(),
+        "generated_at": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
+    }
+
+
+@router.get(
+    "/suricata-rules",
+    summary="Auto-Generated Suricata / Snort IDS/IPS Ruleset",
+    tags=["Threat Intelligence & Syndication"],
+)
+async def get_suricata_rules_endpoint() -> dict[str, Any]:
+    """Return synthesized Suricata/Snort network inspection rules."""
+    from services.yara_generator import generate_suricata_snort_rules
+    return {
+        "format": "Suricata / Snort",
+        "rules": generate_suricata_snort_rules(),
+        "generated_at": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
+    }
+
+
+# ── Security Awareness & Red-Team Simulation ──
+@router.get(
+    "/red-team/campaigns",
+    summary="Get Security Awareness Training Simulation Templates",
+    tags=["Autonomous Defense & Radar"],
+)
+async def get_red_team_templates_endpoint() -> dict[str, Any]:
+    """Return standardized Malaysian banking awareness training templates."""
+    from services.red_team_simulator import get_available_campaign_templates
+    return {"templates": get_available_campaign_templates()}
+
+
+class RedTeamLaunchRequest(BaseModel):
+    template_id: str
+    target_count: Optional[int] = 50
+
+
+@router.post(
+    "/red-team/launch",
+    summary="Launch Simulated Enterprise Red-Team Phishing Campaign",
+    tags=["Autonomous Defense & Radar"],
+)
+async def launch_red_team_campaign_endpoint(payload: RedTeamLaunchRequest) -> dict[str, Any]:
+    """Execute simulated security awareness campaign and calculate employee defense resilience."""
+    from services.red_team_simulator import launch_simulated_red_team_campaign
+    return launch_simulated_red_team_campaign(
+        template_id=payload.template_id,
+        target_count=payload.target_count or 50
+    )
+
+
+
 
 
 

@@ -480,6 +480,12 @@
                     <button id="openSinkholeModalBtn" class="action-btn" type="button" title="Export DNS Sinkhole & SIEM Firewall Rules">
                         🛡️ Sinkhole / SIEM
                     </button>
+                    <button id="openMitreBtn" class="action-btn" type="button" title="MITRE ATT&CK Enterprise Matrix Heatmap">
+                        🎯 MITRE ATT&CK
+                    </button>
+                    <button id="openYaraBtn" class="action-btn" type="button" title="Auto-Generated YARA & Suricata Rules">
+                        🛡️ YARA / IDS
+                    </button>
                 </div>
             </div>
 
@@ -495,6 +501,9 @@
                     </button>
                     <button id="openDbMaintenanceBtn" class="action-btn" type="button" title="Database Maintenance & Hot Backup">
                         💾 Database
+                    </button>
+                    <button id="openRedTeamBtn" class="action-btn" type="button" title="Security Awareness & Red-Team Campaign Simulator">
+                        🏹 Red-Team Sim
                     </button>
                     <button id="openHotkeysBtn" class="action-btn" type="button" title="SOC Keyboard Hotkeys Reference (?)">
                         ⌨️ Hotkeys
@@ -1306,6 +1315,39 @@
                         </tbody>
                     </table>
                 </div>
+            </div>
+        </div>
+
+        <!-- ─── MITRE ATT&CK Enterprise Matrix Modal ─── -->
+        <div id="mitreModal" class="modal-overlay hidden" aria-hidden="true">
+            <div class="modal-card" style="max-width: 960px; max-height: 90vh; display: flex; flex-direction: column;">
+                <div class="modal-header">
+                    <h3 class="modal-title">🎯 MITRE ATT&CK® v14 Enterprise Matrix & CTI Mapping</h3>
+                    <button class="modal-close-btn" id="closeMitreModalBtn" type="button">&times;</button>
+                </div>
+                <div class="modal-body" id="mitreModalBody" style="overflow-y: auto; padding-right: 6px;"></div>
+            </div>
+        </div>
+
+        <!-- ─── Auto-Generated YARA & Suricata Rules Modal ─── -->
+        <div id="yaraRulesModal" class="modal-overlay hidden" aria-hidden="true">
+            <div class="modal-card" style="max-width: 860px; max-height: 90vh; display: flex; flex-direction: column;">
+                <div class="modal-header">
+                    <h3 class="modal-title">🛡️ Auto-Generated YARA & Suricata / Snort Rulesets</h3>
+                    <button class="modal-close-btn" id="closeYaraRulesModalBtn" type="button">&times;</button>
+                </div>
+                <div class="modal-body" id="yaraRulesBody" style="overflow-y: auto; padding-right: 6px;"></div>
+            </div>
+        </div>
+
+        <!-- ─── Security Awareness & Red-Team Simulator Modal ─── -->
+        <div id="redTeamModal" class="modal-overlay hidden" aria-hidden="true">
+            <div class="modal-card" style="max-width: 900px; max-height: 90vh; display: flex; flex-direction: column;">
+                <div class="modal-header">
+                    <h3 class="modal-title">🏹 Enterprise Security Awareness & Phishing Red-Team Simulator</h3>
+                    <button class="modal-close-btn" id="closeRedTeamModalBtn" type="button">&times;</button>
+                </div>
+                <div class="modal-body" id="redTeamModalBody" style="overflow-y: auto; padding-right: 6px;"></div>
             </div>
         </div>
 

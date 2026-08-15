@@ -729,4 +729,64 @@ Please confirm your account balance at http://maybank2u-tac.top and send RM 500 
         assert b_data["sqlite_query_latency_ms"] >= 0
         assert "system_telemetry" in b_data
 
+    @pytest.mark.asyncio
+    async def test_mitre_attack_matrix_service_and_endpoint(self, test_client: AsyncClient) -> None:
+        from services.mitre_mapper import generate_mitre_attack_matrix
+        matrix = generate_mitre_attack_matrix(141)
+        assert "MITRE ATT&CK" in matrix["framework"]
+        assert matrix["total_tactics"] >= 4
+        assert matrix["total_techniques_covered"] >= 5
+
+        resp = await test_client.get("/api/v1/dashboard/mitre-matrix")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "tactics" in data
+        assert len(data["tactics"]) >= 4
+
+    @pytest.mark.asyncio
+    async def test_yara_and_suricata_rules_generation_and_endpoints(self, test_client: AsyncClient) -> None:
+        from services.yara_generator import generate_phishguard_yara_rules, generate_suricata_snort_rules
+
+        yara_str = generate_phishguard_yara_rules()
+        assert "rule PhishGuard_Malaysian_Banking_PhishKit" in yara_str
+        assert "$bank1" in yara_str
+
+        suricata_str = generate_suricata_snort_rules()
+        assert "alert http" in suricata_str
+        assert "PHISHGUARD MALICIOUS HOST" in suricata_str
+
+        # Endpoints
+        yara_resp = await test_client.get("/api/v1/dashboard/yara-rules")
+        assert yara_resp.status_code == 200
+        assert "rules" in yara_resp.json()
+
+        suricata_resp = await test_client.get("/api/v1/dashboard/suricata-rules")
+        assert suricata_resp.status_code == 200
+        assert "rules" in suricata_resp.json()
+
+    @pytest.mark.asyncio
+    async def test_red_team_simulator_service_and_endpoint(self, test_client: AsyncClient) -> None:
+        from services.red_team_simulator import get_available_campaign_templates, launch_simulated_red_team_campaign
+
+        templates = get_available_campaign_templates()
+        assert len(templates) >= 5
+
+        sim_res = launch_simulated_red_team_campaign("SAT-MY-001", target_count=50)
+        assert sim_res["recipients_targeted"] == 50
+        assert sim_res["telemetry"]["blocked_by_phishguard_extension"] > 0
+        assert sim_res["verdict"] == "CAMPAIGN_EXECUTED_SUCCESSFULLY"
+
+        # Endpoints
+        tpl_resp = await test_client.get("/api/v1/dashboard/red-team/campaigns")
+        assert tpl_resp.status_code == 200
+        assert len(tpl_resp.json()["templates"]) >= 5
+
+        launch_resp = await test_client.post(
+            "/api/v1/dashboard/red-team/launch",
+            json={"template_id": "SAT-MY-002", "target_count": 80}
+        )
+        assert launch_resp.status_code == 200
+        assert launch_resp.json()["recipients_targeted"] == 80
+
+
 
