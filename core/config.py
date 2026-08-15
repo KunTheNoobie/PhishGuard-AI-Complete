@@ -21,10 +21,12 @@ from typing import Final
 # ==============================================================================
 APP_TITLE: Final[str] = "PhishGuard-AI"
 APP_DESCRIPTION: Final[str] = (
-    "Enterprise-grade, real-time Anti-Phishing Browser Security Suite. "
-    "Performs semantic NLP analysis and mule-account scanning on raw DOM payloads."
+    "Enterprise-grade SOC Cyber Defense & Multi-Vector Threat Intelligence Platform v3.0. "
+    "Performs real-time BERT semantic NLP classification, Brand Homoglyph profiling, Mule syndicate tracking, "
+    "NSRC 997 & National Fraud Portal gateway orchestration, TAXII 2.1 STIX syndication, Quishing QR inspection, "
+    "Pre-emptive Typosquatting radar, and Autonomous Incident Playbooks."
 )
-APP_VERSION: Final[str] = "2.0.0"
+APP_VERSION: Final[str] = "3.0.0"
 
 # ==============================================================================
 # 2. SECURITY CONSTANTS

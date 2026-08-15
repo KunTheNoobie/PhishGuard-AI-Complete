@@ -28,7 +28,7 @@ logger: Final[logging.Logger] = logging.getLogger("phishguard.dashboard")
 # ==============================================================================
 router: Final[APIRouter] = APIRouter(
     prefix="/api/v1/dashboard",
-    tags=["Dashboard (Internal)"],
+    tags=["Dashboard & Telemetry"],
 )
 
 

@@ -258,10 +258,42 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 # FastAPI Application Instance
 # ==============================================================================
 
+OPENAPI_TAGS: Final[list[dict[str, Any]]] = [
+    {
+        "name": "Live Analysis & Ingestion",
+        "description": "Real-time DOM payload ingestion, BERT semantic NLP classification, heuristic parsing, and parallel mule verification.",
+    },
+    {
+        "name": "SOC Defense & Tactical Modules",
+        "description": "SOC War Room, Visual Sandbox, NSRC 997 & National Fraud Portal gateway, and Quishing QR code inspection.",
+    },
+    {
+        "name": "Threat Intelligence & Syndication",
+        "description": "OASIS STIX 2.1 / TAXII 2.1 server, Global Threat Feeds (URLhaus, PhishTank, OpenPhish), and Batch Forensic Inspector.",
+    },
+    {
+        "name": "Autonomous Defense & Radar",
+        "description": "Autonomous Incident Response Playbooks, Pre-emptive Typosquatting Radar, and DNS Sinkhole / SIEM rule exports.",
+    },
+    {
+        "name": "Dashboard & Telemetry",
+        "description": "Live SSE event streaming, 10-Bank telemetry distributions, Geo-node attack vectors, and executive CISO briefing reports.",
+    },
+    {
+        "name": "Visual Identity Analysis",
+        "description": "YOLO-based bank logo detection and visual screenshot domain mismatch validation.",
+    },
+    {
+        "name": "System & Operations",
+        "description": "Database maintenance, SQLite live hot backups, hardware inference benchmarks, webhook alerts, and liveness probes.",
+    },
+]
+
 app: Final[FastAPI] = FastAPI(
     title=APP_TITLE,
     description=APP_DESCRIPTION,
     version=APP_VERSION,
+    openapi_tags=OPENAPI_TAGS,
     lifespan=lifespan,
     docs_url=None,
     redoc_url=None,
@@ -434,14 +466,14 @@ _SWAGGER_CYBER_DARK_HTML: Final[str] = """<!DOCTYPE html>
 
         <div class="header__status">
             <span class="status-dot live"></span>
-            <span class="status-text">FastAPI 2.0 Docs</span>
+            <span class="status-text">OAS 3.1 &bull; v3.0.0</span>
         </div>
     </header>
 
     <div id="swagger-ui"></div>
 
     <footer class="footer" style="margin-top: 3rem;">
-        <p>&copy; 2026 PhishGuard-AI &mdash; Threat Intelligence Platform<br/>
+        <p>&copy; 2026 PhishGuard-AI &mdash; Semantic Threat Intelligence Engine v3.0<br/>
         <small>Faculty of Computing & Information Technology, TAR UMT</small></p>
     </footer>
 

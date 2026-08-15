@@ -59,7 +59,7 @@ logger: Final[logging.Logger] = logging.getLogger("phishguard.endpoints")
 # ==============================================================================
 router: Final[APIRouter] = APIRouter(
     prefix="/api/v1",
-    tags=["Threat Analysis"],
+    tags=["Live Analysis & Ingestion"],
     dependencies=[Depends(verify_api_key)],  # All routes require auth.
 )
 
