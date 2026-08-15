@@ -392,6 +392,14 @@
         </nav>
 
         <div class="header__status">
+            <!-- Quick Launch Primary Actions -->
+            <button id="openWarRoomBtn" class="action-btn" style="background: linear-gradient(135deg, rgba(6,182,212,0.25), rgba(99,102,241,0.25)); border-color: var(--accent-cyan); color: #fff; font-weight: 700;" type="button" title="Launch Fullscreen Defense War Room">
+                ⚡ War Room
+            </button>
+            <button id="openCommandPaletteBtn" class="action-btn" type="button" title="Open Global Command Palette (Ctrl+K)">
+                ⚡ Command <kbd style="font-size: 0.65rem; background: rgba(0,0,0,0.4); padding: 1px 4px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.1);">Ctrl+K</kbd>
+            </button>
+
             <!-- Theme & Audio Settings -->
             <div class="header__status-group" title="Theme and Audio Controls">
                 <select id="themeSelector" class="page-size-select" title="Switch Theme">
@@ -424,49 +432,6 @@
                 </button>
             </div>
 
-            <!-- SOC Operations & Remediation Tools -->
-            <div class="header__status-group" title="SOC Playbooks & Security Workflows">
-                <button id="openWarRoomBtn" class="action-btn" style="background: linear-gradient(135deg, rgba(6,182,212,0.25), rgba(99,102,241,0.25)); border-color: var(--accent-cyan); color: #fff; font-weight: 700;" type="button" title="Launch Fullscreen Defense War Room">
-                    ⚡ War Room
-                </button>
-                <button id="openCommandPaletteBtn" class="action-btn" type="button" title="Open Global Command Palette (Ctrl+K)">
-                    ⚡ Command <kbd style="font-size: 0.65rem; background: rgba(0,0,0,0.4); padding: 1px 4px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.1);">Ctrl+K</kbd>
-                </button>
-                <button id="openBatchInspectBtn" class="action-btn" type="button" title="Batch Forensic URL & Raw Email Inspector">
-                    📥 Batch Scan
-                </button>
-                <button id="openThreatFeedsBtn" class="action-btn" type="button" title="Global Threat Intelligence Feeds (URLhaus / PhishTank)">
-                    🌐 Feeds
-                </button>
-                <button id="openNsrcBtn" class="action-btn" type="button" title="Malaysian National Anti-Scam NSRC 997 & NFP Portal">
-                    🏛️ NFP Gateway
-                </button>
-                <button id="openQuishingBtn" class="action-btn" type="button" title="Quishing QR Code & Payload Analyzer">
-                    📷 Quish Scan
-                </button>
-                <button id="openPlaybooksBtn" class="action-btn" type="button" title="Autonomous Incident Playbooks">
-                    🤖 Playbooks
-                </button>
-                <button id="openTyposquatBtn" class="action-btn" type="button" title="Pre-Emptive Typosquat Radar">
-                    🎯 Typosquat
-                </button>
-                <button id="openWebhookModalBtn" class="action-btn" type="button" title="Configure Discord / Slack / Telegram Alerts">
-                    ⚙️ Alerts
-                </button>
-                <button id="openCisoReportBtn" class="action-btn" type="button" title="Generate Executive CISO Briefing Report">
-                    📑 CISO Briefing
-                </button>
-                <button id="openSinkholeModalBtn" class="action-btn" type="button" title="Export DNS Sinkhole & SIEM Firewall Rules">
-                    🛡️ Sinkhole / SIEM
-                </button>
-                <button id="openDbMaintenanceBtn" class="action-btn" type="button" title="Database Maintenance & Hot Backup">
-                    💾 Database
-                </button>
-                <button id="openHotkeysBtn" class="action-btn" type="button" title="SOC Keyboard Hotkeys Reference (?)">
-                    ⌨️ Keys
-                </button>
-            </div>
-
             <!-- Real-time Status -->
             <div class="header__status-group" style="padding: 0.3rem 0.6rem;">
                 <span class="status-dot live" id="statusDot"></span>
@@ -480,6 +445,63 @@
 
     <!-- ═══════════════════ MAIN ═══════════════════ -->
     <main class="main">
+
+        <!-- ─── SOC Command & Operations Ribbon ─── -->
+        <section class="soc-command-ribbon" aria-label="SOC Command & Operations Ribbon">
+            <!-- Cluster 1: Live Intercept & Defense -->
+            <div class="soc-ribbon-group">
+                <span class="soc-ribbon-label">🚨 THREAT INTERCEPT</span>
+                <div class="soc-ribbon-buttons">
+                    <button id="openNsrcBtn" class="action-btn" type="button" title="Malaysian National Anti-Scam NSRC 997 & NFP Portal">
+                        🏛️ NFP Gateway
+                    </button>
+                    <button id="openQuishingBtn" class="action-btn" type="button" title="Quishing QR Code & Payload Analyzer">
+                        📷 Quish Scan
+                    </button>
+                    <button id="openBatchInspectBtn" class="action-btn" type="button" title="Batch Forensic URL & Raw Email Inspector">
+                        📥 Batch Scan
+                    </button>
+                    <button id="openThreatFeedsBtn" class="action-btn" type="button" title="Global Threat Intelligence Feeds (URLhaus / PhishTank)">
+                        🌐 Threat Feeds
+                    </button>
+                </div>
+            </div>
+
+            <!-- Cluster 2: Radar & Automation -->
+            <div class="soc-ribbon-group">
+                <span class="soc-ribbon-label">🤖 RADAR & AUTOMATION</span>
+                <div class="soc-ribbon-buttons">
+                    <button id="openPlaybooksBtn" class="action-btn" type="button" title="Autonomous Incident Playbooks">
+                        🤖 Playbooks
+                    </button>
+                    <button id="openTyposquatBtn" class="action-btn" type="button" title="Pre-Emptive Typosquat Radar">
+                        🎯 Typosquat
+                    </button>
+                    <button id="openSinkholeModalBtn" class="action-btn" type="button" title="Export DNS Sinkhole & SIEM Firewall Rules">
+                        🛡️ Sinkhole / SIEM
+                    </button>
+                </div>
+            </div>
+
+            <!-- Cluster 3: Intel, Reports & System -->
+            <div class="soc-ribbon-group">
+                <span class="soc-ribbon-label">📊 INTEL & SYSTEM</span>
+                <div class="soc-ribbon-buttons">
+                    <button id="openCisoReportBtn" class="action-btn" type="button" title="Generate Executive CISO Briefing Report">
+                        📑 CISO Briefing
+                    </button>
+                    <button id="openWebhookModalBtn" class="action-btn" type="button" title="Configure Discord / Slack / Telegram Alerts">
+                        ⚙️ Alerts
+                    </button>
+                    <button id="openDbMaintenanceBtn" class="action-btn" type="button" title="Database Maintenance & Hot Backup">
+                        💾 Database
+                    </button>
+                    <button id="openHotkeysBtn" class="action-btn" type="button" title="SOC Keyboard Hotkeys Reference (?)">
+                        ⌨️ Hotkeys
+                    </button>
+                </div>
+            </div>
+        </section>
 
         <!-- ─── Quick URL Threat Inspector ─── -->
         <section class="quick-scanner-card" aria-label="Quick URL scanner">
