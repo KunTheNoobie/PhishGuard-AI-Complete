@@ -16,10 +16,17 @@ import time
 from typing import Any
 
 
-def generate_phishguard_yara_rules() -> str:
-    """Generate YARA rule block for scanning downloaded phishing kits and HTML files."""
+def generate_phishguard_yara_rules(active_domains: list[str] | None = None) -> str:
+    """Generate dynamic YARA rule block for scanning downloaded phishing kits and HTML files."""
     timestamp = time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
     
+    domain_strings = ""
+    if active_domains:
+        for idx, d in enumerate(active_domains[:10]):
+            clean_d = d.replace('"', '\\"').strip()
+            if clean_d:
+                domain_strings += f'        $ioc_domain_{idx + 1} = "{clean_d}" nocase\n'
+
     yara_code = f"""/*
  * PhishGuard-AI Auto-Generated YARA Ruleset v3.0
  * Generated: {timestamp}
@@ -57,7 +64,7 @@ rule PhishGuard_Malaysian_Banking_PhishKit {{
         $urg2 = "Account has been suspended" nocase
         $urg3 = "Verify within 24 hours" nocase
         $urg4 = "Tuntutan Bantuan Tunai" nocase
-
+{domain_strings}
     condition:
         (1 of ($bank*)) and (1 of ($tac*)) and (1 of ($urg*))
 }}
@@ -80,9 +87,17 @@ rule PhishGuard_DuitNow_EMVCo_Quishing_Payload {{
     return yara_code
 
 
-def generate_suricata_snort_rules() -> str:
-    """Generate Suricata and Snort IDS/IPS network inspection signatures."""
+def generate_suricata_snort_rules(active_domains: list[str] | None = None) -> str:
+    """Generate dynamic Suricata and Snort IDS/IPS network inspection signatures."""
     timestamp = time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
+
+    dynamic_rules = ""
+    if active_domains:
+        for idx, d in enumerate(active_domains[:5]):
+            sid = 3000100 + idx
+            clean_d = d.replace('"', '\\"').strip()
+            if clean_d:
+                dynamic_rules += f'alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"PHISHGUARD ACTIVE IOC - Intercepted Request to Flagged Domain {clean_d}"; flow:established,to_server; http.host; content:"{clean_d}"; nocase; classtype:trojan-activity; sid:{sid}; rev:1;)\n'
 
     suricata_rules = f"""# ═════════════════════════════════════════════════════════════════════
 # PhishGuard-AI Auto-Generated Suricata / Snort IDS Ruleset v3.0
@@ -100,5 +115,6 @@ alert dns $HOME_NET any -> any 53 (msg:"PHISHGUARD DNS QUERY - Request to High-R
 
 # Rule 4: DuitNow Scam Account Exfiltration Payload
 alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"PHISHGUARD MULE SYNDICATE - Stolen Fund Redirection to Flagged Account"; flow:established,to_server; http.request_body; content:"account_number="; nocase; classtype:trojan-activity; sid:3000004; rev:1;)
-"""
+
+{dynamic_rules}"""
     return suricata_rules

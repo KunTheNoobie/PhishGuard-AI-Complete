@@ -1807,12 +1807,17 @@ async def get_mitre_attack_matrix_endpoint(request: Request) -> dict[str, Any]:
     summary="Auto-Generated YARA Threat Ruleset",
     tags=["Threat Intelligence & Syndication"],
 )
-async def get_yara_rules_endpoint() -> dict[str, Any]:
+async def get_yara_rules_endpoint(request: Request) -> dict[str, Any]:
     """Return synthesized YARA file and memory detection rules."""
     from services.yara_generator import generate_phishguard_yara_rules
+    from urllib.parse import urlparse
+    db = request.app.state.db
+    cursor = await db.execute("SELECT malicious_url FROM threat_telemetry ORDER BY log_id DESC LIMIT 10;")
+    rows = await cursor.fetchall()
+    domains = [urlparse(r[0]).netloc for r in rows if r and r[0]]
     return {
         "format": "YARA",
-        "rules": generate_phishguard_yara_rules(),
+        "rules": generate_phishguard_yara_rules(domains),
         "generated_at": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
     }
 
@@ -1822,12 +1827,17 @@ async def get_yara_rules_endpoint() -> dict[str, Any]:
     summary="Auto-Generated Suricata / Snort IDS/IPS Ruleset",
     tags=["Threat Intelligence & Syndication"],
 )
-async def get_suricata_rules_endpoint() -> dict[str, Any]:
+async def get_suricata_rules_endpoint(request: Request) -> dict[str, Any]:
     """Return synthesized Suricata/Snort network inspection rules."""
     from services.yara_generator import generate_suricata_snort_rules
+    from urllib.parse import urlparse
+    db = request.app.state.db
+    cursor = await db.execute("SELECT malicious_url FROM threat_telemetry ORDER BY log_id DESC LIMIT 10;")
+    rows = await cursor.fetchall()
+    domains = [urlparse(r[0]).netloc for r in rows if r and r[0]]
     return {
         "format": "Suricata / Snort",
-        "rules": generate_suricata_snort_rules(),
+        "rules": generate_suricata_snort_rules(domains),
         "generated_at": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
     }
 
