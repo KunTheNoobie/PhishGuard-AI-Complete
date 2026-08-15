@@ -426,6 +426,15 @@
 
             <!-- SOC Operations & Remediation Tools -->
             <div class="header__status-group" title="SOC Playbooks & Security Workflows">
+                <button id="openWarRoomBtn" class="action-btn" style="background: linear-gradient(135deg, rgba(6,182,212,0.25), rgba(99,102,241,0.25)); border-color: var(--accent-cyan); color: #fff; font-weight: 700;" type="button" title="Launch Fullscreen Defense War Room">
+                    ⚡ War Room
+                </button>
+                <button id="openNsrcBtn" class="action-btn" type="button" title="Malaysian National Anti-Scam NSRC 997 & NFP Portal">
+                    🏛️ NFP Gateway
+                </button>
+                <button id="openQuishingBtn" class="action-btn" type="button" title="Quishing QR Code & Payload Analyzer">
+                    📷 Quish Scan
+                </button>
                 <button id="openPlaybooksBtn" class="action-btn" type="button" title="Autonomous Incident Playbooks">
                     🤖 Playbooks
                 </button>
@@ -1092,6 +1101,117 @@
                     <button type="button" id="dismissThreatGraphBtn" class="action-btn action-btn--primary" onclick="document.getElementById('threatGraphModal').classList.add('hidden')">
                         Close
                     </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── Enterprise SOC Defense War Room Fullscreen Modal ─── -->
+        <div id="warRoomModal" class="modal-overlay hidden" aria-hidden="true" style="z-index: 9999;">
+            <div class="modal-card war-room-card" style="max-width: 96vw; width: 1400px; max-height: 94vh; padding: 1.5rem; display: flex; flex-direction: column;">
+                <div class="modal-header" style="border-bottom: 1px solid rgba(6, 182, 212, 0.3);">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span class="status-dot live" style="box-shadow: 0 0 14px #22c55e;"></span>
+                        <h2 class="modal-title" style="font-size: 1.25rem; letter-spacing: 0.04em;">⚡ ENTERPRISE SOC DEFENSE WAR ROOM</h2>
+                        <span class="brand-risk-badge brand-risk-badge--critical" id="warRoomDefconBadge">DEFCON 2: ELEVATED</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <button type="button" id="warRoomAudioToggleBtn" class="action-btn" title="Toggle Acoustic Cyber Announcer">🔊 Voice Alert: ON</button>
+                        <button id="closeWarRoomModalBtn" class="modal-close-btn" type="button">&times;</button>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.25rem; margin-top: 1rem; flex: 1; min-height: 0;">
+                    <!-- Left: Attack Trajectory Radar Canvas -->
+                    <div style="background: rgba(10, 15, 30, 0.95); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <span style="font-size: 0.82rem; font-weight: 700; color: var(--accent-cyan);">🌐 LIVE GLOBAL ATTACK TRAJECTORY ARCS</span>
+                            <span style="font-size: 0.72rem; color: var(--text-muted);">Real-time BGP AS Path Interceptions &bull; 6 Hosting Hubs</span>
+                        </div>
+                        <div style="flex: 1; position: relative; min-height: 380px; background: radial-gradient(circle at center, #0e1e38 0%, #060b18 100%); border-radius: 8px; overflow: hidden;">
+                            <canvas id="warRoomCanvas" style="width: 100%; height: 100%; display: block;"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Right: Threat Defense Controls & DEFCON Lock -->
+                    <div style="display: flex; flex-direction: column; gap: 1rem; overflow-y: auto;">
+                        <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1rem;">
+                            <h4 style="margin: 0 0 0.5rem 0; font-size: 0.85rem; color: #fff;">🚨 DEFCON Cyber Readiness Level</h4>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;">
+                                <button type="button" class="action-btn" onclick="setDefconLevel(3)" id="defcon3Btn">DEFCON 3<br/><small style="font-size: 0.65rem;">Normal</small></button>
+                                <button type="button" class="action-btn action-btn--primary" onclick="setDefconLevel(2)" id="defcon2Btn">DEFCON 2<br/><small style="font-size: 0.65rem;">Elevated</small></button>
+                                <button type="button" class="action-btn" style="background: rgba(239, 68, 68, 0.2); border-color: #ef4444; color: #f87171;" onclick="setDefconLevel(1)" id="defcon1Btn">DEFCON 1<br/><small style="font-size: 0.65rem;">LOCKDOWN</small></button>
+                            </div>
+                        </div>
+
+                        <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1rem;">
+                            <h4 style="margin: 0 0 0.5rem 0; font-size: 0.85rem; color: #fff;">🏛️ Sovereign Loss Prevention Tracker</h4>
+                            <div style="font-size: 1.5rem; font-weight: 800; color: #34d399; font-family: monospace;" id="warRoomLossCounter">RM 3,480,200.00</div>
+                            <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">NSRC 997 Real-time Citizen Assets Shielded</div>
+                        </div>
+
+                        <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1rem; flex: 1;">
+                            <h4 style="margin: 0 0 0.5rem 0; font-size: 0.85rem; color: #fff;">📡 Live War Room Intercept Ticker</h4>
+                            <div id="warRoomTicker" style="display: flex; flex-direction: column; gap: 6px; font-size: 0.75rem; font-family: monospace; max-height: 200px; overflow-y: auto;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-actions" style="margin-top: 1rem; justify-content: space-between;">
+                    <button type="button" class="action-btn" onclick="openPlaybooksModal()">🤖 Trigger Active Mitigation Playbook</button>
+                    <button type="button" id="dismissWarRoomBtn" class="action-btn action-btn--primary" onclick="document.getElementById('warRoomModal').classList.add('hidden')">Exit War Room</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── Visual Forensic Sandbox Snapshot Modal ─── -->
+        <div id="visualSandboxModal" class="modal-overlay hidden" aria-hidden="true" style="z-index: 9998;">
+            <div class="modal-card" style="max-width: 900px; max-height: 90vh; display: flex; flex-direction: column;">
+                <div class="modal-header">
+                    <h3 class="modal-title">👁️ Live Visual Forensic Sandbox & Input Extraction</h3>
+                    <button id="closeVisualSandboxModalBtn" class="modal-close-btn" type="button">&times;</button>
+                </div>
+                <div id="visualSandboxModalBody" style="flex: 1; overflow-y: auto; font-size: 0.84rem; line-height: 1.5; color: var(--text-secondary);">
+                    Loading forensic sandbox inspection...
+                </div>
+                <div class="modal-actions" style="margin-top: 1rem;">
+                    <button type="button" class="action-btn action-btn--primary" onclick="document.getElementById('visualSandboxModal').classList.add('hidden')">Close Sandbox</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── Malaysian National Anti-Scam NSRC 997 & NFP Modal ─── -->
+        <div id="nsrcModal" class="modal-overlay hidden" aria-hidden="true" style="z-index: 9998;">
+            <div class="modal-card" style="max-width: 780px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">🏛️ National Fraud Portal (NFP) & NSRC 997 Gateway</h3>
+                    <button id="closeNsrcModalBtn" class="modal-close-btn" type="button">&times;</button>
+                </div>
+                <div id="nsrcModalBody" style="font-size: 0.84rem; line-height: 1.6; color: var(--text-secondary); max-height: 65vh; overflow-y: auto;">
+                    Syncing with NSRC 997 & PDRM CCID SemakMule records...
+                </div>
+                <div class="modal-actions" style="margin-top: 1rem;">
+                    <button type="button" class="action-btn action-btn--primary" onclick="document.getElementById('nsrcModal').classList.add('hidden')">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── Quishing (QR Phishing) & Deceptive Payload Scanner Modal ─── -->
+        <div id="quishingModal" class="modal-overlay hidden" aria-hidden="true" style="z-index: 9998;">
+            <div class="modal-card" style="max-width: 680px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">📷 Quishing (QR-Code Phishing) Forensic Scanner</h3>
+                    <button id="closeQuishingModalBtn" class="modal-close-btn" type="button">&times;</button>
+                </div>
+                <div style="font-size: 0.84rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                    <p style="margin-bottom: 0.5rem;">Audit decoded QR-code content, DuitNow payment schemes, or fake PDRM parking summon QR links:</p>
+                    <div style="display: flex; gap: 8px; margin-bottom: 0.75rem;">
+                        <input type="text" id="quishingInput" class="search-input" style="flex: 1;" placeholder="Enter QR Payload (e.g. duitnow://pay?acc=112233445566 or http://pdrm-saman.xyz)..." />
+                        <button type="button" id="quishingScanBtn" class="action-btn action-btn--primary">Audit QR</button>
+                    </div>
+                    <div id="quishingResultBox" class="hidden" style="margin-top: 0.75rem; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 0.85rem;"></div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="action-btn action-btn--primary" onclick="document.getElementById('quishingModal').classList.add('hidden')">Close</button>
                 </div>
             </div>
         </div>

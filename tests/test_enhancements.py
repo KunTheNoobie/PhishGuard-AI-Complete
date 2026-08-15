@@ -552,3 +552,80 @@ class TestDashboardEnhancements:
         assert s_resp.status_code == 200
         assert s_resp.json()["simulator_speed"] == 2.5
 
+    # ── Phase 10 Tests ──
+    @pytest.mark.asyncio
+    async def test_visual_sandbox_service_and_endpoint(self, test_client: AsyncClient) -> None:
+        from services.visual_sandbox import generate_visual_sandbox_snapshot
+        snap = generate_visual_sandbox_snapshot("http://maybank2u-secure-login.top/auth", log_id=101, bert_score=0.96)
+        assert snap["target_brand"] == "Maybank"
+        assert len(snap["extracted_fields"]) >= 4
+        assert snap["yolo_detection"]["detected"] is True
+        assert "<iframe" in snap["safe_html_preview"] or "<html" in snap["safe_html_preview"]
+
+        # API inspection endpoint
+        resp = await test_client.post(
+            "/api/v1/dashboard/sandbox-inspect",
+            json={"url": "http://cimb-clicks-verify.net/tac", "bert_score": 0.92}
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["target_brand"] == "CIMB Bank"
+        assert len(data["security_headers"]) >= 4
+
+    @pytest.mark.asyncio
+    async def test_nsrc_bridge_and_freeze_endpoint(self, test_client: AsyncClient) -> None:
+        # NSRC summary
+        s_resp = await test_client.get("/api/v1/dashboard/nsrc/summary")
+        assert s_resp.status_code == 200
+        s_data = s_resp.json()
+        assert "total_losses_prevented_myr" in s_data
+        assert "RM" in s_data["total_losses_prevented_formatted"]
+        assert len(s_data["recent_intercept_cases"]) > 0
+
+        # NSRC multi-bank freeze escalation
+        f_resp = await test_client.post(
+            "/api/v1/dashboard/nsrc/escalate-freeze",
+            json={"account_number": "998877665544", "bank_name": "Public Bank"}
+        )
+        assert f_resp.status_code == 200
+        f_data = f_resp.json()
+        assert f_data["status"] == "FREEZE_DIRECTIVE_BROADCASTED"
+        assert "NSRC-2026-EMERGENCY" in f_data["case_reference"]
+
+    @pytest.mark.asyncio
+    async def test_quishing_scanner_and_endpoint(self, test_client: AsyncClient) -> None:
+        from services.quishing_scanner import scan_quishing_payload
+        res = scan_quishing_payload("duitnow://pay?acc=112233445566&bank=Maybank&url=http://maybank-verify.top")
+        assert res["quishing_score"] >= 0.70
+        assert res["is_duitnow_scheme"] is True
+        assert len(res["extracted_mule_accounts"]) > 0
+
+        # API endpoint
+        resp = await test_client.post(
+            "/api/v1/dashboard/quishing/scan",
+            json={"payload": "https://pdrm-saman-bayar.xyz/dbkl?acc=564738291012"}
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["quishing_score"] > 0.5
+        assert len(data["risk_factors"]) > 0
+
+    @pytest.mark.asyncio
+    async def test_taxii2_server_endpoints(self, test_client: AsyncClient) -> None:
+        # Discovery root
+        root_resp = await test_client.get("/api/v1/dashboard/taxii2/root")
+        assert root_resp.status_code == 200
+        assert "PhishGuard-AI" in root_resp.json()["title"]
+
+        # Collections
+        col_resp = await test_client.get("/api/v1/dashboard/taxii2/collections")
+        assert col_resp.status_code == 200
+        assert len(col_resp.json()["collections"]) == 1
+
+        # Threat objects STIX bundle
+        obj_resp = await test_client.get("/api/v1/dashboard/taxii2/collections/phishguard-threats/objects")
+        assert obj_resp.status_code == 200
+        obj_data = obj_resp.json()
+        assert "objects" in obj_data
+        assert obj_data["spec_version"] == "2.1"
+

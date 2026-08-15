@@ -937,6 +937,9 @@ function renderTelemetry() {
                 <td>${formatTimestamp(e.timestamp)}</td>
                 <td>
                     <div style="display: flex; gap: 4px;">
+                        <button class="action-btn" style="padding: 2px 6px; font-size: 0.7rem; border-color: rgba(6,182,212,0.6); color: var(--accent-cyan);" onclick="openVisualSandbox(${e.log_id})" title="View in Isolated Visual Forensic Sandbox">
+                            👁️ Sandbox
+                        </button>
                         <button class="action-btn" style="padding: 2px 6px; font-size: 0.7rem;" onclick="openIncidentReport(${e.log_id})">
                             📄 Dossier
                         </button>
@@ -2210,10 +2213,461 @@ if ($closeThreatGraphModalBtn) $closeThreatGraphModalBtn.addEventListener("click
 if ($dismissThreatGraphBtn) $dismissThreatGraphBtn.addEventListener("click", () => $threatGraphModal?.classList.add("hidden"));
 
 
+// ═══════════════════════════════════════════════════════════════════
+// PHASE 10: ENTERPRISE SOC WAR ROOM, VISUAL SANDBOX, NSRC & QUISHING
+// ═══════════════════════════════════════════════════════════════════
+
+// DOM References for Phase 10
+const $openWarRoomBtn = document.getElementById("openWarRoomBtn");
+const $warRoomModal = document.getElementById("warRoomModal");
+const $closeWarRoomModalBtn = document.getElementById("closeWarRoomModalBtn");
+const $warRoomCanvas = document.getElementById("warRoomCanvas");
+const $warRoomDefconBadge = document.getElementById("warRoomDefconBadge");
+const $warRoomLossCounter = document.getElementById("warRoomLossCounter");
+const $warRoomTicker = document.getElementById("warRoomTicker");
+const $warRoomAudioToggleBtn = document.getElementById("warRoomAudioToggleBtn");
+
+const $visualSandboxModal = document.getElementById("visualSandboxModal");
+const $closeVisualSandboxModalBtn = document.getElementById("closeVisualSandboxModalBtn");
+const $visualSandboxModalBody = document.getElementById("visualSandboxModalBody");
+
+const $openNsrcBtn = document.getElementById("openNsrcBtn");
+const $nsrcModal = document.getElementById("nsrcModal");
+const $closeNsrcModalBtn = document.getElementById("closeNsrcModalBtn");
+const $nsrcModalBody = document.getElementById("nsrcModalBody");
+
+const $openQuishingBtn = document.getElementById("openQuishingBtn");
+const $quishingModal = document.getElementById("quishingModal");
+const $closeQuishingModalBtn = document.getElementById("closeQuishingModalBtn");
+const $quishingInput = document.getElementById("quishingInput");
+const $quishingScanBtn = document.getElementById("quishingScanBtn");
+const $quishingResultBox = document.getElementById("quishingResultBox");
+
+let warRoomAnimationId = null;
+let warRoomAudioEnabled = true;
+let currentDefconLevel = 2;
+
+// ── 1. Visual Forensic Sandbox Inspector ──
+async function openVisualSandbox(logId) {
+    if (!$visualSandboxModal || !$visualSandboxModalBody) return;
+    $visualSandboxModalBody.innerHTML = `<div style="text-align: center; padding: 2rem;"><span class="status-dot live"></span> Spawning safe isolated DOM sandbox for Incident #${logId}...</div>`;
+    $visualSandboxModal.classList.remove("hidden");
+
+    try {
+        const data = await apiFetch(`/telemetry/${logId}/sandbox-preview`);
+        const isCritical = data.bert_score >= 0.85;
+
+        const fieldsHtml = (data.extracted_fields || []).map(f => `
+            <tr>
+                <td style="font-family: monospace; font-weight: 700; color: #fff;">${escapeHtml(f.name)}</td>
+                <td><span class="brand-risk-badge ${f.risk === 'CRITICAL' ? 'brand-risk-badge--critical' : 'brand-risk-badge--elevated'}">${escapeHtml(f.risk)}</span></td>
+                <td>${escapeHtml(f.label)}</td>
+                <td>${f.harvested ? '<strong style="color: #f87171;">⚠️ ACTIVE EXFIL TARGET</strong>' : '<span style="color: var(--text-muted);">Optional</span>'}</td>
+            </tr>
+        `).join("");
+
+        const headersHtml = (data.security_headers || []).map(h => `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: rgba(15,23,42,0.6); border-radius: 4px; font-size: 0.78rem;">
+                <span style="font-family: monospace; font-weight: 600; color: #fff;">${escapeHtml(h.header)}</span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 0.72rem; color: var(--text-muted);">${escapeHtml(h.detail)}</span>
+                    <span class="brand-risk-badge ${h.status === 'PASS' ? 'brand-risk-badge--monitored' : 'brand-risk-badge--critical'}">${escapeHtml(h.status)}</span>
+                </div>
+            </div>
+        `).join("");
+
+        $visualSandboxModalBody.innerHTML = `
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div style="background: rgba(15,23,42,0.8); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                        <strong style="color: #fff; font-size: 0.95rem;">🎯 Target Entity: ${escapeHtml(data.target_brand)}</strong>
+                        <span class="brand-risk-badge ${isCritical ? 'brand-risk-badge--critical' : 'brand-risk-badge--elevated'}">BERT: ${(data.bert_score * 100).toFixed(1)}%</span>
+                    </div>
+                    <div style="font-size: 0.78rem; font-family: monospace; color: var(--accent-cyan); word-break: break-all; margin-bottom: 0.5rem;">
+                        ${escapeHtml(data.url)}
+                    </div>
+                    <div style="background: rgba(0,0,0,0.3); border-radius: 6px; padding: 8px; font-size: 0.78rem;">
+                        <strong>YOLOv8 Detection:</strong> ${escapeHtml(data.yolo_detection.verdict)} (Similarity: ${(data.yolo_detection.visual_similarity * 100).toFixed(1)}%)
+                    </div>
+                </div>
+
+                <div style="background: rgba(15,23,42,0.8); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 1rem;">
+                    <strong style="color: #fff; font-size: 0.88rem; display: block; margin-bottom: 0.5rem;">🛡️ Security Headers & Anti-Tamper Audit</strong>
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        ${headersHtml}
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <strong style="color: #fff; font-size: 0.88rem; display: block; margin-bottom: 0.5rem;">📋 Extracted Credential Harvesting Input Fields:</strong>
+                <table class="data-table" style="font-size: 0.78rem;">
+                    <thead>
+                        <tr>
+                            <th>DOM Input Element</th>
+                            <th>Severity</th>
+                            <th>Field Description</th>
+                            <th>Harvest Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${fieldsHtml}
+                    </tbody>
+                </table>
+            </div>
+
+            <div>
+                <strong style="color: #fff; font-size: 0.88rem; display: block; margin-bottom: 0.5rem;">🖼️ Isolated Visual Sandbox Rendering:</strong>
+                <iframe class="sandbox-preview-frame" sandbox="allow-same-origin" srcdoc="${escapeHtml(data.safe_html_preview).replace(/"/g, '&quot;')}"></iframe>
+            </div>
+        `;
+    } catch (err) {
+        $visualSandboxModalBody.innerHTML = `<div style="color: #f87171; padding: 1.5rem;">Failed to load visual sandbox snapshot: ${escapeHtml(err.message)}</div>`;
+    }
+}
+
+if ($closeVisualSandboxModalBtn) $closeVisualSandboxModalBtn.addEventListener("click", () => $visualSandboxModal?.classList.add("hidden"));
+
+// ── 2. Enterprise SOC War Room & Trajectory Canvas Animation ──
+function initWarRoomTrajectoryCanvas() {
+    if (!$warRoomCanvas) return;
+    const canvas = $warRoomCanvas;
+    const ctx = canvas.getContext("2d");
+
+    const resizeCanvas = () => {
+        canvas.width = canvas.parentElement.clientWidth || 800;
+        canvas.height = canvas.parentElement.clientHeight || 400;
+    };
+    resizeCanvas();
+
+    const nodes = [
+        { id: "US", name: "San Jose (US)", x: 0.12, y: 0.35, color: "#38bdf8", attacks: 42 },
+        { id: "DE", name: "Frankfurt (DE)", x: 0.28, y: 0.25, color: "#f59e0b", attacks: 26 },
+        { id: "HK", name: "Hong Kong (HK)", x: 0.72, y: 0.40, color: "#a855f7", attacks: 15 },
+        { id: "JP", name: "Tokyo (JP)", x: 0.88, y: 0.30, color: "#ec4899", attacks: 10 },
+        { id: "SG", name: "Singapore (SG)", x: 0.62, y: 0.72, color: "#22c55e", attacks: 58 },
+    ];
+    const target = { id: "MY", name: "Kuala Lumpur (MY Hub)", x: 0.55, y: 0.65, color: "#06b6d4" };
+
+    const particles = [];
+    for (let i = 0; i < 24; i++) {
+        const origin = nodes[i % nodes.length];
+        particles.push({
+            origin,
+            progress: Math.random(),
+            speed: 0.004 + Math.random() * 0.006,
+            trail: []
+        });
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw grid lines
+        ctx.strokeStyle = "rgba(6, 182, 212, 0.06)";
+        ctx.lineWidth = 1;
+        for (let x = 0; x < canvas.width; x += 40) {
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+        }
+        for (let y = 0; y < canvas.height; y += 40) {
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+        }
+
+        const tX = target.x * canvas.width;
+        const tY = target.y * canvas.height;
+
+        // Draw Target Hub (MY)
+        ctx.beginPath();
+        ctx.arc(tX, tY, 14, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(6, 182, 212, 0.2)";
+        ctx.fill();
+        ctx.strokeStyle = "#06b6d4";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(tX, tY, 5, 0, Math.PI * 2);
+        ctx.fillStyle = "#ffffff";
+        ctx.fill();
+
+        ctx.fillStyle = "#38bdf8";
+        ctx.font = "bold 11px monospace";
+        ctx.fillText(target.name, tX - 55, tY + 28);
+
+        // Draw Nodes and Arcs
+        nodes.forEach(n => {
+            const nX = n.x * canvas.width;
+            const nY = n.y * canvas.height;
+
+            // Parabolic Control Point
+            const cpX = (nX + tX) / 2;
+            const cpY = Math.min(nY, tY) - 50;
+
+            // Curve Arc
+            ctx.beginPath();
+            ctx.moveTo(nX, nY);
+            ctx.quadraticCurveTo(cpX, cpY, tX, tY);
+            ctx.strokeStyle = `${n.color}44`;
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([4, 4]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Node Circle
+            ctx.beginPath();
+            ctx.arc(nX, nY, 6, 0, Math.PI * 2);
+            ctx.fillStyle = n.color;
+            ctx.fill();
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "10px monospace";
+            ctx.fillText(`${n.name} [${n.attacks}]`, nX - 35, nY - 10);
+        });
+
+        // Draw Attack Particles
+        particles.forEach(p => {
+            p.progress += p.speed;
+            if (p.progress >= 1) p.progress = 0;
+
+            const nX = p.origin.x * canvas.width;
+            const nY = p.origin.y * canvas.height;
+            const cpX = (nX + tX) / 2;
+            const cpY = Math.min(nY, tY) - 50;
+
+            const t = p.progress;
+            const curX = (1 - t) * (1 - t) * nX + 2 * (1 - t) * t * cpX + t * t * tX;
+            const curY = (1 - t) * (1 - t) * nY + 2 * (1 - t) * t * cpY + t * t * tY;
+
+            ctx.beginPath();
+            ctx.arc(curX, curY, 3.5, 0, Math.PI * 2);
+            ctx.fillStyle = p.origin.color;
+            ctx.shadowColor = p.origin.color;
+            ctx.shadowBlur = 8;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        });
+
+        warRoomAnimationId = requestAnimationFrame(animate);
+    }
+
+    if (warRoomAnimationId) cancelAnimationFrame(warRoomAnimationId);
+    animate();
+}
+
+function setDefconLevel(level) {
+    currentDefconLevel = level;
+    if (!$warRoomDefconBadge) return;
+    if (level === 1) {
+        $warRoomDefconBadge.className = "brand-risk-badge brand-risk-badge--critical";
+        $warRoomDefconBadge.textContent = "DEFCON 1: EMERGENCY LOCKDOWN";
+        showCyberToast("danger", "DEFCON 1 Activated", "Automated Cloudflare IP blocklist and sovereign bank firewall rules engaged!");
+        playVoiceAlert("Warning. DEFCON 1 Emergency Lockdown engaged.");
+    } else if (level === 2) {
+        $warRoomDefconBadge.className = "brand-risk-badge brand-risk-badge--elevated";
+        $warRoomDefconBadge.textContent = "DEFCON 2: ELEVATED THREAT";
+        showCyberToast("warning", "DEFCON 2 Active", "Increased heuristic monitoring and synthetic telemetry sampling.");
+    } else {
+        $warRoomDefconBadge.className = "brand-risk-badge brand-risk-badge--monitored";
+        $warRoomDefconBadge.textContent = "DEFCON 3: NORMAL OPERATIONS";
+        showCyberToast("info", "DEFCON 3 Normal", "Baseline cyber defense posture active.");
+    }
+}
+
+function playVoiceAlert(text) {
+    if (!warRoomAudioEnabled) return;
+    if ('speechSynthesis' in window) {
+        try {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 1.05;
+            utterance.pitch = 0.95;
+            window.speechSynthesis.speak(utterance);
+        } catch (_e) {}
+    }
+}
+
+if ($openWarRoomBtn) {
+    $openWarRoomBtn.addEventListener("click", () => {
+        if ($warRoomModal) {
+            $warRoomModal.classList.remove("hidden");
+            setTimeout(initWarRoomTrajectoryCanvas, 150);
+            updateWarRoomTicker();
+            playVoiceAlert("SOC War Room defense grid online.");
+        }
+    });
+}
+if ($closeWarRoomModalBtn) {
+    $closeWarRoomModalBtn.addEventListener("click", () => {
+        if ($warRoomModal) $warRoomModal.classList.add("hidden");
+        if (warRoomAnimationId) cancelAnimationFrame(warRoomAnimationId);
+    });
+}
+if ($warRoomAudioToggleBtn) {
+    $warRoomAudioToggleBtn.addEventListener("click", () => {
+        warRoomAudioEnabled = !warRoomAudioEnabled;
+        $warRoomAudioToggleBtn.textContent = warRoomAudioEnabled ? "🔊 Voice Alert: ON" : "🔇 Voice Alert: OFF";
+        showCyberToast("info", "Audio Announcer", warRoomAudioEnabled ? "Voice alerts enabled." : "Voice alerts muted.");
+    });
+}
+
+function updateWarRoomTicker() {
+    if (!$warRoomTicker) return;
+    const recents = (telemetryData || []).slice(0, 6);
+    $warRoomTicker.innerHTML = recents.map(t => `
+        <div style="background: rgba(10,15,30,0.8); padding: 4px 8px; border-left: 2px solid ${t.bert_score >= 0.85 ? '#ef4444' : '#38bdf8'}; border-radius: 2px;">
+            <span style="color: #fff;">[${t.country_code || 'MY'}]</span>
+            <span style="color: var(--accent-cyan);">${escapeHtml(t.malicious_url).slice(0, 32)}...</span>
+            <span style="color: ${t.bert_score >= 0.85 ? '#f87171' : '#34d399'}; font-weight: bold;">(${(t.bert_score * 100).toFixed(0)}%)</span>
+        </div>
+    `).join("") || '<div style="color: var(--text-muted);">Listening for live intercepts...</div>';
+}
+
+// ── 3. Malaysian National Fraud Portal (NSRC / CCID / BNM NFP) ──
+async function openNsrcModal() {
+    if (!$nsrcModal || !$nsrcModalBody) return;
+    $nsrcModalBody.innerHTML = `<div style="text-align: center; padding: 2rem;"><span class="status-dot live"></span> Connecting to NSRC 997 & BNM National Fraud Portal...</div>`;
+    $nsrcModal.classList.remove("hidden");
+
+    try {
+        const data = await apiFetch("/nsrc/summary");
+        if ($warRoomLossCounter) $warRoomLossCounter.textContent = data.total_losses_prevented_formatted;
+
+        const casesHtml = (data.recent_intercept_cases || []).map(c => {
+            const statusClass = c.nsrc_status === 'FROZEN' ? 'nsrc-status-frozen' :
+                                c.nsrc_status === 'ESCALATED' ? 'nsrc-status-escalated' : 'nsrc-status-investigating';
+            return `
+                <div style="background: rgba(15,23,42,0.85); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 0.85rem; margin-bottom: 0.65rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                        <strong style="color: #fff; font-family: monospace;">📁 ${escapeHtml(c.case_ref)}</strong>
+                        <span class="${statusClass}">● ${escapeHtml(c.nsrc_status)}</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; font-size: 0.78rem; gap: 4px; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                        <span>Target: <strong style="color: #fff;">${escapeHtml(c.victim_bank)}</strong></span>
+                        <span>Mule Account: <strong style="color: #f87171; font-family: monospace;">${escapeHtml(c.mule_account)}</strong></span>
+                        <span>Scam Vector: ${escapeHtml(c.scam_type)}</span>
+                        <span>Protected Value: <strong style="color: #34d399;">RM ${Number(c.funds_at_risk_myr).toLocaleString('en-MY', {minimumFractionDigits: 2})}</strong></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; color: var(--text-muted); border-top: 1px solid rgba(255,255,255,0.06); padding-top: 4px;">
+                        <span>PDRM Dossier: <code>${escapeHtml(c.ccid_report_id)}</code></span>
+                        <button class="action-btn action-btn--primary" style="padding: 2px 8px; font-size: 0.7rem;" onclick="triggerNsrcFreeze('${escapeJs(c.mule_account)}', '${escapeJs(c.victim_bank)}')">⚡ NFP Multi-Bank Freeze</button>
+                    </div>
+                </div>
+            `;
+        }).join("");
+
+        $nsrcModalBody.innerHTML = `
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+                <div style="background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3); border-radius: 8px; padding: 1rem;">
+                    <span style="font-size: 0.75rem; color: #34d399; font-weight: 700; text-transform: uppercase;">Total Sovereign Assets Shielded</span>
+                    <div style="font-size: 1.5rem; font-weight: 800; color: #fff; font-family: monospace; margin-top: 4px;">${data.total_losses_prevented_formatted}</div>
+                    <span style="font-size: 0.72rem; color: var(--text-muted);">Synced across ${data.nfp_member_banks_count} BNM Member Banks</span>
+                </div>
+                <div style="background: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.3); border-radius: 8px; padding: 1rem;">
+                    <span style="font-size: 0.75rem; color: #818cf8; font-weight: 700; text-transform: uppercase;">PDRM CCID Telemetry Sync</span>
+                    <div style="font-size: 1.25rem; font-weight: 800; color: #fff; font-family: monospace; margin-top: 4px;">${data.active_mules_tracked} Mules &bull; ${data.citizen_reports_filed} Reports</div>
+                    <span style="font-size: 0.72rem; color: var(--text-muted);">Sync Latency: ${data.pdrm_ccid_sync_latency_ms}ms &bull; NSRC 997 Active</span>
+                </div>
+            </div>
+
+            <h4 style="margin: 0 0 0.6rem 0; font-size: 0.88rem; color: #fff;">🚨 Real-Time Intercepted Cases & Automated Freeze Directives:</h4>
+            ${casesHtml}
+        `;
+    } catch (err) {
+        $nsrcModalBody.innerHTML = `<div style="color: #f87171; padding: 1.5rem;">Failed to connect to NSRC Gateway: ${escapeHtml(err.message)}</div>`;
+    }
+}
+
+async function triggerNsrcFreeze(accountNumber, bankName) {
+    showCyberConfirm(
+        "NSRC Multi-Bank Freeze",
+        `Dispatch emergency freeze directive for mule account ${accountNumber} (${bankName}) across all 20+ National Fraud Portal member institutions?`,
+        async () => {
+            try {
+                const res = await apiFetch("/nsrc/escalate-freeze", {
+                    method: "POST",
+                    body: JSON.stringify({ account_number: accountNumber, bank_name: bankName })
+                });
+                showCyberToast("success", "Freeze Directive Dispatched", `Account ${accountNumber} frozen across all BNM NFP banks!`);
+                openNsrcModal();
+            } catch (err) {
+                showCyberToast("danger", "Freeze Failed", err.message);
+            }
+        }
+    );
+}
+
+if ($openNsrcBtn) $openNsrcBtn.addEventListener("click", openNsrcModal);
+if ($closeNsrcModalBtn) $closeNsrcModalBtn.addEventListener("click", () => $nsrcModal?.classList.add("hidden"));
+
+// ── 4. Quishing (QR-Code Phishing) Scanner ──
+if ($openQuishingBtn) {
+    $openQuishingBtn.addEventListener("click", () => {
+        $quishingModal?.classList.remove("hidden");
+        if ($quishingResultBox) $quishingResultBox.classList.add("hidden");
+    });
+}
+if ($closeQuishingModalBtn) $closeQuishingModalBtn.addEventListener("click", () => $quishingModal?.classList.add("hidden"));
+
+if ($quishingScanBtn && $quishingInput) {
+    $quishingScanBtn.addEventListener("click", async () => {
+        const val = $quishingInput.value.trim();
+        if (!val) {
+            showCyberToast("warning", "Empty Payload", "Please enter a QR payload or payment URI.");
+            return;
+        }
+
+        if ($quishingResultBox) {
+            $quishingResultBox.classList.remove("hidden");
+            $quishingResultBox.innerHTML = `<span class="status-dot live"></span> Auditing QR-code structure and multi-vector risk...`;
+        }
+
+        try {
+            const data = await apiFetch("/quishing/scan", {
+                method: "POST",
+                body: JSON.stringify({ payload: val, context: "SOC Dashboard Manual Audit" })
+            });
+
+            const isHigh = data.quishing_score >= 0.75;
+            const riskFactorsList = (data.risk_factors || []).map(rf => `<li>${escapeHtml(rf)}</li>`).join("");
+
+            if ($quishingResultBox) {
+                $quishingResultBox.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <strong style="color: ${isHigh ? '#f87171' : '#34d399'}; font-size: 0.95rem;">${escapeHtml(data.verdict)}</strong>
+                        <span class="brand-risk-badge ${isHigh ? 'brand-risk-badge--critical' : 'brand-risk-badge--monitored'}">Risk: ${(data.quishing_score * 100).toFixed(1)}%</span>
+                    </div>
+                    <div style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                        <div>Destination URL: <code style="color: var(--accent-cyan);">${escapeHtml(data.primary_url || 'N/A')}</code></div>
+                        <div>DuitNow Scheme: <strong style="color: #fff;">${data.is_duitnow_scheme ? 'YES (P2P Direct)' : 'NO'}</strong></div>
+                        ${data.extracted_mule_accounts.length ? `<div>Extracted Accounts: <strong style="color: #f87171;">${escapeHtml(data.extracted_mule_accounts.join(', '))}</strong></div>` : ''}
+                    </div>
+                    <ul style="margin: 0 0 0.5rem 1rem; padding: 0; font-size: 0.75rem; color: var(--text-muted);">
+                        ${riskFactorsList}
+                    </ul>
+                    <div style="font-size: 0.78rem; font-weight: 700; color: #fff; background: rgba(0,0,0,0.3); padding: 6px; border-radius: 4px;">
+                        Recommended Action: <span style="color: ${isHigh ? '#f87171' : '#34d399'};">${escapeHtml(data.recommended_action)}</span>
+                    </div>
+                `;
+            }
+            showCyberToast(isHigh ? "danger" : "success", "QR Audit Complete", data.verdict);
+        } catch (err) {
+            if ($quishingResultBox) {
+                $quishingResultBox.innerHTML = `<span style="color: #f87171;">Scan Error: ${escapeHtml(err.message)}</span>`;
+            }
+        }
+    });
+}
+
 // Initial load & stream
 async function masterRefresh() {
     await refreshAll();
     await refreshBrandMatrix();
+    if ($warRoomModal && !$warRoomModal.classList.contains("hidden")) {
+        updateWarRoomTicker();
+    }
 }
 
 masterRefresh();

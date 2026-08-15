@@ -1488,6 +1488,140 @@ async def set_simulator_speed(request: Request, payload: SimSpeedRequest) -> dic
     return {"simulator_speed": speed, "message": f"Simulation speed set to {speed}x"}
 
 
+# ==============================================================================
+# PHASE 10: ENTERPRISE SOC WAR ROOM, VISUAL SANDBOX, NSRC & TAXII 2.1
+# ==============================================================================
+
+# ── 1. Visual Forensic Sandbox ──
+
+class SandboxInspectRequest(BaseModel):
+    url: str
+    bert_score: float = 0.95
+
+
+@router.get(
+    "/telemetry/{log_id}/sandbox-preview",
+    summary="Get Visual Forensic Sandbox Snapshot for Incident",
+)
+async def get_sandbox_preview(request: Request, log_id: int) -> dict[str, Any]:
+    """Provides safe DOM structure, input harvesting analysis, and isolated visual snapshot."""
+    db = request.app.state.db
+    cursor = await db.execute(
+        "SELECT malicious_url, bert_score FROM threat_telemetry WHERE log_id = ?;",
+        (log_id,),
+    )
+    row = await cursor.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Incident not found.")
+
+    from services.visual_sandbox import generate_visual_sandbox_snapshot
+    return generate_visual_sandbox_snapshot(row[0], log_id=log_id, bert_score=float(row[1]))
+
+
+@router.post(
+    "/sandbox-inspect",
+    summary="Inspect Custom URL in Visual Forensic Sandbox",
+)
+async def inspect_url_sandbox(payload: SandboxInspectRequest) -> dict[str, Any]:
+    from services.visual_sandbox import generate_visual_sandbox_snapshot
+    return generate_visual_sandbox_snapshot(payload.url, log_id=999, bert_score=payload.bert_score)
+
+
+# ── 2. Malaysian National Anti-Scam Command Center (NSRC / CCID / BNM NFP) ──
+
+class NsrcFreezeRequest(BaseModel):
+    account_number: str
+    bank_name: str
+
+
+@router.get(
+    "/nsrc/summary",
+    summary="Get NSRC 997 & National Fraud Portal Defense Statistics",
+)
+async def get_nsrc_summary(request: Request) -> dict[str, Any]:
+    from services.nsrc_bridge import get_nsrc_gateway_summary
+    return await get_nsrc_gateway_summary(request.app.state.db)
+
+
+@router.post(
+    "/nsrc/escalate-freeze",
+    summary="Escalate Account to NSRC 997 and Broadcast National Fraud Portal Freeze",
+)
+async def escalate_nsrc_freeze(request: Request, payload: NsrcFreezeRequest) -> dict[str, Any]:
+    from services.nsrc_bridge import escalate_nsrc_emergency_freeze
+    return await escalate_nsrc_emergency_freeze(payload.account_number, payload.bank_name, request.app.state.db)
+
+
+# ── 3. Quishing (QR-Code Phishing) Scanner ──
+
+class QuishingScanRequest(BaseModel):
+    payload: str
+    context: str = "SOC Scanner"
+
+
+@router.post(
+    "/quishing/scan",
+    summary="Forensically Audit and Decode Quishing / QR Payloads",
+)
+async def scan_quishing(payload: QuishingScanRequest) -> dict[str, Any]:
+    from services.quishing_scanner import scan_quishing_payload
+    return scan_quishing_payload(payload.payload, target_context=payload.context)
+
+
+# ── 4. TAXII 2.1 Threat Intel REST Server ──
+
+@router.get(
+    "/taxii2/root",
+    summary="TAXII 2.1 API Root Discovery",
+)
+async def taxii_discovery() -> dict[str, Any]:
+    """OASIS TAXII 2.1 API Root Information."""
+    return {
+        "title": "PhishGuard-AI Sovereign Cyber Threat Intelligence TAXII 2.1 Server",
+        "description": "Real-time TAXII 2.1 API Root serving Malaysian financial threat feeds.",
+        "contact": "soc-command@phishguard.gov.my",
+        "default": "https://phishguard.ai/taxii2/collections/phishguard-threats",
+        "api_roots": ["/api/v1/dashboard/taxii2"],
+        "max_content_length": 10485760,
+    }
+
+
+@router.get(
+    "/taxii2/collections",
+    summary="TAXII 2.1 Collections Listing",
+)
+async def taxii_collections() -> dict[str, Any]:
+    """Lists available threat intelligence collections for SIEM pollers."""
+    return {
+        "collections": [
+            {
+                "id": "phishguard-threats",
+                "title": "Malaysian Banking & Financial Cyber Threat Intel Feed",
+                "description": "High-confidence phishing indicators, visual clone domains, and DuitNow mule accounts.",
+                "can_read": True,
+                "can_write": False,
+                "media_types": ["application/stix+json;version=2.1"],
+            }
+        ]
+    }
+
+
+@router.get(
+    "/taxii2/collections/phishguard-threats/objects",
+    summary="TAXII 2.1 STIX Threat Objects Bundle",
+)
+async def taxii_get_objects(request: Request) -> dict[str, Any]:
+    """Delivers STIX 2.1 Bundle conforming to TAXII 2.1 specification for SIEM ingestion."""
+    from services.stix_exporter import generate_stix_bundle
+    db = request.app.state.db
+    stix_bundle = await generate_stix_bundle(db)
+    return {
+        "more": False,
+        "objects": stix_bundle.get("objects", []),
+        "spec_version": "2.1",
+    }
+
+
 
 
 
