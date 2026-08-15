@@ -92,16 +92,26 @@ limiter: Final[Limiter] = Limiter(
 # ==============================================================================
 
 async def simulate_live_threats(state) -> None:
-    """Continuously generates live threat intel for demonstration purposes."""
-    banks = ["Maybank", "CIMB Bank", "Public Bank", "RHB Bank", "Hong Leong Bank", "AmBank", "Bank Islam"]
-    platforms = ["Shopee", "Facebook Marketplace", "WhatsApp", "Telegram", "Mudah.my", "Carousell", "Lazada"]
-    domains = ["secure-login-cimb.com", "maybznk2u.com.my", "shopee-free-gifts.net", "lhdn-refunds.org", "pnm-gov.my-login.com", "cimb-clicks-secure.com", "pbb-update-info.net"]
+    """Continuously generates live threat intel for demonstration purposes across all 10 tracked banks."""
+    all_banks = [
+        ("Maybank", ["maybznk2u.com.my", "maybank2u-secure-login.top", "mae-verify-otp.net", "maybank-ccid-update.com"]),
+        ("CIMB Bank", ["secure-login-cimb.com", "cimb-clicks-secure.com", "cimb-security-gateway.net", "cimbclicks-auth.top"]),
+        ("Public Bank", ["pbebank-update-info.net", "pbb-online-auth.top", "publicbank-ebank.com", "pbe-secure-portal.org"]),
+        ("RHB Bank", ["rhb-online-verify.net", "rhbgroup-secure-auth.top", "rhbnow-login-gateway.com"]),
+        ("Hong Leong Bank", ["hlb-connect-secure.com", "hongleong-auth-verify.top", "hlbb-portal-update.net"]),
+        ("AmBank", ["ambank-amonline-secure.top", "amonline-verify-auth.com", "ambankgroup-portal.net"]),
+        ("Bank Islam", ["bankislam-internet-auth.com", "bimb-portal-verify.top", "bankislam-secure-login.net"]),
+        ("Touch 'n Go eWallet", ["tng-digital-claim-bonus.net", "touchngo-ewallet-auth.top", "tng-wallet-verify.com"]),
+        ("GrabPay Malaysia", ["grabpay-reward-verification.top", "grab-malaysia-bonus.net", "grabpay-auth-login.com"]),
+        ("ShopeePay", ["shopeepay-voucher-claim.net", "shopee-free-gifts.net", "shopeepay-verify-portal.top"]),
+    ]
+    platforms = ["Shopee", "Facebook Marketplace", "WhatsApp", "Telegram", "Mudah.my", "Carousell", "Lazada", "TikTok Shop"]
 
-    logger.info("Live Threat Simulator started.")
+    logger.info("Live Threat Simulator started with full 10-Bank coverage.")
     while True:
         # Dynamic interval based on speed multiplier
         speed = max(0.2, min(getattr(state, "simulator_speed", 1.0), 10.0))
-        base_interval = random.uniform(4.0, 9.0)
+        base_interval = random.uniform(3.0, 7.0)
         await asyncio.sleep(base_interval / speed)
         
         if not getattr(state, "simulator_running", False):
@@ -109,41 +119,42 @@ async def simulate_live_threats(state) -> None:
             
         try:
             # 1. Always inject a telemetry log (malicious URL detection)
-            chosen_domain = random.choice(domains)
-            malicious_url = f"http://{chosen_domain}/auth/login?token={random.randint(1000, 9999)}"
-            score = round(random.uniform(0.75, 0.99), 3)
+            bank_name, bank_domains = random.choice(all_banks)
+            chosen_domain = random.choice(bank_domains)
+            malicious_url = f"http://{chosen_domain}/auth/login?session={random.randint(10000, 99999)}"
+            score = round(random.uniform(0.78, 0.99), 4)
             await state.db.execute(
                 "INSERT INTO threat_telemetry (malicious_url, bert_score) VALUES (?, ?)",
                 (malicious_url, score)
             )
 
-            # 2. 40% chance to report a new mule account or increment an existing one
+            # 2. 50% chance to report a new mule account or increment an existing one
             inserted_mule = None
-            if random.random() < 0.4:
+            if random.random() < 0.5:
                 account_num = str(random.randint(1000000000, 99999999999999))
-                bank = random.choice(banks)
                 plat = random.choice(platforms)
-                reports = random.randint(1, 3)
-                inserted_mule = {"account_number": account_num, "bank_name": bank}
+                reports = random.randint(1, 4)
+                inserted_mule = {"account_number": account_num, "bank_name": bank_name}
                 
                 await state.db.execute(
                     """
                     INSERT INTO mule_registry (account_number, bank_name, platform_flagged, report_count) 
                     VALUES (?, ?, ?, ?)
+                    ON CONFLICT(account_number) DO UPDATE SET report_count = report_count + 1
                     """,
-                    (account_num, bank, plat, reports)
+                    (account_num, bank_name, plat, reports)
                 )
 
             await state.db.commit()
-            logger.debug("Live Threat Simulator: Injected new threat intel.")
+            logger.debug("Live Threat Simulator: Injected new threat intel for %s.", bank_name)
 
             # 3. Autonomous Playbook Trigger on Critical Threats
-            if score >= 0.92 and inserted_mule:
+            if score >= 0.90 and inserted_mule:
                 from services.playbook_engine import execute_playbook_action
                 threat_payload = {
                     "malicious_url": malicious_url,
                     "url": malicious_url,
-                    "bank": inserted_mule["bank_name"],
+                    "bank": bank_name,
                     "score": score,
                     "mules": [inserted_mule]
                 }
@@ -151,7 +162,7 @@ async def simulate_live_threats(state) -> None:
 
         except Exception as e:
             logger.error("Live Threat Simulator Error: %s", e)
-            await asyncio.sleep(3)
+            await asyncio.sleep(2)
 
 
 # ==============================================================================

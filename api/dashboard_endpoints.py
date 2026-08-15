@@ -251,20 +251,20 @@ async def quick_scan_url(request: Request, payload: QuickScanRequest) -> dict[st
 # GET /api/v1/dashboard/telemetry
 # ==============================================================================
 
+_GEO_INFRA_NODES: Final[list[dict[str, str]]] = [
+    {"country": "Malaysia", "country_code": "MY", "city": "Kuala Lumpur", "asn": "TM Net (AS4788)"},
+    {"country": "Singapore", "country_code": "SG", "city": "Singapore", "asn": "Singtel (AS7473)"},
+    {"country": "United States", "country_code": "US", "city": "San Jose", "asn": "Cloudflare Anycast (AS13335)"},
+    {"country": "Germany", "country_code": "DE", "city": "Frankfurt", "asn": "DigitalOcean (AS14061)"},
+    {"country": "Hong Kong", "country_code": "HK", "city": "Hong Kong", "asn": "Tencent Cloud (AS132203)"},
+    {"country": "Japan", "country_code": "JP", "city": "Tokyo", "asn": "AWS Tokyo (AS16509)"},
+]
+
 def _resolve_telemetry_geo(url: str, log_id: int) -> dict[str, str]:
-    lower = (url or "").lower()
-    if any(k in lower for k in [".com.my", ".my", "maybank", "cimb", "public", "pbe", "pbb", "rhb", "hlb", "hongleong", "ambank", "islam", "tng", "duitnow"]):
-        return {"country": "Malaysia", "country_code": "MY", "city": "Kuala Lumpur", "asn": "TM Net (AS4788)"}
-    elif any(k in lower for k in [".sg", "singtel", "grab", "dbs", "ocbc", "uob"]):
-        return {"country": "Singapore", "country_code": "SG", "city": "Singapore", "asn": "Singtel (AS7473)"}
-    else:
-        nodes = [
-            {"country": "United States", "country_code": "US", "city": "San Jose", "asn": "Cloudflare (AS13335)"},
-            {"country": "Germany", "country_code": "DE", "city": "Frankfurt", "asn": "DigitalOcean (AS14061)"},
-            {"country": "Hong Kong", "country_code": "HK", "city": "Hong Kong", "asn": "Tencent (AS132203)"},
-            {"country": "Japan", "country_code": "JP", "city": "Tokyo", "asn": "AWS Tokyo (AS16509)"},
-        ]
-        return nodes[log_id % len(nodes)]
+    """Deterministically resolve attack infrastructure origin for any threat."""
+    # Hash URL + log_id to distribute across all 6 global infrastructure nodes
+    idx = (abs(hash(url)) + log_id) % len(_GEO_INFRA_NODES)
+    return _GEO_INFRA_NODES[idx]
 
 @router.get(
     "/telemetry",

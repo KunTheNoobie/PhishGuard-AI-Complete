@@ -95,11 +95,91 @@ _SEED_MULE_ACCOUNTS: Final[list[tuple[str, str, str, int]]] = [
     ("980102-14-5678", "DuitNow (NRIC)", "Facebook Marketplace", 8),
 ]
 
+_SEED_THREAT_TELEMETRY: Final[list[tuple[str, float]]] = [
+    # Maybank
+    ("http://maybznk2u.com.my/auth/login", 0.985),
+    ("http://maybank2u-secure-login.top/verify", 0.962),
+    ("http://mae-verify-otp.net/update", 0.941),
+    ("http://maybank-ccid-update.com/login", 0.978),
+    ("http://maybank2u-account-safety.org/auth", 0.953),
+    ("http://maybank-tac-portal.net/sms", 0.932),
+    # CIMB Bank
+    ("http://secure-login-cimb.com/clicks", 0.976),
+    ("http://cimb-clicks-secure.com/auth", 0.954),
+    ("http://cimb-security-gateway.net/update", 0.923),
+    ("http://cimbclicks-auth.top/login", 0.967),
+    ("http://cimb-online-verify.net/tac", 0.945),
+    ("http://cimb-portal-alerts.org/auth", 0.912),
+    # Public Bank
+    ("http://pbebank-update-info.net/login", 0.981),
+    ("http://pbb-online-auth.top/verify", 0.963),
+    ("http://publicbank-ebank.com/auth", 0.947),
+    ("http://pbe-secure-portal.org/login", 0.958),
+    ("http://pbb-secure-alert.top/verify", 0.934),
+    ("http://publicbank-pac-token.net/auth", 0.972),
+    # RHB Bank
+    ("http://rhb-online-verify.net/auth", 0.952),
+    ("http://rhbgroup-secure-auth.top/login", 0.944),
+    ("http://rhbnow-login-gateway.com/verify", 0.968),
+    ("http://rhb-ebank-portal.net/update", 0.935),
+    ("http://rhbnow-otp-token.top/auth", 0.961),
+    ("http://rhb-security-center.org/login", 0.927),
+    # Hong Leong Bank
+    ("http://hlb-connect-secure.com/auth", 0.957),
+    ("http://hongleong-auth-verify.top/login", 0.964),
+    ("http://hlbb-portal-update.net/verify", 0.938),
+    ("http://hlb-connect-online.org/auth", 0.949),
+    ("http://hongleong-security-gateway.top/login", 0.971),
+    ("http://hlb-tac-verify.net/auth", 0.922),
+    # AmBank
+    ("http://ambank-amonline-secure.top/auth", 0.963),
+    ("http://amonline-verify-auth.com/login", 0.951),
+    ("http://ambankgroup-portal.net/update", 0.937),
+    ("http://ambank-security-check.org/auth", 0.946),
+    ("http://amonline-gateway.top/login", 0.974),
+    ("http://ambank-tac-online.net/verify", 0.928),
+    # Bank Islam
+    ("http://bankislam-internet-auth.com/login", 0.969),
+    ("http://bimb-portal-verify.top/auth", 0.955),
+    ("http://bankislam-secure-login.net/update", 0.942),
+    ("http://bankislam-online-token.org/auth", 0.961),
+    ("http://bimb-security-center.top/login", 0.934),
+    ("http://bankislam-tac-sms.net/verify", 0.948),
+    # Touch 'n Go eWallet
+    ("http://tng-digital-claim-bonus.net/claim", 0.973),
+    ("http://touchngo-ewallet-auth.top/verify", 0.965),
+    ("http://tng-wallet-verify.com/login", 0.952),
+    ("http://tngdigital-voucher-claim.org/auth", 0.944),
+    ("http://touchngo-security-update.top/claim", 0.982),
+    ("http://tng-pin-reset-portal.net/auth", 0.939),
+    # GrabPay Malaysia
+    ("http://grabpay-reward-verification.top/claim", 0.958),
+    ("http://grab-malaysia-bonus.net/auth", 0.947),
+    ("http://grabpay-auth-login.com/verify", 0.966),
+    ("http://grab-voucher-rebate.org/claim", 0.938),
+    ("http://grabpay-security-alert.top/auth", 0.971),
+    ("http://grab-driver-merchant.net/login", 0.925),
+    # ShopeePay
+    ("http://shopeepay-voucher-claim.net/claim", 0.977),
+    ("http://shopee-free-gifts.net/login", 0.962),
+    ("http://shopeepay-verify-portal.top/auth", 0.953),
+    ("http://shopee-coin-rewards.org/claim", 0.941),
+    ("http://shopeepay-security-update.top/login", 0.968),
+    ("http://shopee-lucky-draw.net/auth", 0.936),
+]
+
 _INSERT_SEED: Final[str] = """
 INSERT OR IGNORE INTO mule_registry
     (account_number, bank_name, platform_flagged, report_count)
 VALUES
     (?, ?, ?, ?);
+"""
+
+_INSERT_TELEMETRY_SEED: Final[str] = """
+INSERT INTO threat_telemetry
+    (malicious_url, bert_score)
+VALUES
+    (?, ?);
 """
 
 
@@ -108,18 +188,7 @@ VALUES
 # ==============================================================================
 
 async def initialize_database() -> aiosqlite.Connection:
-    """Create (or open) the SQLite database, execute DDL, and seed data.
-
-    This coroutine is designed to be invoked **once** inside the FastAPI
-    ``lifespan`` context manager.  The returned connection is stored in
-    ``app.state`` and shared across request handlers via dependency
-    injection.
-
-    Returns
-    -------
-    aiosqlite.Connection
-        A long-lived, WAL-mode connection to the PhishGuard database.
-    """
+    """Create (or open) the SQLite database, execute DDL, and seed data."""
     logger.info("Initializing database at '%s' …", DATABASE_PATH)
 
     db: aiosqlite.Connection = await aiosqlite.connect(DATABASE_PATH)
@@ -140,10 +209,19 @@ async def initialize_database() -> aiosqlite.Connection:
     for account in _SEED_MULE_ACCOUNTS:
         await db.execute(_INSERT_SEED, account)
 
+    # ── Seed: Insert initial telemetry if table is fresh ──
+    cursor = await db.execute("SELECT COUNT(*) FROM threat_telemetry;")
+    count_row = await cursor.fetchone()
+    count = count_row[0] if count_row else 0
+    if count < len(_SEED_THREAT_TELEMETRY):
+        for threat in _SEED_THREAT_TELEMETRY:
+            await db.execute(_INSERT_TELEMETRY_SEED, threat)
+
     await db.commit()
 
     logger.info(
-        "Database ready — %d threat intel seed records loaded.",
+        "Database ready — %d mule accounts and %d telemetry records verified.",
         len(_SEED_MULE_ACCOUNTS),
+        len(_SEED_THREAT_TELEMETRY),
     )
     return db
