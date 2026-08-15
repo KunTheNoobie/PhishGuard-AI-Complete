@@ -926,12 +926,9 @@
                             📋 Takedown Notice
                         </button>
                     </div>
-                    <div style="display: flex; gap: 0.4rem;">
+                    <div>
                         <button type="button" id="printReportBtn" class="action-btn action-btn--primary" onclick="window.print()">
                             🖨️ Print / PDF
-                        </button>
-                        <button type="button" id="dismissForensicBtn" class="action-btn" onclick="document.getElementById('forensicReportModal').classList.add('hidden')">
-                            Close
                         </button>
                     </div>
                 </div>
@@ -994,9 +991,6 @@
                     <button type="button" class="action-btn action-btn--primary" onclick="window.print()">
                         🖨️ Print / Save PDF
                     </button>
-                    <button type="button" id="dismissCisoBtn" class="action-btn" onclick="document.getElementById('cisoReportModal').classList.add('hidden')">
-                        Close
-                    </button>
                 </div>
             </div>
         </div>
@@ -1011,11 +1005,6 @@
                 <div id="xaiModalBody" style="font-size: 0.85rem; line-height: 1.6; color: var(--text-secondary);">
                     Evaluating token feature weights and semantic heatmaps...
                 </div>
-                <div class="modal-actions">
-                    <button type="button" id="dismissXaiBtn" class="action-btn action-btn--primary" onclick="document.getElementById('xaiModal').classList.add('hidden')">
-                        Done / Close
-                    </button>
-                </div>
             </div>
         </div>
 
@@ -1026,7 +1015,7 @@
                     <h3 class="modal-title">🛡️ Automated DNS Sinkhole & SIEM Firewall Exporter</h3>
                     <button id="closeSinkholeModalBtn" class="modal-close-btn" type="button">&times;</button>
                 </div>
-                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.25rem;">
+                <div style="font-size: 0.85rem; color: var(--text-secondary);">
                     <p style="margin-bottom: 0.75rem;">Export real-time blocklists and IDS threat signatures generated from active quarantined domains:</p>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
                         <a href="/api/v1/dashboard/export/sinkhole-rules?format=pihole" download="phishguard_pihole.txt" class="action-btn" style="padding: 0.75rem; justify-content: center;">
@@ -1043,11 +1032,6 @@
                         </a>
                     </div>
                 </div>
-                <div class="modal-actions">
-                    <button type="button" id="dismissSinkholeBtn" class="action-btn action-btn--primary" onclick="document.getElementById('sinkholeModal').classList.add('hidden')">
-                        Close
-                    </button>
-                </div>
             </div>
         </div>
 
@@ -1058,13 +1042,8 @@
                     <h3 class="modal-title">🤖 Autonomous SOC Incident Playbooks</h3>
                     <button id="closePlaybookModalBtn" class="modal-close-btn" type="button">&times;</button>
                 </div>
-                <div id="playbookModalContent" style="max-height: 60vh; overflow-y: auto; margin-bottom: 1rem; font-size: 0.84rem;">
+                <div id="playbookModalContent" style="max-height: 60vh; overflow-y: auto; font-size: 0.84rem;">
                     Loading playbooks & audit history...
-                </div>
-                <div class="modal-actions">
-                    <button type="button" id="dismissPlaybookBtn" class="action-btn action-btn--primary" onclick="document.getElementById('playbookModal').classList.add('hidden')">
-                        Close
-                    </button>
                 </div>
             </div>
         </div>
@@ -1076,13 +1055,8 @@
                     <h3 class="modal-title">🎯 Pre-Emptive Typosquatting & Homoglyph Protection Radar</h3>
                     <button id="closeTyposquatModalBtn" class="modal-close-btn" type="button">&times;</button>
                 </div>
-                <div id="typosquatModalContent" style="max-height: 60vh; overflow-y: auto; margin-bottom: 1rem; font-size: 0.84rem;">
+                <div id="typosquatModalContent" style="max-height: 60vh; overflow-y: auto; font-size: 0.84rem;">
                     Scanning 10 banking entities for homoglyph and bit-squat variants...
-                </div>
-                <div class="modal-actions">
-                    <button type="button" id="dismissTyposquatBtn" class="action-btn action-btn--primary" onclick="document.getElementById('typosquatModal').classList.add('hidden')">
-                        Close
-                    </button>
                 </div>
             </div>
         </div>
@@ -1094,13 +1068,8 @@
                     <h3 class="modal-title">🌲 Phishing Attack Tree & Threat Graph Visualizer</h3>
                     <button id="closeThreatGraphModalBtn" class="modal-close-btn" type="button">&times;</button>
                 </div>
-                <div id="threatGraphModalContent" style="min-height: 280px; max-height: 60vh; overflow-y: auto; margin-bottom: 1rem;">
+                <div id="threatGraphModalContent" style="min-height: 280px; max-height: 60vh; overflow-y: auto;">
                     Rendering attack tree graph...
-                </div>
-                <div class="modal-actions">
-                    <button type="button" id="dismissThreatGraphBtn" class="action-btn action-btn--primary" onclick="document.getElementById('threatGraphModal').classList.add('hidden')">
-                        Close
-                    </button>
                 </div>
             </div>
         </div>
@@ -1156,9 +1125,8 @@
                     </div>
                 </div>
 
-                <div class="modal-actions" style="margin-top: 1rem; justify-content: space-between;">
+                <div class="modal-actions" style="margin-top: 1rem; justify-content: flex-start;">
                     <button type="button" class="action-btn" onclick="openPlaybooksModal()">🤖 Trigger Active Mitigation Playbook</button>
-                    <button type="button" id="dismissWarRoomBtn" class="action-btn action-btn--primary" onclick="document.getElementById('warRoomModal').classList.add('hidden')">Exit War Room</button>
                 </div>
             </div>
         </div>
@@ -1173,9 +1141,6 @@
                 <div id="visualSandboxModalBody" style="flex: 1; overflow-y: auto; font-size: 0.84rem; line-height: 1.5; color: var(--text-secondary);">
                     Loading forensic sandbox inspection...
                 </div>
-                <div class="modal-actions" style="margin-top: 1rem;">
-                    <button type="button" class="action-btn action-btn--primary" onclick="document.getElementById('visualSandboxModal').classList.add('hidden')">Close Sandbox</button>
-                </div>
             </div>
         </div>
 
@@ -1188,9 +1153,6 @@
                 </div>
                 <div id="nsrcModalBody" style="font-size: 0.84rem; line-height: 1.6; color: var(--text-secondary); max-height: 65vh; overflow-y: auto;">
                     Syncing with NSRC 997 & PDRM CCID SemakMule records...
-                </div>
-                <div class="modal-actions" style="margin-top: 1rem;">
-                    <button type="button" class="action-btn action-btn--primary" onclick="document.getElementById('nsrcModal').classList.add('hidden')">Close</button>
                 </div>
             </div>
         </div>
@@ -1209,9 +1171,6 @@
                         <button type="button" id="quishingScanBtn" class="action-btn action-btn--primary">Audit QR</button>
                     </div>
                     <div id="quishingResultBox" class="hidden" style="margin-top: 0.75rem; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 0.85rem;"></div>
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="action-btn action-btn--primary" onclick="document.getElementById('quishingModal').classList.add('hidden')">Close</button>
                 </div>
             </div>
         </div>
@@ -1241,9 +1200,8 @@
                     <button class="modal-close-btn" type="button">&times;</button>
                 </div>
                 <div id="cyberNoticeBody" style="font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary); margin-bottom: 1.25rem;"></div>
-                <div class="modal-actions" style="justify-content: space-between;">
+                <div class="modal-actions" style="justify-content: flex-end;">
                     <button type="button" id="cyberNoticeCopyBtn" class="action-btn action-btn--primary">📋 Copy Text</button>
-                    <button type="button" class="action-btn modal-dismiss-btn">Dismiss</button>
                 </div>
             </div>
         </div>
