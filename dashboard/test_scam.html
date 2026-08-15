@@ -212,7 +212,15 @@
             margin-top: 1.25rem;
             line-height: 1.4;
         }
-    </style>
+    <script>
+        function applyTheme(t) {
+            document.documentElement.setAttribute("data-theme", t);
+            if (document.body) document.body.setAttribute("data-theme", t);
+            localStorage.setItem("phishguard_theme", t);
+        }
+        const savedTheme = localStorage.getItem("phishguard_theme") || "cyberpunk";
+        applyTheme(savedTheme);
+    </script>
 </head>
 <body>
     <!-- ═══════════════════ HEADER ═══════════════════ -->
@@ -247,10 +255,26 @@
         </nav>
 
         <div class="header__status">
-            <span class="status-dot error"></span>
-            <span class="status-text" style="color: #f87171;">Scam Target Active</span>
+            <div class="header__status-group">
+                <select id="themeSelector" class="page-size-select" title="Switch Theme">
+                    <option value="cyberpunk">Cyber Neon</option>
+                    <option value="matrix">Matrix Emerald</option>
+                    <option value="abyss">OLED Abyss</option>
+                </select>
+            </div>
+            <div class="header__status-group">
+                <button id="simToggleBtn" class="sim-toggle-btn off" type="button" title="Toggle Threat Simulator">
+                    ⚡ Simulation: OFF
+                </button>
+            </div>
+            <div class="header__status-group" style="padding: 0.3rem 0.6rem;">
+                <span class="status-dot error" id="statusDot"></span>
+                <span class="status-text" style="color: #f87171;" id="statusText">Scam Target Active</span>
+            </div>
         </div>
     </header>
+
+    <div id="cyberToastContainer" class="cyber-toast-container"></div>
 
     <main class="test-site-container">
         <!-- Control Banner -->
@@ -301,7 +325,7 @@
                     </div>
                 </div>
 
-                <form class="phish-form" onsubmit="event.preventDefault(); alert('⚠️ PhishGuard Intercept: This is a simulated phishing attack submission!');">
+                <form class="phish-form" id="scamForm">
                     <div class="form-group">
                         <label for="usernameInput">Maybank2u Username / NRIC Number</label>
                         <input type="text" id="usernameInput" placeholder="e.g. johndoe99 / 990101-14-1234" required />
@@ -334,5 +358,56 @@
         <p>&copy; 2026 PhishGuard-AI &mdash; Threat Intelligence Platform<br/>
         <small>Faculty of Computing & Information Technology, TAR UMT</small></p>
     </footer>
+
+    <script>
+        const $themeSelector = document.getElementById("themeSelector");
+        if ($themeSelector) {
+            $themeSelector.value = savedTheme;
+            $themeSelector.addEventListener("change", (e) => applyTheme(e.target.value));
+        }
+
+        const $simToggleBtn = document.getElementById("simToggleBtn");
+        async function updateSimStatus() {
+            try {
+                const res = await fetch("/api/v1/dashboard/simulator/status");
+                const data = await res.json();
+                if ($simToggleBtn) {
+                    if (data.simulator_running) {
+                        $simToggleBtn.className = "sim-toggle-btn on";
+                        $simToggleBtn.innerHTML = "⚡ Simulation: ACTIVE";
+                    } else {
+                        $simToggleBtn.className = "sim-toggle-btn off";
+                        $simToggleBtn.innerHTML = "⚡ Simulation: OFF";
+                    }
+                }
+            } catch (_e) {}
+        }
+        if ($simToggleBtn) {
+            $simToggleBtn.addEventListener("click", async () => {
+                $simToggleBtn.disabled = true;
+                try {
+                    await fetch("/api/v1/dashboard/simulator/toggle", { method: "POST" });
+                    await updateSimStatus();
+                } catch (_e) {}
+                $simToggleBtn.disabled = false;
+            });
+        }
+        updateSimStatus();
+
+        document.getElementById("scamForm")?.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const toast = document.createElement("div");
+            toast.className = "cyber-toast cyber-toast--danger";
+            toast.innerHTML = `
+                <div class="cyber-toast__icon">🚨</div>
+                <div class="cyber-toast__content">
+                    <div class="cyber-toast__title">PhishGuard Autonomous Intercept</div>
+                    <div>Simulated credential harvesting submission blocked. Mule Account 112233445566 quarantined.</div>
+                </div>
+            `;
+            document.getElementById("cyberToastContainer")?.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        });
+    </script>
 </body>
 </html>

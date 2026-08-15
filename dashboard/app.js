@@ -464,6 +464,8 @@ async function refreshStats() {
     setStatAnimated($statReports,    data.total_reports.toLocaleString());
 }
 
+let activeGeoFilter = null; // { city, countryCode }
+
 function renderGeoRadar(nodes) {
     const group = document.getElementById("geoRadarNodesGroup");
     const legend = document.getElementById("geoNodesLegend");
@@ -480,7 +482,6 @@ function renderGeoRadar(nodes) {
         ];
     }
 
-    // High-precision non-overlapping map positions on 900x280 canvas with customized leader line offsets
     const nodeConfig = {
         "kuala lumpur": { x: 630, y: 155, labelX: 645, labelY: 158, align: "start", leader: null },
         "singapore":    { x: 638, y: 175, labelX: 585, labelY: 215, align: "end",   leader: "638,175 605,210 585,210" },
@@ -500,13 +501,12 @@ function renderGeoRadar(nodes) {
         const isHigh = n.status === "high";
         const color = isCritical ? "#ef4444" : isHigh ? "#f59e0b" : "#06b6d4";
         const text = `${n.city} (${n.threats})`;
+        const isSelected = activeGeoFilter && (activeGeoFilter.countryCode.toLowerCase() === n.country_code.toLowerCase() || activeGeoFilter.city.toLowerCase() === key);
 
-        // Leader line if configured
         if (conf.leader) {
             svgHtml += `<polyline points="${conf.leader}" fill="none" stroke="${color}" stroke-width="1.2" stroke-dasharray="2 2" opacity="0.75" />`;
         }
 
-        // Pulse wave circles for active threats
         if (isCritical || isHigh) {
             svgHtml += `<circle cx="${conf.x}" cy="${conf.y}" r="6" fill="none" stroke="${color}" stroke-width="1.8" class="radar-pulse-node" />`;
             if (isCritical) {
@@ -514,23 +514,21 @@ function renderGeoRadar(nodes) {
             }
         }
 
-        // Center hub dot
-        svgHtml += `<circle cx="${conf.x}" cy="${conf.y}" r="4.5" fill="${color}" stroke="#ffffff" stroke-width="1.5" style="cursor: pointer;" />`;
+        svgHtml += `<circle cx="${conf.x}" cy="${conf.y}" r="4.5" fill="${color}" stroke="#ffffff" stroke-width="1.5" style="cursor: pointer;" onclick="filterFeedByCity('${escapeHtml(n.city)}', '${escapeHtml(n.country_code)}')" />`;
 
-        // Text label pill background + text
         const badgeWidth = text.length * 7.2 + 12;
         const rectX = conf.align === "end" ? conf.labelX - badgeWidth : conf.labelX - 4;
         const textAnchor = conf.align === "end" ? "end" : "start";
 
         svgHtml += `
-            <g style="cursor: pointer;" onclick="filterFeedByCity('${escapeHtml(n.city)}')">
-                <rect x="${rectX}" y="${conf.labelY - 12}" width="${badgeWidth}" height="16" rx="4" fill="rgba(10, 15, 30, 0.88)" stroke="${color}" stroke-width="0.8" />
+            <g style="cursor: pointer;" onclick="filterFeedByCity('${escapeHtml(n.city)}', '${escapeHtml(n.country_code)}')">
+                <rect x="${rectX}" y="${conf.labelY - 12}" width="${badgeWidth}" height="16" rx="4" fill="${isSelected ? color : 'rgba(10, 15, 30, 0.88)'}" stroke="${color}" stroke-width="${isSelected ? 2 : 0.8}" />
                 <text x="${conf.labelX}" y="${conf.labelY}" fill="#ffffff" font-size="10.5" font-weight="600" font-family="'JetBrains Mono', monospace" text-anchor="${textAnchor}">${escapeHtml(text)}</text>
             </g>
         `;
 
         legendHtml += `
-            <div class="geo-node-card" onclick="filterFeedByCity('${escapeHtml(n.city)}')">
+            <div class="geo-node-card ${isSelected ? 'active-geo-node' : ''}" onclick="filterFeedByCity('${escapeHtml(n.city)}', '${escapeHtml(n.country_code)}')">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div style="display: flex; align-items: center; gap: 6px;">
                         <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${color}; box-shadow: 0 0 8px ${color};"></span>
@@ -540,7 +538,7 @@ function renderGeoRadar(nodes) {
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2px;">
                     <span style="color: var(--text-muted); font-size: 0.72rem;">${escapeHtml(n.asn)}</span>
-                    <span style="color: var(--accent-cyan); font-size: 0.7rem; font-family: monospace;">🔍 Filter</span>
+                    <span style="color: ${isSelected ? '#34d399' : 'var(--accent-cyan)'}; font-size: 0.7rem; font-family: monospace; font-weight: 700;">${isSelected ? '✓ ACTIVE' : '🔍 Filter'}</span>
                 </div>
             </div>
         `;
@@ -550,15 +548,32 @@ function renderGeoRadar(nodes) {
     legend.innerHTML = legendHtml;
 }
 
-function filterFeedByCity(city) {
+function filterFeedByCity(city, countryCode) {
+    activeGeoFilter = { city, countryCode: countryCode || city };
     const $search = document.getElementById("telemetrySearch");
     if ($search) {
-        $search.value = `bank:${city}`;
-        telemetryFilterText = `bank:${city}`;
+        $search.value = `country:${countryCode || city}`;
+        telemetryFilterText = `country:${countryCode || city}`;
         telemetryPagination.page = 1;
         renderTelemetry();
+        showCyberToast("info", "Geographic Filter Applied", `Filtered threats for ${city} (${countryCode || ''}).`);
         $search.scrollIntoView({ behavior: "smooth", block: "center" });
     }
+    // Update radar selection highlight
+    apiFetch("/geo-threats").then(geo => renderGeoRadar(geo.nodes)).catch(() => {});
+}
+
+function clearGeoFilter() {
+    activeGeoFilter = null;
+    const $search = document.getElementById("telemetrySearch");
+    if ($search) {
+        $search.value = "";
+        telemetryFilterText = "";
+        telemetryPagination.page = 1;
+        renderTelemetry();
+        showCyberToast("info", "Filter Cleared", "Displaying all live threat telemetry.");
+    }
+    apiFetch("/geo-threats").then(geo => renderGeoRadar(geo.nodes)).catch(() => {});
 }
 
 
@@ -645,10 +660,23 @@ function evaluateHuntingFilter(entry, query) {
     if (!query) return true;
     const lowerQ = query.toLowerCase().trim();
 
-    // Support field syntax: bank:maybank, score:>0.85, score:<0.60, id:>50, url:.top
+    // Support field syntax: country:my, geo:kuala lumpur, city:singapore, bank:maybank, score:>0.85, score:<0.60, id:>50, url:.top
     const tokens = lowerQ.split(/\s+and\s+/i);
     return tokens.every(tok => {
         tok = tok.trim();
+        if (tok.startsWith("country:")) {
+            const val = tok.replace("country:", "").trim().toLowerCase();
+            const cCode = (entry.country_code || "").toLowerCase();
+            const cName = (entry.country || "").toLowerCase();
+            return cCode === val || cName.includes(val);
+        }
+        if (tok.startsWith("geo:") || tok.startsWith("city:")) {
+            const val = tok.replace(/(geo|city):/, "").trim().toLowerCase();
+            const cCity = (entry.city || "").toLowerCase();
+            const cName = (entry.country || "").toLowerCase();
+            const cCode = (entry.country_code || "").toLowerCase();
+            return cCity.includes(val) || cName.includes(val) || cCode === val;
+        }
         if (tok.startsWith("bank:")) {
             const val = tok.replace("bank:", "").trim();
             return String(entry.malicious_url).toLowerCase().includes(val);
@@ -669,7 +697,11 @@ function evaluateHuntingFilter(entry, query) {
             const val = tok.replace("url:", "").trim();
             return String(entry.malicious_url).toLowerCase().includes(val);
         }
-        return String(entry.log_id).includes(tok) || String(entry.malicious_url).toLowerCase().includes(tok);
+        return String(entry.log_id).includes(tok) || 
+               String(entry.malicious_url).toLowerCase().includes(tok) ||
+               String(entry.country || "").toLowerCase().includes(tok) ||
+               String(entry.country_code || "").toLowerCase().includes(tok) ||
+               String(entry.city || "").toLowerCase().includes(tok);
     });
 }
 
@@ -680,6 +712,23 @@ function renderTelemetry() {
         filtered = filtered.filter(e => evaluateHuntingFilter(e, telemetryFilterText));
     }
 
+    const $activeFilterBar = document.getElementById("activeGeoFilterContainer");
+    if ($activeFilterBar) {
+        if (activeGeoFilter) {
+            $activeFilterBar.style.display = "flex";
+            $activeFilterBar.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <span class="geo-filter-pill">
+                        📍 Active Geographic Filter: <strong>${escapeHtml(activeGeoFilter.city)} (${escapeHtml(activeGeoFilter.countryCode)})</strong>
+                        <button class="geo-filter-pill__clear" onclick="clearGeoFilter()" title="Clear geographic filter">✕ Clear</button>
+                    </span>
+                    <span style="font-size: 0.74rem; color: var(--text-muted);">${filtered.length} matching incident(s)</span>
+                </div>
+            `;
+        } else {
+            $activeFilterBar.style.display = "none";
+        }
+    }
 
     if (telemetryScoreFilter === "high") {
         filtered = filtered.filter(e => e.bert_score >= 0.85);
@@ -1075,11 +1124,11 @@ async function refreshAll() {
         renderMuleRegistry();
         
         if (simStatus.simulator_running) {
-            $simToggleBtn.classList.replace("off", "on");
-            $simToggleBtn.textContent = "Simulation: ON";
+            $simToggleBtn.className = "sim-toggle-btn on";
+            $simToggleBtn.innerHTML = "⚡ Simulation: ACTIVE";
         } else {
-            $simToggleBtn.classList.replace("on", "off");
-            $simToggleBtn.textContent = "Simulation: OFF";
+            $simToggleBtn.className = "sim-toggle-btn off";
+            $simToggleBtn.innerHTML = "⚡ Simulation: OFF";
         }
 
         refreshDistributions();
@@ -1095,23 +1144,31 @@ async function refreshAll() {
 }
 
 async function handleSimToggle() {
+    if (!$simToggleBtn) return;
     $simToggleBtn.disabled = true;
     try {
         const res = await fetch(`${API_BASE}/simulator/toggle`, { method: "POST" });
         const data = await res.json();
         if (data.simulator_running) {
-            $simToggleBtn.classList.replace("off", "on");
-            $simToggleBtn.textContent = "Simulation: ON";
+            $simToggleBtn.className = "sim-toggle-btn on";
+            $simToggleBtn.innerHTML = "⚡ Simulation: ACTIVE";
+            showCyberToast("success", "Simulator Active", "Background threat simulator started generating live events.");
         } else {
-            $simToggleBtn.classList.replace("on", "off");
-            $simToggleBtn.textContent = "Simulation: OFF";
+            $simToggleBtn.className = "sim-toggle-btn off";
+            $simToggleBtn.innerHTML = "⚡ Simulation: OFF";
+            showCyberToast("info", "Simulator Paused", "Background threat simulator paused.");
         }
         refreshAll();
     } catch (err) {
         console.error("Failed to toggle simulator:", err);
+        showCyberToast("danger", "Simulator Error", err.message);
     } finally {
         $simToggleBtn.disabled = false;
     }
+}
+
+if ($simToggleBtn) {
+    $simToggleBtn.addEventListener("click", handleSimToggle);
 }
 
 // Quick URL Scanner Handler

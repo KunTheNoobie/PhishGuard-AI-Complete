@@ -32,12 +32,19 @@
         .verdict-banner { padding: 1rem; border-radius: 6px; font-weight: 800; font-size: 1.1rem; text-align: center; margin-bottom: 1rem; }
         .verdict-banner--block { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 2px solid #ef4444; }
         .verdict-banner--safe { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 2px solid #10b981; }
-    </style>
+    <script>
+        function applyTheme(t) {
+            document.documentElement.setAttribute("data-theme", t);
+            if (document.body) document.body.setAttribute("data-theme", t);
+            localStorage.setItem("phishguard_theme", t);
+        }
+        const savedTheme = localStorage.getItem("phishguard_theme") || "cyberpunk";
+        applyTheme(savedTheme);
+    </script>
 </head>
 <body>
     <!-- ═══════════════════ HEADER ═══════════════════ -->
     <header class="header">
-
         <div class="header__brand">
             <div class="header__logo">
                 <img src="favicon.png" alt="PhishGuard Cyber Shield" class="header__logo-img" />
@@ -68,10 +75,26 @@
         </nav>
 
         <div class="header__status">
-            <span class="status-dot live"></span>
-            <span class="status-text">Sandbox Active</span>
+            <div class="header__status-group">
+                <select id="themeSelector" class="page-size-select" title="Switch Theme">
+                    <option value="cyberpunk">Cyber Neon</option>
+                    <option value="matrix">Matrix Emerald</option>
+                    <option value="abyss">OLED Abyss</option>
+                </select>
+            </div>
+            <div class="header__status-group">
+                <button id="simToggleBtn" class="sim-toggle-btn off" type="button" title="Toggle Threat Simulator">
+                    ⚡ Simulation: OFF
+                </button>
+            </div>
+            <div class="header__status-group" style="padding: 0.3rem 0.6rem;">
+                <span class="status-dot live" id="statusDot"></span>
+                <span class="status-text" id="statusText">Sandbox Active</span>
+            </div>
         </div>
     </header>
+
+    <div id="cyberToastContainer" class="cyber-toast-container"></div>
 
 
     <main class="sandbox-container">
@@ -238,6 +261,40 @@
             }
         }
 
+
+        const $themeSelector = document.getElementById("themeSelector");
+        if ($themeSelector) {
+            $themeSelector.value = savedTheme;
+            $themeSelector.addEventListener("change", (e) => applyTheme(e.target.value));
+        }
+
+        const $simToggleBtn = document.getElementById("simToggleBtn");
+        async function updateSimStatus() {
+            try {
+                const res = await fetch("/api/v1/dashboard/simulator/status");
+                const data = await res.json();
+                if ($simToggleBtn) {
+                    if (data.simulator_running) {
+                        $simToggleBtn.className = "sim-toggle-btn on";
+                        $simToggleBtn.innerHTML = "⚡ Simulation: ACTIVE";
+                    } else {
+                        $simToggleBtn.className = "sim-toggle-btn off";
+                        $simToggleBtn.innerHTML = "⚡ Simulation: OFF";
+                    }
+                }
+            } catch (_e) {}
+        }
+        if ($simToggleBtn) {
+            $simToggleBtn.addEventListener("click", async () => {
+                $simToggleBtn.disabled = true;
+                try {
+                    await fetch("/api/v1/dashboard/simulator/toggle", { method: "POST" });
+                    await updateSimStatus();
+                } catch (_e) {}
+                $simToggleBtn.disabled = false;
+            });
+        }
+        updateSimStatus();
 
         loadScenario(0);
     </script>
