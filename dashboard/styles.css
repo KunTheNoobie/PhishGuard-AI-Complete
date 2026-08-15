@@ -1551,26 +1551,37 @@ html, body, *, *::before, *::after {
     body {
         background: #ffffff !important;
         color: #0f172a !important;
+        margin: 0 !important;
+        padding: 16px !important;
     }
 
-    .header, .stats-grid, .charts-grid, .panel, .footer, .modal-actions, .modal-close-btn {
+    /* Hide everything on the page except the active report/briefing modal */
+    header, nav, footer, .hub-matrix-strip, .command-strip, .quick-scanner-card,
+    .stats-grid, .charts-grid, .panel, .geo-soc-card, .brand-matrix-panel,
+    .cyber-toast-container, .modal-actions, .modal-close-btn, button, .action-btn,
+    .modal-overlay.hidden, .modal-overlay:not(#cisoReportModal):not(#reportModal),
+    #systemHealthBadge, .health-dot {
         display: none !important;
     }
 
-    .modal-overlay {
+    #cisoReportModal:not(.hidden), #reportModal:not(.hidden) {
         position: static !important;
-        background: transparent !important;
         display: block !important;
+        background: transparent !important;
         padding: 0 !important;
+        width: 100% !important;
+        box-shadow: none !important;
     }
 
-    .modal-card {
+    #cisoReportModal:not(.hidden) .modal-card, #reportModal:not(.hidden) .modal-card {
         max-width: 100% !important;
+        width: 100% !important;
         background: #ffffff !important;
         color: #0f172a !important;
         border: 2px solid #0f172a !important;
         box-shadow: none !important;
-        padding: 1.5rem !important;
+        padding: 20px !important;
+        page-break-inside: avoid;
     }
 
     .modal-title {
@@ -1580,19 +1591,24 @@ html, body, *, *::before, *::after {
         padding-bottom: 0.5rem;
     }
 
-    #forensicReportBody {
+    #cisoReportContent, #forensicReportBody {
         color: #0f172a !important;
     }
 
-    #forensicReportBody div {
+    #cisoReportContent div, #forensicReportBody div {
         background: #f8fafc !important;
         border: 1px solid #cbd5e1 !important;
         color: #0f172a !important;
     }
 
-    code {
+    #cisoReportContent strong, #forensicReportBody strong {
+        color: #0f172a !important;
+    }
+
+    code, pre {
         color: #0284c7 !important;
         background: #f1f5f9 !important;
+        border: 1px solid #cbd5e1 !important;
     }
 }
 

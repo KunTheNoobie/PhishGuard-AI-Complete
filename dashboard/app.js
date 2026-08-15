@@ -1390,6 +1390,25 @@ async function refreshSystemHealth() {
     } catch (_e) {}
 }
 
+function playAlertSound(type = "warning") {
+    try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type === "danger" || type === "warning" ? "sawtooth" : "sine";
+        osc.frequency.setValueAtTime(type === "danger" ? 880 : 587, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(type === "danger" ? 440 : 880, ctx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.25);
+    } catch (_e) {}
+}
+
 if ($quickScanForm) {
     $quickScanForm.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -1421,7 +1440,12 @@ if ($quickScanForm) {
                 </div>
                 <button class="action-btn" onclick="document.getElementById('quickScanResult').classList.add('hidden')">Dismiss</button>
             `;
-            if (isDanger) playAlertSound();
+            if (isDanger) {
+                playAlertSound("danger");
+                showCyberToast("danger", "High-Risk Threat Intercepted", `Score: ${(res.score * 100).toFixed(1)}% &bull; Verdict: ${res.verdict}`);
+            } else {
+                showCyberToast("success", "Target Verified Clean", `Score: ${(res.score * 100).toFixed(1)}% &bull; Verdict: ${res.verdict}`);
+            }
         } catch (err) {
             showCyberToast("danger", "Inspection Failed", err.message);
         } finally {
@@ -1629,6 +1653,18 @@ function closeWebhookModal() {
 if ($openWebhookModalBtn) $openWebhookModalBtn.addEventListener("click", openWebhookModal);
 if ($closeWebhookModalBtn) $closeWebhookModalBtn.addEventListener("click", closeWebhookModal);
 if ($cancelWebhookBtn) $cancelWebhookBtn.addEventListener("click", closeWebhookModal);
+
+document.getElementById("webhookInsertDemoBtn")?.addEventListener("click", () => {
+    const dInput = document.getElementById("discordWebhookInput");
+    const sInput = document.getElementById("slackWebhookInput");
+    const tToken = document.getElementById("telegramTokenInput");
+    const tChat = document.getElementById("telegramChatInput");
+    if (dInput) dInput.value = "https://discord.com/api/webhooks/1234567890/PhishGuard-SOC-Alerts-Demo";
+    if (sInput) sInput.value = "https://hooks.slack.com/services/T00000000/B00000000/PhishGuardAlertsDemo";
+    if (tToken) tToken.value = "6842194829:AAH9fK_PhishGuardSecBot";
+    if (tChat) tChat.value = "-1002948201948";
+    showCyberToast("info", "Demo Webhook Config Loaded", "Populated Discord, Slack, and Telegram demo endpoints.");
+});
 
 async function handleTestPing(channel, urlInputId, chatInputId = null) {
     const url = document.getElementById(urlInputId)?.value.trim();
@@ -3346,6 +3382,23 @@ async function openDbMaintenanceModal() {
     }
 }
 
+if ($openDbMaintenanceBtn) $openDbMaintenanceBtn.addEventListener("click", openDbMaintenanceModal);
+if ($closeDbMaintenanceModalBtn) $closeDbMaintenanceModalBtn.addEventListener("click", () => $dbMaintenanceModal?.classList.add("hidden"));
+window.openDbMaintenanceModal = openDbMaintenanceModal;
+
+// ── 6. SOC Keyboard Hotkeys Controller ──
+function openHotkeysModal() {
+    if ($hotkeysModal) $hotkeysModal.classList.remove("hidden");
+}
+
+function closeHotkeysModal() {
+    if ($hotkeysModal) $hotkeysModal.classList.add("hidden");
+}
+
+if ($openHotkeysBtn) $openHotkeysBtn.addEventListener("click", openHotkeysModal);
+if ($closeHotkeysModalBtn) $closeHotkeysModalBtn.addEventListener("click", closeHotkeysModal);
+window.openHotkeysModal = openHotkeysModal;
+
 // ── 7. MITRE ATT&CK Matrix Controller ──
 const $openMitreBtn = document.getElementById("openMitreBtn");
 const $mitreModal = document.getElementById("mitreModal");
@@ -3583,6 +3636,28 @@ async function openRedTeamModal() {
 
 if ($openRedTeamBtn) $openRedTeamBtn.addEventListener("click", openRedTeamModal);
 if ($closeRedTeamModalBtn) $closeRedTeamModalBtn.addEventListener("click", () => $redTeamModal?.classList.add("hidden"));
+
+function initSseStream() {
+    try {
+        if (!window.EventSource) return;
+        const source = new EventSource(`${API_BASE}/telemetry/stream`);
+        source.onmessage = (event) => {
+            if (isStreamPaused) return;
+            try {
+                const item = JSON.parse(event.data);
+                if (item && item.log_id) {
+                    telemetryData.unshift(item);
+                    if (telemetryData.length > 500) telemetryData.pop();
+                    renderTelemetry();
+                    refreshStats();
+                }
+            } catch (_e) {}
+        };
+        source.onerror = () => {
+            source.close();
+        };
+    } catch (_e) {}
+}
 
 // Initial load & stream
 async function masterRefresh() {
