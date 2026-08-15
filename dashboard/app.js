@@ -323,7 +323,11 @@ function sortData(data, key, asc) {
 function escapeHtml(str) {
     const div = document.createElement("div");
     div.appendChild(document.createTextNode(String(str || "")));
-    return div.innerHTML;
+    return div.innerHTML.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+function escapeJs(str) {
+    return String(str || "").replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, '\\"');
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -576,21 +580,21 @@ function renderGeoRadar(nodes) {
             }
         }
 
-        svgHtml += `<circle cx="${conf.x}" cy="${conf.y}" r="4.5" fill="${color}" stroke="#ffffff" stroke-width="1.5" style="cursor: pointer;" onclick="toggleGeoFilter('${escapeHtml(n.city)}', '${escapeHtml(n.country_code)}')" />`;
+        svgHtml += `<circle cx="${conf.x}" cy="${conf.y}" r="4.5" fill="${color}" stroke="#ffffff" stroke-width="1.5" style="cursor: pointer;" onclick="toggleGeoFilter('${escapeJs(n.city)}', '${escapeJs(n.country_code)}')" />`;
 
         const badgeWidth = text.length * 7.2 + 12;
         const rectX = conf.align === "end" ? conf.labelX - badgeWidth : conf.labelX - 4;
         const textAnchor = conf.align === "end" ? "end" : "start";
 
         svgHtml += `
-            <g style="cursor: pointer;" onclick="toggleGeoFilter('${escapeHtml(n.city)}', '${escapeHtml(n.country_code)}')">
+            <g style="cursor: pointer;" onclick="toggleGeoFilter('${escapeJs(n.city)}', '${escapeJs(n.country_code)}')">
                 <rect x="${rectX}" y="${conf.labelY - 12}" width="${badgeWidth}" height="16" rx="4" fill="${isSelected ? color : 'rgba(10, 15, 30, 0.88)'}" stroke="${color}" stroke-width="${isSelected ? 2 : 0.8}" />
                 <text x="${conf.labelX}" y="${conf.labelY}" fill="#ffffff" font-size="10.5" font-weight="600" font-family="'JetBrains Mono', monospace" text-anchor="${textAnchor}">${escapeHtml(text)}</text>
             </g>
         `;
 
         legendHtml += `
-            <div class="geo-node-card ${isSelected ? 'active-geo-node' : ''}" onclick="toggleGeoFilter('${escapeHtml(n.city)}', '${escapeHtml(n.country_code)}')">
+            <div class="geo-node-card ${isSelected ? 'active-geo-node' : ''}" onclick="toggleGeoFilter('${escapeJs(n.city)}', '${escapeJs(n.country_code)}')">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div style="display: flex; align-items: center; gap: 6px;">
                         <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${color}; box-shadow: 0 0 8px ${color};"></span>
@@ -856,7 +860,7 @@ function renderTelemetry() {
             const brandChips = Array.from(selectedBrandFilters).map(b => `
                 <span class="geo-filter-pill geo-filter-pill--brand">
                     🏛️ <strong>${escapeHtml(b)}</strong>
-                    <button class="geo-filter-pill__clear" onclick="removeBrandFilter('${escapeHtml(b)}')" title="Remove ${escapeHtml(b)}">✕</button>
+                    <button class="geo-filter-pill__clear" onclick="removeBrandFilter('${escapeJs(b)}')" title="Remove ${escapeHtml(b)}">✕</button>
                 </span>
             `).join("");
 
@@ -865,7 +869,7 @@ function renderTelemetry() {
                 return `
                     <span class="geo-filter-pill geo-filter-pill--geo">
                         📍 <strong>${escapeHtml(meta.city)} (${escapeHtml(meta.code)})</strong>
-                        <button class="geo-filter-pill__clear" onclick="removeGeoFilter('${escapeHtml(meta.code)}')" title="Remove ${escapeHtml(meta.city)}">✕</button>
+                        <button class="geo-filter-pill__clear" onclick="removeGeoFilter('${escapeJs(meta.code)}')" title="Remove ${escapeHtml(meta.city)}">✕</button>
                     </span>
                 `;
             }).join("");
@@ -1736,7 +1740,7 @@ async function refreshBrandMatrix() {
             const riskClass = b.risk_level === "CRITICAL" ? "brand-risk-badge--critical" :
                               b.risk_level === "ELEVATED" ? "brand-risk-badge--elevated" : "brand-risk-badge--monitored";
             return `
-                <div class="brand-matrix-card ${isSelected ? 'active-brand-card' : ''}" onclick="toggleBrandFilter('${escapeHtml(b.brand)}')">
+                <div class="brand-matrix-card ${isSelected ? 'active-brand-card' : ''}" onclick="toggleBrandFilter('${escapeJs(b.brand)}')">
                     <div class="brand-matrix-header">
                         <span class="brand-matrix-title">
                             <span>${b.logo}</span> ${escapeHtml(b.brand)}
