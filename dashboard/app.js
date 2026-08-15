@@ -678,8 +678,28 @@ function evaluateHuntingFilter(entry, query) {
             return cCity.includes(val) || cName.includes(val) || cCode === val;
         }
         if (tok.startsWith("bank:")) {
-            const val = tok.replace("bank:", "").trim();
-            return String(entry.malicious_url).toLowerCase().includes(val);
+            const val = tok.replace("bank:", "").trim().toLowerCase();
+            const bankAliases = {
+                "maybank": ["maybank", "maybank2u", "maybznk2u", "mae"],
+                "cimb": ["cimb", "cimbclicks", "cimb-clicks"],
+                "cimb bank": ["cimb", "cimbclicks", "cimb-clicks"],
+                "public": ["public", "pbb", "pbebank", "pbe"],
+                "public bank": ["public", "pbb", "pbebank", "pbe"],
+                "rhb": ["rhb", "rhbgroup", "rhbnow"],
+                "rhb bank": ["rhb", "rhbgroup", "rhbnow"],
+                "hong leong": ["hongleong", "hlb", "hlbb"],
+                "hong leong bank": ["hongleong", "hlb", "hlbb"],
+                "ambank": ["ambank", "ambankgroup", "amonline"],
+                "bank islam": ["islam", "bankislam", "bimb"],
+                "touch 'n go": ["touch", "tng", "tngdigital", "ewallet"],
+                "touch 'n go ewallet": ["touch", "tng", "tngdigital", "ewallet"],
+                "touch n go": ["touch", "tng", "tngdigital", "ewallet"],
+                "grabpay": ["grab", "grabpay"],
+                "shopeepay": ["shopee", "shopeepay"]
+            };
+            const aliases = bankAliases[val] || [val];
+            const u = String(entry.malicious_url).toLowerCase();
+            return aliases.some(alias => u.includes(alias));
         }
         if (tok.startsWith("score:>")) {
             const val = parseFloat(tok.replace("score:>", "").trim());
@@ -714,7 +734,18 @@ function renderTelemetry() {
 
     const $activeFilterBar = document.getElementById("activeGeoFilterContainer");
     if ($activeFilterBar) {
-        if (activeGeoFilter) {
+        if (activeBrandFilter) {
+            $activeFilterBar.style.display = "flex";
+            $activeFilterBar.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <span class="geo-filter-pill">
+                        🏦 Active Institution Filter: <strong>${escapeHtml(activeBrandFilter)}</strong>
+                        <button class="geo-filter-pill__clear" onclick="clearBrandFilter()" title="Clear institution filter">✕ Clear</button>
+                    </span>
+                    <span style="font-size: 0.74rem; color: var(--text-muted);">${filtered.length} matching incident(s)</span>
+                </div>
+            `;
+        } else if (activeGeoFilter) {
             $activeFilterBar.style.display = "flex";
             $activeFilterBar.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
@@ -1562,6 +1593,8 @@ if ($closeCisoModalBtn) $closeCisoModalBtn.addEventListener("click", () => $ciso
 // PHASE 8: BRAND CAMPAIGN MATRIX & XAI TOKEN ATTRIBUTION
 // ═══════════════════════════════════════════════════════════════════
 
+let activeBrandFilter = null;
+
 async function refreshBrandMatrix() {
     try {
         const res = await apiFetch("/brand-campaign-matrix");
@@ -1572,10 +1605,11 @@ async function refreshBrandMatrix() {
         if (countBadge) countBadge.textContent = `${res.total_tracked_institutions} Tracked`;
 
         container.innerHTML = (res.brands || []).map(b => {
+            const isSelected = activeBrandFilter && (activeBrandFilter.toLowerCase() === b.brand.toLowerCase());
             const riskClass = b.risk_level === "CRITICAL" ? "brand-risk-badge--critical" :
                               b.risk_level === "ELEVATED" ? "brand-risk-badge--elevated" : "brand-risk-badge--monitored";
             return `
-                <div class="brand-matrix-card" onclick="filterFeedByBrand('${escapeHtml(b.brand)}')">
+                <div class="brand-matrix-card ${isSelected ? 'active-brand-card' : ''}" onclick="filterFeedByBrand('${escapeHtml(b.brand)}')">
                     <div class="brand-matrix-header">
                         <span class="brand-matrix-title">
                             <span>${b.logo}</span> ${escapeHtml(b.brand)}
@@ -1586,8 +1620,8 @@ async function refreshBrandMatrix() {
                         <span>Active Clones: <strong style="color: #fff;">${b.active_threats}</strong></span>
                         <span>Mules: <strong style="color: #f87171;">${b.flagged_mules}</strong></span>
                     </div>
-                    <div style="font-size: 0.7rem; color: var(--accent-cyan); text-align: right; margin-top: 2px;">
-                        Filter Stream &rarr;
+                    <div style="font-size: 0.7rem; color: ${isSelected ? '#34d399' : 'var(--accent-cyan)'}; font-weight: 700; text-align: right; margin-top: 2px;">
+                        ${isSelected ? '✓ ACTIVE' : 'Filter Stream &rarr;'}
                     </div>
                 </div>
             `;
@@ -1596,12 +1630,36 @@ async function refreshBrandMatrix() {
 }
 
 function filterFeedByBrand(brand) {
+    if (activeBrandFilter && activeBrandFilter.toLowerCase() === brand.toLowerCase()) {
+        clearBrandFilter();
+        return;
+    }
+
+    activeBrandFilter = brand;
+    activeGeoFilter = null; // Clear geo filter when brand filter is chosen
+
     telemetryFilterText = `bank:${brand}`;
     const searchInput = document.getElementById("telemetrySearch");
     if (searchInput) searchInput.value = telemetryFilterText;
     telemetryPagination.page = 1;
     renderTelemetry();
-    document.getElementById("telemetryTable")?.scrollIntoView({ behavior: "smooth" });
+    refreshBrandMatrix();
+    showCyberToast("info", "Institution Filter Applied", `Filtered live threats targeting ${brand}.`);
+    document.getElementById("telemetryTable")?.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    // Refresh geo radar to clear selected geo node
+    apiFetch("/geo-threats").then(geo => renderGeoRadar(geo.nodes)).catch(() => {});
+}
+
+function clearBrandFilter() {
+    activeBrandFilter = null;
+    const searchInput = document.getElementById("telemetrySearch");
+    if (searchInput) searchInput.value = "";
+    telemetryFilterText = "";
+    telemetryPagination.page = 1;
+    renderTelemetry();
+    refreshBrandMatrix();
+    showCyberToast("info", "Filter Cleared", "Displaying all live threat telemetry.");
 }
 
 // XAI Modal Attributions
