@@ -2061,14 +2061,25 @@ async function openPlaybooksModal() {
             apiFetch("/playbooks/history")
         ]);
 
+        const executedCounts = {};
+        (histData.history || []).forEach(h => {
+            if (h.playbook_id) {
+                executedCounts[h.playbook_id] = (executedCounts[h.playbook_id] || 0) + 1;
+            }
+        });
+
         const playbooksHtml = (pbData.playbooks || []).map(p => {
-            const wasRecentlyExecuted = _lastExecutedPlaybookId === p.id;
-            const actionBadge = wasRecentlyExecuted
-                ? `<span style="background: rgba(52, 211, 153, 0.15); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.4); padding: 4px 10px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; font-family: monospace;">✓ ENFORCEMENT DISPATCHED</span>`
+            const count = executedCounts[p.id] || (_lastExecutedPlaybookId === p.id ? 1 : 0);
+            const isEnforced = count > 0;
+            const actionBadge = isEnforced
+                ? `<div style="display: flex; gap: 8px; align-items: center;">
+                       <span style="background: rgba(52, 211, 153, 0.15); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.4); padding: 4px 10px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; font-family: monospace;">✓ ENFORCEMENT ACTIVE (${count}x)</span>
+                       <button class="action-btn" id="btn-pb-${escapeHtml(p.id)}" style="padding: 3px 8px; font-size: 0.7rem;" onclick="manualRunPlaybook('${escapeJs(p.id)}')">⚡ Re-run</button>
+                   </div>`
                 : `<button class="action-btn action-btn--primary" id="btn-pb-${escapeHtml(p.id)}" style="padding: 4px 12px; font-size: 0.74rem;" onclick="manualRunPlaybook('${escapeJs(p.id)}')">⚡ Execute Remediation</button>`;
 
             return `
-                <div style="background: rgba(15, 23, 42, 0.85); padding: 14px; border-radius: 8px; border: 1px solid ${wasRecentlyExecuted ? 'rgba(52, 211, 153, 0.5)' : 'var(--border-subtle)'}; margin-bottom: 10px;">
+                <div style="background: rgba(15, 23, 42, 0.85); padding: 14px; border-radius: 8px; border: 1px solid ${isEnforced ? 'rgba(52, 211, 153, 0.5)' : 'var(--border-subtle)'}; margin-bottom: 10px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                         <strong style="color: #fff; font-size: 0.9rem;">${escapeHtml(p.name)}</strong>
                         <span class="brand-risk-badge ${p.severity === 'CRITICAL' ? 'brand-risk-badge--critical' : 'brand-risk-badge--elevated'}">${escapeHtml(p.severity)}</span>
