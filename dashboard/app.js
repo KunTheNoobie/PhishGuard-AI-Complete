@@ -3090,11 +3090,11 @@ function renderUrlBatchInspectionResults(data) {
     if (!$batchInspectResultsBox) return;
     const rows = (data.results || []).map(r => `
         <tr>
-            <td style="font-family: monospace; word-break: break-all;" title="${escapeHtml(r.url)}">${escapeHtml(r.url)}</td>
+            <td title="${escapeHtml(r.url)}"><span style="display: block; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(r.url)}</span></td>
             <td><strong style="color: #fff;">${escapeHtml(r.target_brand)}</strong></td>
             <td><span class="brand-risk-badge ${r.composite_score >= 0.7 ? 'brand-risk-badge--critical' : 'brand-risk-badge--monitored'}">${(r.composite_score * 100).toFixed(1)}%</span></td>
             <td><span class="brand-risk-badge ${r.verdict === 'CRITICAL_PHISH' ? 'brand-risk-badge--critical' : (r.verdict === 'SUSPICIOUS' ? 'brand-risk-badge--elevated' : 'brand-risk-badge--monitored')}">${escapeHtml(r.verdict)}</span></td>
-            <td style="font-size: 0.74rem;">${r.heuristic_flags.length ? escapeHtml(r.heuristic_flags.join(", ")) : '<span style="color: var(--text-muted);">None</span>'}</td>
+            <td class="cell-wrap" style="font-size: 0.74rem;">${r.heuristic_flags.length ? escapeHtml(r.heuristic_flags.join(", ")) : '<span style="color: var(--text-muted);">None</span>'}</td>
         </tr>
     `).join("");
 
@@ -3121,11 +3121,11 @@ function renderUrlBatchInspectionResults(data) {
         <table class="data-table" style="font-size: 0.78rem; width: 100%;">
             <thead>
                 <tr>
-                    <th style="width: 32%;">Evaluated URL</th>
-                    <th style="width: 18%;">Target Entity</th>
+                    <th style="width: 30%;">Evaluated URL</th>
+                    <th style="width: 16%;">Target Entity</th>
                     <th style="width: 12%;">Risk</th>
                     <th style="width: 18%;">Verdict</th>
-                    <th style="width: 20%;">Heuristic Indicators</th>
+                    <th style="width: 24%;">Heuristic Indicators</th>
                 </tr>
             </thead>
             <tbody>
@@ -3145,7 +3145,7 @@ async function openThreatFeedsModal() {
         const data = await apiFetch("/threat-feeds/status");
         const rows = (data.recent_indicators || []).map(item => `
             <tr>
-                <td style="font-family: monospace; word-break: break-all;" title="${escapeHtml(item.url)}">${escapeHtml(item.url)}</td>
+                <td title="${escapeHtml(item.url)}"><span style="display: block; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(item.url)}</span></td>
                 <td><span class="cmd-badge">${escapeHtml(item.feed_source)}</span></td>
                 <td><strong style="color: #fff;">${escapeHtml(item.target_bank)}</strong></td>
                 <td><span class="brand-risk-badge brand-risk-badge--critical">${escapeHtml(item.threat_type)}</span></td>
@@ -3154,7 +3154,7 @@ async function openThreatFeedsModal() {
         `).join("");
 
         $threatFeedsModalBody.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 8px;">
                 <div>
                     <strong style="color: #fff; font-size: 0.95rem;">Active Threat Intelligence Syndication</strong>
                     <div style="font-size: 0.75rem; color: var(--text-muted);">Synced ${data.total_active_indicators} blacklisted banking targets &bull; Last Synced: ${escapeHtml(data.last_sync)}</div>
@@ -3171,11 +3171,11 @@ async function openThreatFeedsModal() {
             <table class="data-table" style="font-size: 0.78rem; width: 100%;">
                 <thead>
                     <tr>
-                        <th style="width: 34%;">Threat URL Indicator</th>
-                        <th style="width: 18%;">Feed Provider</th>
-                        <th style="width: 18%;">Target Institution</th>
-                        <th style="width: 16%;">Threat Type</th>
-                        <th style="width: 14%;">Ingested</th>
+                        <th style="width: 28%;">Threat URL Indicator</th>
+                        <th style="width: 17%;">Feed Provider</th>
+                        <th style="width: 17%;">Target Institution</th>
+                        <th style="width: 22%;">Threat Type</th>
+                        <th style="width: 16%;">Ingested</th>
                     </tr>
                 </thead>
                 <tbody>
