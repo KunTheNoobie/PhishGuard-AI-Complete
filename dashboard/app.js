@@ -330,14 +330,15 @@ function escapeHtml(str) {
 // ANALYTICS VISUAL CHARTS
 // ═══════════════════════════════════════════════════════════════════
 
-function renderBankDonutChart(banks) {
+function renderBankDonutChart(banks, totalMulesOverride) {
     if (!banks || !banks.length) {
         $bankDonutSvg.innerHTML = '<circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="14"/>';
         $bankLegend.innerHTML = '<div class="legend-item"><span>No data</span></div>';
+        $donutCenterText.innerHTML = `0<small>Mules</small>`;
         return;
     }
 
-    const total = banks.reduce((acc, b) => acc + b.count, 0) || 1;
+    const total = totalMulesOverride || banks.reduce((acc, b) => acc + b.count, 0) || 1;
     let accumulatedAngle = 0;
     const radius = 36;
     const circumference = 2 * Math.PI * radius;
@@ -371,7 +372,7 @@ function renderBankDonutChart(banks) {
 
     $bankDonutSvg.innerHTML = svgSegments;
     $bankLegend.innerHTML = legendHtml;
-    $donutCenterText.innerHTML = `${total}<small>Mules</small>`;
+    $donutCenterText.innerHTML = `${total.toLocaleString()}<small>Mules</small>`;
 }
 
 function renderTimelineBars(timeline) {
@@ -673,7 +674,7 @@ async function refreshDistributions() {
     try {
         const data = await apiFetch("/distributions");
         distributionsData = data;
-        renderBankDonutChart(data.banks);
+        renderBankDonutChart(data.banks, data.total_mules);
         renderTimelineBars(data.timeline);
         renderPlatformBars(data.platforms);
         renderInfraBars(data.infrastructure);

@@ -510,10 +510,15 @@ async def get_distributions(request: Request) -> dict[str, Any]:
     """Return bank and platform breakdowns for visual analytics charts."""
     db = request.app.state.db
 
-    # Bank distribution
+    # Total mules count from registry (exact match with /stats)
+    cur_total = await db.execute("SELECT COUNT(*) FROM mule_registry;")
+    total_mules_row = await cur_total.fetchone()
+    total_mules = total_mules_row[0] if total_mules_row else 0
+
+    # Bank distribution (all banks, sorted by count)
     cursor = await db.execute(
         "SELECT bank_name, COUNT(*), SUM(report_count) FROM mule_registry "
-        "GROUP BY bank_name ORDER BY COUNT(*) DESC LIMIT 8;"
+        "GROUP BY bank_name ORDER BY COUNT(*) DESC;"
     )
     bank_rows = await cursor.fetchall()
     banks = [
@@ -590,6 +595,7 @@ async def get_distributions(request: Request) -> dict[str, Any]:
 
 
     return {
+        "total_mules": total_mules,
         "banks": banks,
         "platforms": platforms,
         "timeline": timeline,
