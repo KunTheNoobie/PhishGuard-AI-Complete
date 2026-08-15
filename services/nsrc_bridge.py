@@ -111,6 +111,11 @@ async def escalate_nsrc_emergency_freeze(
     )
     await db.commit()
 
+    # Update status in mock cases
+    for c in _MOCK_NSRC_CASES:
+        if c.get("mule_account") == account_number:
+            c["nsrc_status"] = "FROZEN"
+
     case_ref = f"NSRC-2026-EMERGENCY-{abs(hash(account_number)) % 90000 + 10000}"
     ccid_ref = f"PDRM/JSJK/2026/EMG-{abs(hash(account_number)) % 800000 + 100000}"
 

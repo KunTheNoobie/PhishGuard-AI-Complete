@@ -2572,8 +2572,13 @@ async function openNsrcModal() {
         if ($warRoomLossCounter) $warRoomLossCounter.textContent = data.total_losses_prevented_formatted;
 
         const casesHtml = (data.recent_intercept_cases || []).map(c => {
-            const statusClass = c.nsrc_status === 'FROZEN' ? 'nsrc-status-frozen' :
+            const isFrozen = c.nsrc_status === 'FROZEN';
+            const statusClass = isFrozen ? 'nsrc-status-frozen' :
                                 c.nsrc_status === 'ESCALATED' ? 'nsrc-status-escalated' : 'nsrc-status-investigating';
+            const actionButtonHtml = isFrozen
+                ? `<span style="color: #34d399; font-size: 0.72rem; font-weight: 700; font-family: monospace; background: rgba(52,211,153,0.12); border: 1px solid rgba(52,211,153,0.3); border-radius: 4px; padding: 3px 8px;">✓ NFP FREEZE ENFORCED</span>`
+                : `<button class="action-btn action-btn--primary" style="padding: 2px 8px; font-size: 0.7rem;" onclick="triggerNsrcFreeze('${escapeJs(c.mule_account)}', '${escapeJs(c.victim_bank)}')">⚡ NFP Multi-Bank Freeze</button>`;
+
             return `
                 <div style="background: rgba(15,23,42,0.85); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 0.85rem; margin-bottom: 0.65rem;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
@@ -2588,7 +2593,7 @@ async function openNsrcModal() {
                     </div>
                     <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; color: var(--text-muted); border-top: 1px solid rgba(255,255,255,0.06); padding-top: 4px;">
                         <span>PDRM Dossier: <code>${escapeHtml(c.ccid_report_id)}</code></span>
-                        <button class="action-btn action-btn--primary" style="padding: 2px 8px; font-size: 0.7rem;" onclick="triggerNsrcFreeze('${escapeJs(c.mule_account)}', '${escapeJs(c.victim_bank)}')">⚡ NFP Multi-Bank Freeze</button>
+                        ${actionButtonHtml}
                     </div>
                 </div>
             `;
@@ -2950,14 +2955,16 @@ function openBatchInspectModal() {
 if ($openBatchInspectBtn) $openBatchInspectBtn.addEventListener("click", openBatchInspectModal);
 if ($closeBatchInspectModalBtn) $closeBatchInspectModalBtn.addEventListener("click", () => $batchInspectModal?.classList.add("hidden"));
 
+const $batchInsertDemoBtn = document.getElementById("batchInsertDemoBtn");
+
 if ($batchTabUrlsBtn && $batchTabEmailBtn && $batchInputText) {
     $batchTabUrlsBtn.addEventListener("click", () => {
         if (batchInspectMode === "urls") return;
         batchInspectMode = "urls";
         $batchTabUrlsBtn.className = "action-btn action-btn--primary";
         $batchTabEmailBtn.className = "action-btn";
-        $batchInputText.placeholder = "Paste multiple URLs (one per line):\nhttp://maybank2u-auth.top/login\nhttps://cimbclicks-secure.xyz\nhttp://pbebank-tac-verify.net";
-        $batchInputText.value = "http://maybank2u-auth.top/login\nhttps://cimbclicks-secure.xyz\nhttps://www.maybank2u.com.my/home/m2u/common/login.do";
+        $batchInputText.placeholder = "Paste multiple URLs (one per line):\nhttp://maybank2u-auth.top/login\nhttps://cimbclicks-secure.xyz\nhttps://www.maybank2u.com.my/home/m2u/common/login.do";
+        $batchInputText.value = "";
         if ($batchInspectResultsBox) $batchInspectResultsBox.classList.add("hidden");
     });
 
@@ -2967,8 +2974,19 @@ if ($batchTabUrlsBtn && $batchTabEmailBtn && $batchInputText) {
         $batchTabEmailBtn.className = "action-btn action-btn--primary";
         $batchTabUrlsBtn.className = "action-btn";
         $batchInputText.placeholder = "Paste raw email headers & body (.eml):\nFrom: security@maybank2u-alerts.top\nSubject: URGENT: Verify Your TAC\nAuthentication-Results: spf=fail dkim=fail\n\nDear customer, please verify your account at http://maybank2u-tac.top and send RM 500 to Maybank 112233445566.";
-        $batchInputText.value = "From: security@maybank2u-alerts.top\nSubject: URGENT: Verify Your TAC & Update Banking Security\nAuthentication-Results: spf=fail dkim=fail dmarc=fail\n\nDear customer, please verify your account at http://maybank2u-tac.top and transfer emergency funds to Maybank account 112233445566.";
+        $batchInputText.value = "";
         if ($batchInspectResultsBox) $batchInspectResultsBox.classList.add("hidden");
+    });
+}
+
+if ($batchInsertDemoBtn && $batchInputText) {
+    $batchInsertDemoBtn.addEventListener("click", () => {
+        if (batchInspectMode === "urls") {
+            $batchInputText.value = "http://maybank2u-auth.top/login\nhttps://cimbclicks-secure.xyz\nhttps://www.maybank2u.com.my/home/m2u/common/login.do";
+        } else {
+            $batchInputText.value = "From: security@maybank2u-alerts.top\nSubject: URGENT: Verify Your TAC & Update Banking Security\nAuthentication-Results: spf=fail dkim=fail dmarc=fail\n\nDear customer, please verify your account at http://maybank2u-tac.top and transfer emergency funds to Maybank account 112233445566.";
+        }
+        showCyberToast("info", "Demo Sample Loaded", `Populated ${batchInspectMode === 'urls' ? 'URL batch' : 'email'} sample.`);
     });
 }
 

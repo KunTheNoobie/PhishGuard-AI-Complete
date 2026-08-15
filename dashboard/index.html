@@ -1243,9 +1243,12 @@
                     <h3 class="modal-title">📥 Batch Forensic Multi-URL & Raw Email Inspector</h3>
                     <button id="closeBatchInspectModalBtn" class="modal-close-btn" type="button">&times;</button>
                 </div>
-                <div style="display: flex; gap: 8px; margin-bottom: 1rem;">
-                    <button type="button" class="action-btn action-btn--primary" id="batchTabUrlsBtn">🌐 Multi-URL Batch (Up to 50)</button>
-                    <button type="button" class="action-btn" id="batchTabEmailBtn">📧 Raw Email / EML Header Audit</button>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 8px;">
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" class="action-btn action-btn--primary" id="batchTabUrlsBtn">🌐 Multi-URL Batch (Up to 50)</button>
+                        <button type="button" class="action-btn" id="batchTabEmailBtn">📧 Raw Email / EML Header Audit</button>
+                    </div>
+                    <button type="button" class="action-btn" id="batchInsertDemoBtn" style="font-size: 0.75rem; padding: 5px 10px;">📋 Insert Demo Sample</button>
                 </div>
                 <div id="batchInputContainer" style="margin-bottom: 1rem;">
                     <textarea id="batchInputText" rows="6" class="search-input" style="width: 100%; height: 130px; font-family: monospace; font-size: 0.8rem; resize: vertical;" placeholder="Paste multiple URLs (one per line):&#10;http://maybank2u-auth.top/login&#10;https://cimbclicks-secure.xyz&#10;http://pbebank-tac-verify.net"></textarea>

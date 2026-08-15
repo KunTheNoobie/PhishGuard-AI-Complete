@@ -1264,10 +1264,39 @@ body {
     background: #0f172a;
     border: 1px solid rgba(99, 102, 241, 0.3);
     border-radius: var(--radius-lg);
-    width: 90%;
+    width: 92%;
     max-width: 460px;
     padding: var(--space-xl);
     box-shadow: 0 24px 48px rgba(0, 0, 0, 0.6);
+    box-sizing: border-box;
+    overflow-x: hidden;
+}
+
+.modal-card .data-table {
+    width: 100% !important;
+    table-layout: auto !important;
+    border-collapse: collapse;
+    margin: 0.5rem 0;
+}
+
+.modal-card .data-table th,
+.modal-card .data-table td {
+    padding: 0.55rem 0.65rem !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    font-size: 0.78rem;
+    vertical-align: middle;
+}
+
+.modal-card .data-table th {
+    font-size: 0.72rem;
+    padding: 0.6rem 0.65rem !important;
+}
+
+.modal-card .data-table td:first-child {
+    word-break: break-all !important;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
 }
 
 .modal-header {
