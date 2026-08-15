@@ -44,8 +44,14 @@ if ($themeSelector) {
 
 const $cyberToastContainer = document.getElementById("cyberToastContainer");
 
-function showCyberToast(type = "info", title = "Notification", message = "", durationMs = 4000) {
+function showCyberToast(type = "info", title = "Notification", message = "", durationMs = 3200) {
     if (!$cyberToastContainer) return;
+
+    // Cap maximum toasts on screen to 3
+    while ($cyberToastContainer.children.length >= 3) {
+        $cyberToastContainer.firstElementChild.remove();
+    }
+
     const toast = document.createElement("div");
     toast.className = `cyber-toast cyber-toast--${type}`;
     
@@ -73,14 +79,27 @@ function showCyberToast(type = "info", title = "Notification", message = "", dur
 
     if (durationMs > 0) {
         setTimeout(() => {
-            toast.style.animation = "toastFadeOut 0.3s forwards";
-            setTimeout(() => toast.remove(), 300);
+            if (toast.parentElement) {
+                toast.style.animation = "toastFadeOut 0.3s forwards";
+                setTimeout(() => toast.remove(), 300);
+            }
         }, durationMs);
     }
 }
 
 // In-UI Confirmation Modal replacing native confirm()
-function showCyberConfirm(title, message, confirmText = "Confirm Action") {
+function showCyberConfirm(title, message, confirmTextOrCb = "Confirm Action", optionalCb = null) {
+    let confirmBtnText = "Confirm Action";
+    let callback = null;
+
+    if (typeof confirmTextOrCb === "function") {
+        callback = confirmTextOrCb;
+        confirmBtnText = typeof optionalCb === "string" ? optionalCb : "Confirm Action";
+    } else if (typeof confirmTextOrCb === "string") {
+        confirmBtnText = confirmTextOrCb;
+        if (typeof optionalCb === "function") callback = optionalCb;
+    }
+
     return new Promise((resolve) => {
         const modal = document.getElementById("cyberConfirmModal");
         const titleEl = document.getElementById("cyberConfirmTitle");
@@ -89,13 +108,15 @@ function showCyberConfirm(title, message, confirmText = "Confirm Action") {
         const cancelBtn = document.getElementById("cyberConfirmCancelBtn");
 
         if (!modal) {
-            resolve(confirm(message));
+            const res = confirm(message);
+            if (res && callback) callback();
+            resolve(res);
             return;
         }
 
         if (titleEl) titleEl.textContent = title;
         if (msgEl) msgEl.textContent = message;
-        if (okBtn) okBtn.textContent = confirmText;
+        if (okBtn) okBtn.textContent = confirmBtnText;
 
         modal.classList.remove("hidden");
 
@@ -107,6 +128,7 @@ function showCyberConfirm(title, message, confirmText = "Confirm Action") {
 
         const onOk = () => {
             cleanup();
+            if (callback) callback();
             resolve(true);
         };
 
@@ -255,8 +277,22 @@ const $copyTakedownBtn      = document.getElementById("copyTakedownBtn");
 // ═══════════════════════════════════════════════════════════════════
 
 async function apiFetch(path, options = {}) {
-    const res = await fetch(`${API_BASE}${path}`, options);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const opts = { ...options };
+    opts.headers = { ...opts.headers };
+    if (opts.body && typeof opts.body === "string" && !opts.headers["Content-Type"]) {
+        opts.headers["Content-Type"] = "application/json";
+    }
+    const res = await fetch(`${API_BASE}${path}`, opts);
+    if (!res.ok) {
+        let errDetail = `HTTP ${res.status}`;
+        try {
+            const errJson = await res.json();
+            if (errJson.detail) {
+                errDetail = typeof errJson.detail === "string" ? errJson.detail : JSON.stringify(errJson.detail);
+            }
+        } catch (_e) {}
+        throw new Error(errDetail);
+    }
     return res.json();
 }
 
@@ -2916,17 +2952,23 @@ if ($closeBatchInspectModalBtn) $closeBatchInspectModalBtn.addEventListener("cli
 
 if ($batchTabUrlsBtn && $batchTabEmailBtn && $batchInputText) {
     $batchTabUrlsBtn.addEventListener("click", () => {
+        if (batchInspectMode === "urls") return;
         batchInspectMode = "urls";
         $batchTabUrlsBtn.className = "action-btn action-btn--primary";
         $batchTabEmailBtn.className = "action-btn";
         $batchInputText.placeholder = "Paste multiple URLs (one per line):\nhttp://maybank2u-auth.top/login\nhttps://cimbclicks-secure.xyz\nhttp://pbebank-tac-verify.net";
+        $batchInputText.value = "http://maybank2u-auth.top/login\nhttps://cimbclicks-secure.xyz\nhttps://www.maybank2u.com.my/home/m2u/common/login.do";
+        if ($batchInspectResultsBox) $batchInspectResultsBox.classList.add("hidden");
     });
 
     $batchTabEmailBtn.addEventListener("click", () => {
+        if (batchInspectMode === "email") return;
         batchInspectMode = "email";
         $batchTabEmailBtn.className = "action-btn action-btn--primary";
         $batchTabUrlsBtn.className = "action-btn";
         $batchInputText.placeholder = "Paste raw email headers & body (.eml):\nFrom: security@maybank2u-alerts.top\nSubject: URGENT: Verify Your TAC\nAuthentication-Results: spf=fail dkim=fail\n\nDear customer, please verify your account at http://maybank2u-tac.top and send RM 500 to Maybank 112233445566.";
+        $batchInputText.value = "From: security@maybank2u-alerts.top\nSubject: URGENT: Verify Your TAC & Update Banking Security\nAuthentication-Results: spf=fail dkim=fail dmarc=fail\n\nDear customer, please verify your account at http://maybank2u-tac.top and transfer emergency funds to Maybank account 112233445566.";
+        if ($batchInspectResultsBox) $batchInspectResultsBox.classList.add("hidden");
     });
 }
 
@@ -3030,11 +3072,11 @@ function renderUrlBatchInspectionResults(data) {
     if (!$batchInspectResultsBox) return;
     const rows = (data.results || []).map(r => `
         <tr>
-            <td style="font-family: monospace; max-width: 220px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="${escapeHtml(r.url)}">${escapeHtml(r.url)}</td>
+            <td style="font-family: monospace; word-break: break-all;" title="${escapeHtml(r.url)}">${escapeHtml(r.url)}</td>
             <td><strong style="color: #fff;">${escapeHtml(r.target_brand)}</strong></td>
             <td><span class="brand-risk-badge ${r.composite_score >= 0.7 ? 'brand-risk-badge--critical' : 'brand-risk-badge--monitored'}">${(r.composite_score * 100).toFixed(1)}%</span></td>
             <td><span class="brand-risk-badge ${r.verdict === 'CRITICAL_PHISH' ? 'brand-risk-badge--critical' : (r.verdict === 'SUSPICIOUS' ? 'brand-risk-badge--elevated' : 'brand-risk-badge--monitored')}">${escapeHtml(r.verdict)}</span></td>
-            <td>${r.heuristic_flags.length ? escapeHtml(r.heuristic_flags.join(", ")) : '<span style="color: var(--text-muted);">None</span>'}</td>
+            <td style="font-size: 0.74rem;">${r.heuristic_flags.length ? escapeHtml(r.heuristic_flags.join(", ")) : '<span style="color: var(--text-muted);">None</span>'}</td>
         </tr>
     `).join("");
 
@@ -3058,14 +3100,14 @@ function renderUrlBatchInspectionResults(data) {
             </div>
         </div>
 
-        <table class="data-table" style="font-size: 0.78rem;">
+        <table class="data-table" style="font-size: 0.78rem; width: 100%;">
             <thead>
                 <tr>
-                    <th>Evaluated URL</th>
-                    <th>Target Entity</th>
-                    <th>Risk</th>
-                    <th>Verdict</th>
-                    <th>Heuristic Indicators</th>
+                    <th style="width: 32%;">Evaluated URL</th>
+                    <th style="width: 18%;">Target Entity</th>
+                    <th style="width: 12%;">Risk</th>
+                    <th style="width: 18%;">Verdict</th>
+                    <th style="width: 20%;">Heuristic Indicators</th>
                 </tr>
             </thead>
             <tbody>
@@ -3085,7 +3127,7 @@ async function openThreatFeedsModal() {
         const data = await apiFetch("/threat-feeds/status");
         const rows = (data.recent_indicators || []).map(item => `
             <tr>
-                <td style="font-family: monospace; max-width: 260px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="${escapeHtml(item.url)}">${escapeHtml(item.url)}</td>
+                <td style="font-family: monospace; word-break: break-all;" title="${escapeHtml(item.url)}">${escapeHtml(item.url)}</td>
                 <td><span class="cmd-badge">${escapeHtml(item.feed_source)}</span></td>
                 <td><strong style="color: #fff;">${escapeHtml(item.target_bank)}</strong></td>
                 <td><span class="brand-risk-badge brand-risk-badge--critical">${escapeHtml(item.threat_type)}</span></td>
@@ -3108,14 +3150,14 @@ async function openThreatFeedsModal() {
             </div>
             <div id="checkFeedResult" class="hidden" style="margin-bottom: 1rem; padding: 0.65rem; background: rgba(15,23,42,0.8); border-radius: 6px; font-size: 0.8rem;"></div>
 
-            <table class="data-table" style="font-size: 0.78rem;">
+            <table class="data-table" style="font-size: 0.78rem; width: 100%;">
                 <thead>
                     <tr>
-                        <th>Threat URL Indicator</th>
-                        <th>Feed Provider</th>
-                        <th>Target Institution</th>
-                        <th>Threat Type</th>
-                        <th>Ingested</th>
+                        <th style="width: 34%;">Threat URL Indicator</th>
+                        <th style="width: 18%;">Feed Provider</th>
+                        <th style="width: 18%;">Target Institution</th>
+                        <th style="width: 16%;">Threat Type</th>
+                        <th style="width: 14%;">Ingested</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -3125,10 +3167,10 @@ async function openThreatFeedsModal() {
         `;
 
         document.getElementById("syncFeedsBtn")?.addEventListener("click", async () => {
+            showCyberToast("info", "Syncing Feeds", "Fetching latest IOCs from URLhaus, PhishTank, and OpenPhish...");
             try {
-                showCyberToast("info", "Syncing Feeds", "Fetching latest IOCs from URLhaus, PhishTank, and OpenPhish...");
-                await apiFetch("/threat-feeds/sync", { method: "POST" });
-                showCyberToast("success", "Feed Sync Complete", "Threat intelligence cache refreshed.");
+                const res = await apiFetch("/threat-feeds/sync", { method: "POST" });
+                showCyberToast("success", "Feed Sync Complete", `Threat cache refreshed.`);
                 openThreatFeedsModal();
             } catch (e) {
                 showCyberToast("danger", "Sync Failed", e.message);
@@ -3136,21 +3178,29 @@ async function openThreatFeedsModal() {
         });
 
         document.getElementById("checkFeedBtn")?.addEventListener("click", async () => {
-            const urlVal = document.getElementById("checkFeedInput")?.value.trim();
-            if (!urlVal) return;
+            const val = document.getElementById("checkFeedInput")?.value.trim();
             const resBox = document.getElementById("checkFeedResult");
-            if (resBox) {
-                resBox.classList.remove("hidden");
-                resBox.innerHTML = "Checking global blacklist cache...";
-                const res = await apiFetch("/threat-feeds/check", {
+            if (!val || !resBox) return;
+
+            resBox.classList.remove("hidden");
+            resBox.innerHTML = `<span class="status-dot live"></span> Searching global syndication feeds for ${escapeHtml(val)}...`;
+
+            try {
+                const checkRes = await apiFetch("/threat-feeds/check", {
                     method: "POST",
-                    body: JSON.stringify({ url: urlVal })
+                    body: JSON.stringify({ url: val })
                 });
-                if (res.is_blacklisted) {
-                    resBox.innerHTML = `<span style="color: #f87171; font-weight: 700;">🚨 MATCH FOUND in ${escapeHtml(res.feed_source)}</span>: ${escapeHtml(res.threat_type)} targeting ${escapeHtml(res.target_bank)} (Confidence: ${(res.confidence * 100).toFixed(0)}%)`;
+
+                if (checkRes.found) {
+                    resBox.innerHTML = `
+                        <div style="color: #f87171; font-weight: 700; margin-bottom: 2px;">🚨 BLACKLIST MATCH FOUND [${escapeHtml(checkRes.source)}]</div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary);">Target: ${escapeHtml(checkRes.details.target_bank)} &bull; Type: ${escapeHtml(checkRes.details.threat_type)}</div>
+                    `;
                 } else {
-                    resBox.innerHTML = `<span style="color: #34d399; font-weight: 700;">✅ CLEAN</span>: URL not found in active external threat feed blacklists.`;
+                    resBox.innerHTML = `<div style="color: #34d399; font-weight: 700;">✅ Clean — Not found in any active external blacklists.</div>`;
                 }
+            } catch (e) {
+                resBox.innerHTML = `<span style="color: #f87171;">Error: ${escapeHtml(e.message)}</span>`;
             }
         });
     } catch (err) {

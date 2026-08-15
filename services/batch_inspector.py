@@ -11,6 +11,7 @@ import time
 from typing import Any
 from urllib.parse import urlparse
 
+from core.config import GLOBAL_SAFE_DOMAINS, TRUSTED_DOMAINS
 from services.brand_profiler import profile_brand_impersonation
 from services.heuristic_engine import analyze_url_heuristics
 from services.mule_scanner import MuleScanner
@@ -55,8 +56,22 @@ def parse_raw_email(raw_text: str) -> dict[str, Any]:
     # Detect mule accounts inside email body
     mule_matches = mule_scanner.scan_text(raw_text)
 
+    # Check if all extracted URLs are trusted
+    all_urls_trusted = False
+    if extracted_urls:
+        all_urls_trusted = all(
+            any(
+                urlparse(u).netloc.lower() == td or urlparse(u).netloc.lower().endswith(f".{td}")
+                for td in list(GLOBAL_SAFE_DOMAINS) + list(TRUSTED_DOMAINS)
+            )
+            for u in extracted_urls
+        )
+
     # NLP analysis on subject + body
     nlp_prob, label = predict_phishing_probability(raw_text[:2000])
+    if all_urls_trusted and not mule_matches and auth_audit["spf"] != "FAIL":
+        nlp_prob = min(nlp_prob, 0.05)
+        label = "BENIGN"
 
     # Check for authentication failure spoofing risk
     spoof_risk = False
@@ -88,28 +103,48 @@ def inspect_batch_urls(urls: list[str]) -> dict[str, Any]:
     clean_urls = [u.strip() for u in urls if u.strip() and u.strip().startswith("http")][:50]
 
     for url in clean_urls:
+        parsed_domain = urlparse(url).netloc.lower()
+        if ":" in parsed_domain:
+            parsed_domain = parsed_domain.split(":")[0]
+
+        is_trusted = any(
+            parsed_domain == td or parsed_domain.endswith(f".{td}")
+            for td in list(GLOBAL_SAFE_DOMAINS) + list(TRUSTED_DOMAINS)
+        )
+
         nlp_prob, label = predict_phishing_probability(url)
         heuristics = analyze_url_heuristics(url)
         brand_prof = profile_brand_impersonation(url)
         mule_hits = mule_scanner.scan_text(url)
 
-        # Composite score
-        base_score = max(nlp_prob, heuristics.get("heuristic_penalty", 0.0))
-        if brand_prof.get("is_impersonation"):
-            base_score = max(base_score, 0.88)
-        composite_score = min(0.99, max(0.05, round(base_score, 4)))
+        if is_trusted:
+            composite_score = 0.01
+            verdict = "BENIGN_SAFE"
+            target_brand = brand_prof.get("target_brand", "Verified Institution")
+            is_brand_spoof = False
+            heuristic_flags = ["Official Verified Domain"]
+        else:
+            # Composite score
+            base_score = max(nlp_prob, heuristics.get("heuristic_penalty", 0.0))
+            if brand_prof.get("is_impersonation"):
+                base_score = max(base_score, 0.88)
+            composite_score = min(0.99, max(0.05, round(base_score, 4)))
+            verdict = "CRITICAL_PHISH" if composite_score >= 0.85 else ("SUSPICIOUS" if composite_score >= 0.60 else "BENIGN")
+            target_brand = brand_prof.get("target_brand", "Unknown / Generic")
+            is_brand_spoof = brand_prof.get("is_impersonation", False)
+            heuristic_flags = heuristics.get("indicators", [])
 
         if composite_score >= 0.60:
             high_risk_count += 1
 
         results.append({
             "url": url,
-            "domain": urlparse(url).netloc,
+            "domain": parsed_domain,
             "composite_score": composite_score,
-            "verdict": "CRITICAL_PHISH" if composite_score >= 0.85 else ("SUSPICIOUS" if composite_score >= 0.60 else "BENIGN"),
-            "target_brand": brand_prof.get("target_brand", "Unknown / Generic"),
-            "is_brand_spoof": brand_prof.get("is_impersonation", False),
-            "heuristic_flags": heuristics.get("indicators", []),
+            "verdict": verdict,
+            "target_brand": target_brand,
+            "is_brand_spoof": is_brand_spoof,
+            "heuristic_flags": heuristic_flags,
             "mule_accounts": [m.account_number for m in mule_hits],
         })
 
