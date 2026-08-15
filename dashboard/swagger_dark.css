@@ -629,3 +629,34 @@ html, body {
     color: #a78bfa !important;
     font-weight: 700 !important;
 }
+
+/* ─── Seamless Layout & Spacing Overrides (Eliminate Voids & Gaps) ─── */
+.swagger-ui .wrapper {
+    padding: 0 1.5rem !important;
+    max-width: 1440px !important;
+    margin: 0 auto !important;
+}
+
+.swagger-ui .opblock-tag-section {
+    margin-bottom: 0.75rem !important;
+}
+
+.swagger-ui .opblock-tag-section:empty {
+    display: none !important;
+}
+
+.swagger-ui section.models {
+    margin: 1.5rem 0 2rem 0 !important;
+    border-radius: 10px !important;
+}
+
+.swagger-ui .opblock-tag {
+    margin-bottom: 0.5rem !important;
+    padding: 0.75rem 1rem !important;
+}
+
+.swagger-ui .opblock-tag small {
+    color: #94a3b8 !important;
+    font-size: 0.85rem !important;
+}
+

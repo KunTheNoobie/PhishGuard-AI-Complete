@@ -1345,6 +1345,7 @@ async def get_ssl_intel(payload: SslIntelRequest) -> dict[str, Any]:
 @router.get(
     "/playbooks",
     summary="List available autonomous SOC playbooks",
+    tags=["Autonomous Defense & Radar"],
 )
 async def list_playbooks() -> dict[str, Any]:
     from services.playbook_engine import AVAILABLE_PLAYBOOKS
@@ -1354,6 +1355,7 @@ async def list_playbooks() -> dict[str, Any]:
 @router.get(
     "/playbooks/history",
     summary="Get autonomous playbook execution history",
+    tags=["Autonomous Defense & Radar"],
 )
 async def get_playbook_audit_history() -> dict[str, Any]:
     from services.playbook_engine import get_playbook_history
@@ -1371,6 +1373,7 @@ class PlaybookRunRequest(BaseModel):
 @router.post(
     "/playbooks/run",
     summary="Manually trigger an autonomous SOC playbook execution",
+    tags=["Autonomous Defense & Radar"],
 )
 async def run_playbook(request: Request, payload: PlaybookRunRequest) -> dict[str, Any]:
     from services.playbook_engine import execute_playbook_action
@@ -1388,6 +1391,7 @@ async def run_playbook(request: Request, payload: PlaybookRunRequest) -> dict[st
 @router.get(
     "/typosquat-radar",
     summary="Get Pre-Emptive Homoglyph & Typosquatting Brand Protection Radar",
+    tags=["Autonomous Defense & Radar"],
 )
 async def get_typosquat_radar() -> dict[str, Any]:
     from services.typosquat_engine import get_complete_typosquat_radar
@@ -1405,6 +1409,7 @@ class MultiVectorRequest(BaseModel):
 @router.post(
     "/multi-vector-score",
     summary="Compute 5-layer Multi-Vector Composite Risk Assessment",
+    tags=["Autonomous Defense & Radar"],
 )
 async def evaluate_multi_vector_score(payload: MultiVectorRequest) -> dict[str, Any]:
     from services.multi_vector_scorer import compute_multi_vector_risk
@@ -1420,6 +1425,7 @@ async def evaluate_multi_vector_score(payload: MultiVectorRequest) -> dict[str, 
 @router.get(
     "/threat-graph/{log_id}",
     summary="Generate Interactive Threat Attack Tree Graph for a specific Incident",
+    tags=["Autonomous Defense & Radar"],
 )
 async def get_threat_attack_graph(request: Request, log_id: int) -> dict[str, Any]:
     db = request.app.state.db
@@ -1502,6 +1508,7 @@ class SandboxInspectRequest(BaseModel):
 @router.get(
     "/telemetry/{log_id}/sandbox-preview",
     summary="Get Visual Forensic Sandbox Snapshot for Incident",
+    tags=["SOC Defense & Tactical Modules"],
 )
 async def get_sandbox_preview(request: Request, log_id: int) -> dict[str, Any]:
     """Provides safe DOM structure, input harvesting analysis, and isolated visual snapshot."""
@@ -1521,6 +1528,7 @@ async def get_sandbox_preview(request: Request, log_id: int) -> dict[str, Any]:
 @router.post(
     "/sandbox-inspect",
     summary="Inspect Custom URL in Visual Forensic Sandbox",
+    tags=["SOC Defense & Tactical Modules"],
 )
 async def inspect_url_sandbox(payload: SandboxInspectRequest) -> dict[str, Any]:
     from services.visual_sandbox import generate_visual_sandbox_snapshot
@@ -1537,6 +1545,7 @@ class NsrcFreezeRequest(BaseModel):
 @router.get(
     "/nsrc/summary",
     summary="Get NSRC 997 & National Fraud Portal Defense Statistics",
+    tags=["SOC Defense & Tactical Modules"],
 )
 async def get_nsrc_summary(request: Request) -> dict[str, Any]:
     from services.nsrc_bridge import get_nsrc_gateway_summary
@@ -1546,6 +1555,7 @@ async def get_nsrc_summary(request: Request) -> dict[str, Any]:
 @router.post(
     "/nsrc/escalate-freeze",
     summary="Escalate Account to NSRC 997 and Broadcast National Fraud Portal Freeze",
+    tags=["SOC Defense & Tactical Modules"],
 )
 async def escalate_nsrc_freeze(request: Request, payload: NsrcFreezeRequest) -> dict[str, Any]:
     from services.nsrc_bridge import escalate_nsrc_emergency_freeze
@@ -1562,6 +1572,7 @@ class QuishingScanRequest(BaseModel):
 @router.post(
     "/quishing/scan",
     summary="Forensically Audit and Decode Quishing / QR Payloads",
+    tags=["SOC Defense & Tactical Modules"],
 )
 async def scan_quishing(payload: QuishingScanRequest) -> dict[str, Any]:
     from services.quishing_scanner import scan_quishing_payload
@@ -1573,6 +1584,7 @@ async def scan_quishing(payload: QuishingScanRequest) -> dict[str, Any]:
 @router.get(
     "/taxii2/root",
     summary="TAXII 2.1 API Root Discovery",
+    tags=["Threat Intelligence & Syndication"],
 )
 async def taxii_discovery() -> dict[str, Any]:
     """OASIS TAXII 2.1 API Root Information."""
@@ -1589,6 +1601,7 @@ async def taxii_discovery() -> dict[str, Any]:
 @router.get(
     "/taxii2/collections",
     summary="TAXII 2.1 Collections Listing",
+    tags=["Threat Intelligence & Syndication"],
 )
 async def taxii_collections() -> dict[str, Any]:
     """Lists available threat intelligence collections for SIEM pollers."""
@@ -1609,6 +1622,7 @@ async def taxii_collections() -> dict[str, Any]:
 @router.get(
     "/taxii2/collections/phishguard-threats/objects",
     summary="TAXII 2.1 STIX Threat Objects Bundle",
+    tags=["Threat Intelligence & Syndication"],
 )
 async def taxii_get_objects(request: Request) -> dict[str, Any]:
     """Delivers STIX 2.1 Bundle conforming to TAXII 2.1 specification for SIEM ingestion."""
@@ -1633,6 +1647,7 @@ import time
 @router.post(
     "/batch-inspect",
     summary="Batch Forensic URL & Raw Email Inspector",
+    tags=["Threat Intelligence & Syndication"],
 )
 async def batch_inspect_endpoint(request: Request) -> dict[str, Any]:
     """Inspect multiple URLs or parse raw email EML headers for threat indicators."""
@@ -1651,6 +1666,7 @@ async def batch_inspect_endpoint(request: Request) -> dict[str, Any]:
 @router.get(
     "/threat-feeds/status",
     summary="Threat Intel Feed Status & Summary",
+    tags=["Threat Intelligence & Syndication"],
 )
 async def threat_feed_status_endpoint() -> dict[str, Any]:
     """Get active global threat intelligence feed synchronization status."""
@@ -1661,6 +1677,7 @@ async def threat_feed_status_endpoint() -> dict[str, Any]:
 @router.post(
     "/threat-feeds/sync",
     summary="Synchronize Global Threat Feeds",
+    tags=["Threat Intelligence & Syndication"],
 )
 async def threat_feed_sync_endpoint() -> dict[str, Any]:
     """Pull latest threat intelligence from URLhaus, PhishTank, and OpenPhish."""
@@ -1671,6 +1688,7 @@ async def threat_feed_sync_endpoint() -> dict[str, Any]:
 @router.post(
     "/threat-feeds/check",
     summary="Query URL against Threat Feed Blacklists",
+    tags=["Threat Intelligence & Syndication"],
 )
 async def threat_feed_check_endpoint(request: Request) -> dict[str, Any]:
     """Check a specific URL against synchronized global threat feeds."""
@@ -1683,6 +1701,7 @@ async def threat_feed_check_endpoint(request: Request) -> dict[str, Any]:
 @router.get(
     "/db/stats",
     summary="Database Storage & Health Statistics",
+    tags=["System & Operations"],
 )
 async def db_stats_endpoint(request: Request) -> dict[str, Any]:
     """Return database file size, page fragmentation, and table row counts."""
@@ -1694,6 +1713,7 @@ async def db_stats_endpoint(request: Request) -> dict[str, Any]:
 @router.post(
     "/db/optimize",
     summary="Optimize & Vacuum Database",
+    tags=["System & Operations"],
 )
 async def db_optimize_endpoint(request: Request) -> dict[str, Any]:
     """Execute WAL checkpoint, integrity check, and index optimization."""
@@ -1705,6 +1725,7 @@ async def db_optimize_endpoint(request: Request) -> dict[str, Any]:
 @router.post(
     "/db/prune",
     summary="Prune Old Telemetry Records",
+    tags=["System & Operations"],
 )
 async def db_prune_endpoint(request: Request) -> dict[str, Any]:
     """Retain only the most recent N telemetry records."""
@@ -1718,6 +1739,7 @@ async def db_prune_endpoint(request: Request) -> dict[str, Any]:
 @router.get(
     "/db/backup",
     summary="Download SQLite Hot Database Backup",
+    tags=["System & Operations"],
 )
 async def db_backup_endpoint(request: Request) -> Any:
     """Stream download of the active SQLite database file."""
@@ -1734,6 +1756,7 @@ async def db_backup_endpoint(request: Request) -> Any:
 @router.get(
     "/diagnostics/benchmark",
     summary="Hardware & Model Inference Benchmark",
+    tags=["System & Operations"],
 )
 async def diagnostics_benchmark_endpoint(request: Request) -> dict[str, Any]:
     """Measure inference latency across BERT NLP, Mule Regex, Brand Profiler, and SQLite."""
