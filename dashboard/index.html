@@ -1238,7 +1238,7 @@
 
         <!-- ─── Batch Forensic URL & Raw Email Inspector Modal ─── -->
         <div id="batchInspectModal" class="modal-overlay hidden" aria-hidden="true" style="z-index: 9998;">
-            <div class="modal-card" style="max-width: 920px; max-height: 90vh; display: flex; flex-direction: column;">
+            <div class="modal-card" style="max-width: 1040px; width: 95vw; max-height: 90vh; display: flex; flex-direction: column; overflow-x: hidden;">
                 <div class="modal-header">
                     <h3 class="modal-title">📥 Batch Forensic Multi-URL & Raw Email Inspector</h3>
                     <button id="closeBatchInspectModalBtn" class="modal-close-btn" type="button">&times;</button>
@@ -1257,18 +1257,18 @@
                     <span style="font-size: 0.75rem; color: var(--text-muted);">Runs parallel BERT NLP + Heuristics + Brand Profiler + Mule Regex</span>
                     <button type="button" id="runBatchInspectBtn" class="action-btn action-btn--primary" style="padding: 0.5rem 1.25rem;">⚡ Run Forensic Audit</button>
                 </div>
-                <div id="batchInspectResultsBox" class="hidden" style="flex: 1; overflow-y: auto; border-top: 1px solid var(--border-subtle); padding-top: 1rem;"></div>
+                <div id="batchInspectResultsBox" class="hidden" style="flex: 1; overflow-y: auto; overflow-x: hidden; border-top: 1px solid var(--border-subtle); padding-top: 1rem;"></div>
             </div>
         </div>
 
         <!-- ─── Global Threat Feeds (URLhaus / PhishTank / OpenPhish) Modal ─── -->
         <div id="threatFeedsModal" class="modal-overlay hidden" aria-hidden="true" style="z-index: 9998;">
-            <div class="modal-card" style="max-width: 960px; max-height: 85vh; display: flex; flex-direction: column;">
+            <div class="modal-card" style="max-width: 1040px; width: 95vw; max-height: 85vh; display: flex; flex-direction: column; overflow-x: hidden;">
                 <div class="modal-header">
                     <h3 class="modal-title">🌐 Global Threat Intelligence Feeds Syndication</h3>
                     <button id="closeThreatFeedsModalBtn" class="modal-close-btn" type="button">&times;</button>
                 </div>
-                <div id="threatFeedsModalBody" style="flex: 1; overflow-y: auto;">
+                <div id="threatFeedsModalBody" style="flex: 1; overflow-y: auto; overflow-x: hidden;">
                     Loading threat feed syndication data...
                 </div>
             </div>

@@ -1274,24 +1274,28 @@ body {
 
 .modal-card .data-table {
     width: 100% !important;
-    table-layout: auto !important;
+    table-layout: fixed !important;
     border-collapse: collapse;
     margin: 0.5rem 0;
 }
 
 .modal-card .data-table th {
     font-size: 0.72rem;
-    padding: 0.65rem 0.75rem !important;
+    padding: 0.6rem 0.5rem !important;
     white-space: nowrap !important;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.04em;
     background: rgba(15, 23, 42, 0.85);
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .modal-card .data-table td {
-    padding: 0.65rem 0.75rem !important;
+    padding: 0.6rem 0.5rem !important;
     font-size: 0.78rem;
     vertical-align: middle;
     white-space: nowrap !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .modal-card .data-table td.cell-wrap {

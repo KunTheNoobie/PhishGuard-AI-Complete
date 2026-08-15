@@ -3118,14 +3118,14 @@ function renderUrlBatchInspectionResults(data) {
             </div>
         </div>
 
-        <table class="data-table" style="font-size: 0.78rem; width: 100%;">
+        <table class="data-table" style="font-size: 0.78rem; width: 100%; table-layout: fixed;">
             <thead>
                 <tr>
-                    <th style="width: 30%;">Evaluated URL</th>
+                    <th style="width: 28%;">Evaluated URL</th>
                     <th style="width: 16%;">Target Entity</th>
                     <th style="width: 12%;">Risk</th>
                     <th style="width: 18%;">Verdict</th>
-                    <th style="width: 24%;">Heuristic Indicators</th>
+                    <th style="width: 26%;">Heuristic Indicators</th>
                 </tr>
             </thead>
             <tbody>
@@ -3145,11 +3145,11 @@ async function openThreatFeedsModal() {
         const data = await apiFetch("/threat-feeds/status");
         const rows = (data.recent_indicators || []).map(item => `
             <tr>
-                <td title="${escapeHtml(item.url)}"><span style="display: block; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(item.url)}</span></td>
+                <td title="${escapeHtml(item.url)}"><span style="display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(item.url)}</span></td>
                 <td><span class="cmd-badge">${escapeHtml(item.feed_source)}</span></td>
                 <td><strong style="color: #fff;">${escapeHtml(item.target_bank)}</strong></td>
                 <td><span class="brand-risk-badge brand-risk-badge--critical">${escapeHtml(item.threat_type)}</span></td>
-                <td style="font-size: 0.72rem; color: var(--text-muted);">${escapeHtml(item.date_added)}</td>
+                <td style="font-size: 0.72rem; color: var(--text-muted);">${escapeHtml((item.date_added || '').replace('2026-', ''))}</td>
             </tr>
         `).join("");
 
@@ -3168,14 +3168,14 @@ async function openThreatFeedsModal() {
             </div>
             <div id="checkFeedResult" class="hidden" style="margin-bottom: 1rem; padding: 0.65rem; background: rgba(15,23,42,0.8); border-radius: 6px; font-size: 0.8rem;"></div>
 
-            <table class="data-table" style="font-size: 0.78rem; width: 100%;">
+            <table class="data-table" style="font-size: 0.78rem; width: 100%; table-layout: fixed;">
                 <thead>
                     <tr>
                         <th style="width: 28%;">Threat URL Indicator</th>
                         <th style="width: 17%;">Feed Provider</th>
                         <th style="width: 17%;">Target Institution</th>
-                        <th style="width: 22%;">Threat Type</th>
-                        <th style="width: 16%;">Ingested</th>
+                        <th style="width: 24%;">Threat Type</th>
+                        <th style="width: 14%;">Ingested</th>
                     </tr>
                 </thead>
                 <tbody>
