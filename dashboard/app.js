@@ -2607,22 +2607,25 @@ async function openNsrcModal() {
             const statusClass = isFrozen ? 'nsrc-status-frozen' :
                                 c.nsrc_status === 'ESCALATED' ? 'nsrc-status-escalated' : 'nsrc-status-investigating';
             const actionButtonHtml = isFrozen
-                ? `<span style="color: #34d399; font-size: 0.72rem; font-weight: 700; font-family: monospace; background: rgba(52,211,153,0.12); border: 1px solid rgba(52,211,153,0.3); border-radius: 4px; padding: 3px 8px;">✓ NFP FREEZE ENFORCED</span>`
-                : `<button class="action-btn action-btn--primary" style="padding: 2px 8px; font-size: 0.7rem;" onclick="triggerNsrcFreeze('${escapeJs(c.mule_account)}', '${escapeJs(c.victim_bank)}')">⚡ NFP Multi-Bank Freeze</button>`;
+                ? `<div style="display: flex; gap: 8px; align-items: center;">
+                       <span style="color: #34d399; font-size: 0.72rem; font-weight: 700; font-family: monospace; background: rgba(52,211,153,0.15); border: 1px solid rgba(52,211,153,0.4); border-radius: 4px; padding: 4px 10px;">✓ NFP FREEZE ENFORCED</span>
+                       <button class="action-btn" style="padding: 3px 8px; font-size: 0.7rem;" onclick="triggerNsrcFreeze('${escapeJs(c.mule_account)}', '${escapeJs(c.victim_bank)}')">⚡ Re-verify</button>
+                   </div>`
+                : `<button class="action-btn action-btn--primary" style="padding: 4px 12px; font-size: 0.72rem;" onclick="triggerNsrcFreeze('${escapeJs(c.mule_account)}', '${escapeJs(c.victim_bank)}')">⚡ NFP Multi-Bank Freeze</button>`;
 
             return `
-                <div style="background: rgba(15,23,42,0.85); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 0.85rem; margin-bottom: 0.65rem;">
+                <div style="background: rgba(15,23,42,0.85); border: 1px solid ${isFrozen ? 'rgba(52,211,153,0.5)' : 'var(--border-subtle)'}; border-radius: 8px; padding: 14px; margin-bottom: 0.75rem;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
                         <strong style="color: #fff; font-family: monospace;">📁 ${escapeHtml(c.case_ref)}</strong>
                         <span class="${statusClass}">● ${escapeHtml(c.nsrc_status)}</span>
                     </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; font-size: 0.78rem; gap: 4px; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; font-size: 0.78rem; gap: 6px; color: var(--text-secondary); margin-bottom: 0.6rem;">
                         <span>Target: <strong style="color: #fff;">${escapeHtml(c.victim_bank)}</strong></span>
                         <span>Mule Account: <strong style="color: #f87171; font-family: monospace;">${escapeHtml(c.mule_account)}</strong></span>
                         <span>Scam Vector: ${escapeHtml(c.scam_type)}</span>
                         <span>Protected Value: <strong style="color: #34d399;">RM ${Number(c.funds_at_risk_myr).toLocaleString('en-MY', {minimumFractionDigits: 2})}</strong></span>
                     </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; color: var(--text-muted); border-top: 1px solid rgba(255,255,255,0.06); padding-top: 4px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; color: var(--text-muted); border-top: 1px solid rgba(255,255,255,0.06); padding-top: 6px; flex-wrap: wrap; gap: 8px;">
                         <span>PDRM Dossier: <code>${escapeHtml(c.ccid_report_id)}</code></span>
                         ${actionButtonHtml}
                     </div>
@@ -2670,6 +2673,8 @@ async function triggerNsrcFreeze(accountNumber, bankName) {
         }
     );
 }
+
+window.triggerNsrcFreeze = triggerNsrcFreeze;
 
 if ($openNsrcBtn) $openNsrcBtn.addEventListener("click", openNsrcModal);
 if ($closeNsrcModalBtn) $closeNsrcModalBtn.addEventListener("click", () => $nsrcModal?.classList.add("hidden"));
