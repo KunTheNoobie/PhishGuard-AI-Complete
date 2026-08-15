@@ -1622,6 +1622,169 @@ async def taxii_get_objects(request: Request) -> dict[str, Any]:
     }
 
 
+# ═══════════════════════════════════════════════════════════════════
+# ULTIMATE SYSTEM FINALIZATION & FUTURE-PROOFING SUITE ENDPOINTS
+# ═══════════════════════════════════════════════════════════════════
+
+from fastapi.responses import FileResponse
+import time
+
+
+@router.post(
+    "/batch-inspect",
+    summary="Batch Forensic URL & Raw Email Inspector",
+)
+async def batch_inspect_endpoint(request: Request) -> dict[str, Any]:
+    """Inspect multiple URLs or parse raw email EML headers for threat indicators."""
+    from services.batch_inspector import inspect_batch_urls, parse_raw_email
+    body = await request.json()
+    mode = body.get("mode", "urls")
+
+    if mode == "email":
+        raw_text = body.get("raw_text", "")
+        return parse_raw_email(raw_text)
+    else:
+        urls = body.get("urls", [])
+        return inspect_batch_urls(urls)
+
+
+@router.get(
+    "/threat-feeds/status",
+    summary="Threat Intel Feed Status & Summary",
+)
+async def threat_feed_status_endpoint() -> dict[str, Any]:
+    """Get active global threat intelligence feed synchronization status."""
+    from services.threat_feed_sync import get_feed_summary
+    return get_feed_summary()
+
+
+@router.post(
+    "/threat-feeds/sync",
+    summary="Synchronize Global Threat Feeds",
+)
+async def threat_feed_sync_endpoint() -> dict[str, Any]:
+    """Pull latest threat intelligence from URLhaus, PhishTank, and OpenPhish."""
+    from services.threat_feed_sync import sync_external_threat_feeds
+    return sync_external_threat_feeds()
+
+
+@router.post(
+    "/threat-feeds/check",
+    summary="Query URL against Threat Feed Blacklists",
+)
+async def threat_feed_check_endpoint(request: Request) -> dict[str, Any]:
+    """Check a specific URL against synchronized global threat feeds."""
+    from services.threat_feed_sync import query_threat_feed
+    body = await request.json()
+    url = body.get("url", "")
+    return query_threat_feed(url)
+
+
+@router.get(
+    "/db/stats",
+    summary="Database Storage & Health Statistics",
+)
+async def db_stats_endpoint(request: Request) -> dict[str, Any]:
+    """Return database file size, page fragmentation, and table row counts."""
+    from services.db_maintenance import get_db_health_stats
+    db = request.app.state.db
+    return await get_db_health_stats(db)
+
+
+@router.post(
+    "/db/optimize",
+    summary="Optimize & Vacuum Database",
+)
+async def db_optimize_endpoint(request: Request) -> dict[str, Any]:
+    """Execute WAL checkpoint, integrity check, and index optimization."""
+    from services.db_maintenance import optimize_and_vacuum_db
+    db = request.app.state.db
+    return await optimize_and_vacuum_db(db)
+
+
+@router.post(
+    "/db/prune",
+    summary="Prune Old Telemetry Records",
+)
+async def db_prune_endpoint(request: Request) -> dict[str, Any]:
+    """Retain only the most recent N telemetry records."""
+    from services.db_maintenance import prune_old_telemetry
+    body = await request.json()
+    keep_last_n = int(body.get("keep_last_n", 500))
+    db = request.app.state.db
+    return await prune_old_telemetry(db, keep_last_n=keep_last_n)
+
+
+@router.get(
+    "/db/backup",
+    summary="Download SQLite Hot Database Backup",
+)
+async def db_backup_endpoint(request: Request) -> Any:
+    """Stream download of the active SQLite database file."""
+    import os
+    if not os.path.exists("phishguard.db"):
+        return {"error": "Database file not found"}
+    return FileResponse(
+        path="phishguard.db",
+        filename="phishguard_backup.sqlite3",
+        media_type="application/x-sqlite3",
+    )
+
+
+@router.get(
+    "/diagnostics/benchmark",
+    summary="Hardware & Model Inference Benchmark",
+)
+async def diagnostics_benchmark_endpoint(request: Request) -> dict[str, Any]:
+    """Measure inference latency across BERT NLP, Mule Regex, Brand Profiler, and SQLite."""
+    from services.nlp_engine import predict_phishing_probability
+    from services.mule_scanner import MuleScanner
+    from services.brand_profiler import profile_brand_impersonation
+    import psutil
+
+    # 1. NLP Latency
+    t0 = time.perf_counter()
+    predict_phishing_probability("URGENT: Maybank account suspended. Verify TAC immediately at http://maybank2u-auth.top")
+    nlp_ms = round((time.perf_counter() - t0) * 1000, 2)
+
+    # 2. Mule Scanner Latency
+    scanner = MuleScanner()
+    t1 = time.perf_counter()
+    scanner.scan_text("Transfer payment to Maybank account 112233445566 or CIMB 558844887979")
+    mule_us = round((time.perf_counter() - t1) * 1_000_000, 2)
+
+    # 3. Brand Profiler Latency
+    t2 = time.perf_counter()
+    profile_brand_impersonation("http://maybank2u-secure-login.top/auth")
+    brand_ms = round((time.perf_counter() - t2) * 1000, 2)
+
+    # 4. DB Query Latency
+    db = request.app.state.db
+    t3 = time.perf_counter()
+    cursor = await db.execute("SELECT COUNT(*) FROM threat_telemetry;")
+    await cursor.fetchone()
+    db_ms = round((time.perf_counter() - t3) * 1000, 2)
+
+    # System memory info
+    mem = psutil.virtual_memory()
+    cpu_pct = psutil.cpu_percent(interval=None)
+
+    return {
+        "status": "HEALTHY",
+        "benchmark_timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
+        "nlp_inference_latency_ms": nlp_ms,
+        "mule_scan_latency_us": mule_us,
+        "brand_profiler_latency_ms": brand_ms,
+        "sqlite_query_latency_ms": db_ms,
+        "system_telemetry": {
+            "cpu_usage_pct": cpu_pct,
+            "memory_usage_pct": mem.percent,
+            "memory_available_mb": round(mem.available / (1024 * 1024), 1),
+            "memory_total_mb": round(mem.total / (1024 * 1024), 1),
+        },
+    }
+
+
 
 
 

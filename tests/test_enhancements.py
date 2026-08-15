@@ -629,3 +629,104 @@ class TestDashboardEnhancements:
         assert "objects" in obj_data
         assert obj_data["spec_version"] == "2.1"
 
+    # ── Finalization Suite Tests ──
+    @pytest.mark.asyncio
+    async def test_batch_inspector_service_and_endpoint(self, test_client: AsyncClient) -> None:
+        from services.batch_inspector import inspect_batch_urls, parse_raw_email
+
+        # 1. Multi-URL batch test
+        urls = [
+            "http://maybank2u-auth.top/login",
+            "https://cimbclicks-secure.xyz",
+            "http://pbebank-tac-verify.net",
+        ]
+        b_res = inspect_batch_urls(urls)
+        assert b_res["total_analyzed"] == 3
+        assert b_res["high_risk_count"] >= 1
+        assert "execution_time_ms" in b_res
+
+        # 2. Raw Email / EML test
+        raw_eml = """From: alerts@maybank2u-security.top
+Subject: URGENT: TAC Authentication Required
+Authentication-Results: spf=fail dkim=fail
+
+Please confirm your account balance at http://maybank2u-tac.top and send RM 500 to Maybank 112233445566.
+"""
+        e_res = parse_raw_email(raw_eml)
+        assert e_res["spoof_risk"] is True
+        assert len(e_res["extracted_urls"]) == 1
+        assert len(e_res["mule_matches"]) > 0
+
+        # 3. API endpoint tests
+        resp_urls = await test_client.post(
+            "/api/v1/dashboard/batch-inspect",
+            json={"mode": "urls", "urls": urls}
+        )
+        assert resp_urls.status_code == 200
+        assert resp_urls.json()["total_analyzed"] == 3
+
+        resp_eml = await test_client.post(
+            "/api/v1/dashboard/batch-inspect",
+            json={"mode": "email", "raw_text": raw_eml}
+        )
+        assert resp_eml.status_code == 200
+        assert resp_eml.json()["spoof_risk"] is True
+
+    @pytest.mark.asyncio
+    async def test_threat_feeds_sync_and_check_endpoint(self, test_client: AsyncClient) -> None:
+        # Status endpoint
+        status_resp = await test_client.get("/api/v1/dashboard/threat-feeds/status")
+        assert status_resp.status_code == 200
+        assert status_resp.json()["total_active_indicators"] >= 3
+
+        # Sync endpoint
+        sync_resp = await test_client.post("/api/v1/dashboard/threat-feeds/sync")
+        assert sync_resp.status_code == 200
+        assert sync_resp.json()["status"] == "SYNC_SUCCESSFUL"
+
+        # Check endpoint
+        check_resp = await test_client.post(
+            "/api/v1/dashboard/threat-feeds/check",
+            json={"url": "http://maybank2u-tac-auth.top/login"}
+        )
+        assert check_resp.status_code == 200
+        assert check_resp.json()["is_blacklisted"] is True
+        assert "URLhaus" in check_resp.json()["feed_source"]
+
+    @pytest.mark.asyncio
+    async def test_db_maintenance_stats_optimize_prune_backup(self, test_client: AsyncClient) -> None:
+        # Stats endpoint
+        stats_resp = await test_client.get("/api/v1/dashboard/db/stats")
+        assert stats_resp.status_code == 200
+        s_data = stats_resp.json()
+        assert s_data["status"] == "HEALTHY"
+        assert "table_row_counts" in s_data
+
+        # Optimize endpoint
+        opt_resp = await test_client.post("/api/v1/dashboard/db/optimize")
+        assert opt_resp.status_code == 200
+        assert opt_resp.json()["status"] == "OPTIMIZATION_COMPLETE"
+
+        # Prune endpoint
+        prune_resp = await test_client.post(
+            "/api/v1/dashboard/db/prune",
+            json={"keep_last_n": 500}
+        )
+        assert prune_resp.status_code == 200
+        assert "records_retained" in prune_resp.json()
+
+        # Hot backup endpoint
+        backup_resp = await test_client.get("/api/v1/dashboard/db/backup")
+        assert backup_resp.status_code == 200
+
+    @pytest.mark.asyncio
+    async def test_diagnostics_benchmark_endpoint(self, test_client: AsyncClient) -> None:
+        b_resp = await test_client.get("/api/v1/dashboard/diagnostics/benchmark")
+        assert b_resp.status_code == 200
+        b_data = b_resp.json()
+        assert b_data["status"] == "HEALTHY"
+        assert b_data["nlp_inference_latency_ms"] >= 0
+        assert b_data["sqlite_query_latency_ms"] >= 0
+        assert "system_telemetry" in b_data
+
+

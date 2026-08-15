@@ -429,6 +429,15 @@
                 <button id="openWarRoomBtn" class="action-btn" style="background: linear-gradient(135deg, rgba(6,182,212,0.25), rgba(99,102,241,0.25)); border-color: var(--accent-cyan); color: #fff; font-weight: 700;" type="button" title="Launch Fullscreen Defense War Room">
                     ⚡ War Room
                 </button>
+                <button id="openCommandPaletteBtn" class="action-btn" type="button" title="Open Global Command Palette (Ctrl+K)">
+                    ⚡ Command <kbd style="font-size: 0.65rem; background: rgba(0,0,0,0.4); padding: 1px 4px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.1);">Ctrl+K</kbd>
+                </button>
+                <button id="openBatchInspectBtn" class="action-btn" type="button" title="Batch Forensic URL & Raw Email Inspector">
+                    📥 Batch Scan
+                </button>
+                <button id="openThreatFeedsBtn" class="action-btn" type="button" title="Global Threat Intelligence Feeds (URLhaus / PhishTank)">
+                    🌐 Feeds
+                </button>
                 <button id="openNsrcBtn" class="action-btn" type="button" title="Malaysian National Anti-Scam NSRC 997 & NFP Portal">
                     🏛️ NFP Gateway
                 </button>
@@ -449,6 +458,12 @@
                 </button>
                 <button id="openSinkholeModalBtn" class="action-btn" type="button" title="Export DNS Sinkhole & SIEM Firewall Rules">
                     🛡️ Sinkhole / SIEM
+                </button>
+                <button id="openDbMaintenanceBtn" class="action-btn" type="button" title="Database Maintenance & Hot Backup">
+                    💾 Database
+                </button>
+                <button id="openHotkeysBtn" class="action-btn" type="button" title="SOC Keyboard Hotkeys Reference (?)">
+                    ⌨️ Keys
                 </button>
             </div>
 
@@ -1171,6 +1186,103 @@
                         <button type="button" id="quishingScanBtn" class="action-btn action-btn--primary">Audit QR</button>
                     </div>
                     <div id="quishingResultBox" class="hidden" style="margin-top: 0.75rem; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 0.85rem;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── Global Quick Command Palette (Ctrl+K) ─── -->
+        <div id="commandPaletteModal" class="modal-overlay hidden" aria-hidden="true" style="z-index: 10005;">
+            <div class="modal-card" style="max-width: 640px; padding: 0; overflow: hidden; border: 1px solid var(--accent-cyan); box-shadow: 0 0 40px rgba(6,182,212,0.3);">
+                <div style="display: flex; align-items: center; padding: 0.85rem 1.25rem; border-bottom: 1px solid var(--border-subtle); background: rgba(15,23,42,0.95); gap: 10px;">
+                    <span style="color: var(--accent-cyan); font-size: 1.1rem;">⚡</span>
+                    <input type="text" id="commandPaletteInput" style="flex: 1; background: transparent; border: none; outline: none; color: #fff; font-size: 1rem; font-family: inherit;" placeholder="Type a command, jump to module, or search threat URL / mule..." autocomplete="off" />
+                    <kbd style="font-size: 0.7rem; background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; color: var(--text-muted);">ESC</kbd>
+                    <button id="closeCommandPaletteBtn" class="modal-close-btn" type="button">&times;</button>
+                </div>
+                <div id="commandPaletteList" style="max-height: 360px; overflow-y: auto; padding: 0.5rem;">
+                    <!-- Dynamically populated commands and search hits -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── Batch Forensic URL & Raw Email Inspector Modal ─── -->
+        <div id="batchInspectModal" class="modal-overlay hidden" aria-hidden="true" style="z-index: 9998;">
+            <div class="modal-card" style="max-width: 840px; max-height: 90vh; display: flex; flex-direction: column;">
+                <div class="modal-header">
+                    <h3 class="modal-title">📥 Batch Forensic Multi-URL & Raw Email Inspector</h3>
+                    <button id="closeBatchInspectModalBtn" class="modal-close-btn" type="button">&times;</button>
+                </div>
+                <div style="display: flex; gap: 8px; margin-bottom: 1rem;">
+                    <button type="button" class="action-btn action-btn--primary" id="batchTabUrlsBtn">🌐 Multi-URL Batch (Up to 50)</button>
+                    <button type="button" class="action-btn" id="batchTabEmailBtn">📧 Raw Email / EML Header Audit</button>
+                </div>
+                <div id="batchInputContainer" style="margin-bottom: 1rem;">
+                    <textarea id="batchInputText" rows="6" class="search-input" style="width: 100%; height: 130px; font-family: monospace; font-size: 0.8rem; resize: vertical;" placeholder="Paste multiple URLs (one per line):&#10;http://maybank2u-auth.top/login&#10;https://cimbclicks-secure.xyz&#10;http://pbebank-tac-verify.net"></textarea>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">Runs parallel BERT NLP + Heuristics + Brand Profiler + Mule Regex</span>
+                    <button type="button" id="runBatchInspectBtn" class="action-btn action-btn--primary" style="padding: 0.5rem 1.25rem;">⚡ Run Forensic Audit</button>
+                </div>
+                <div id="batchInspectResultsBox" class="hidden" style="flex: 1; overflow-y: auto; border-top: 1px solid var(--border-subtle); padding-top: 1rem;"></div>
+            </div>
+        </div>
+
+        <!-- ─── Global Threat Feeds (URLhaus / PhishTank / OpenPhish) Modal ─── -->
+        <div id="threatFeedsModal" class="modal-overlay hidden" aria-hidden="true" style="z-index: 9998;">
+            <div class="modal-card" style="max-width: 760px; max-height: 85vh; display: flex; flex-direction: column;">
+                <div class="modal-header">
+                    <h3 class="modal-title">🌐 Global Threat Intelligence Feeds Syndication</h3>
+                    <button id="closeThreatFeedsModalBtn" class="modal-close-btn" type="button">&times;</button>
+                </div>
+                <div id="threatFeedsModalBody" style="flex: 1; overflow-y: auto;">
+                    Loading threat feed syndication data...
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── Database Maintenance & Backup Modal ─── -->
+        <div id="dbMaintenanceModal" class="modal-overlay hidden" aria-hidden="true" style="z-index: 9998;">
+            <div class="modal-card" style="max-width: 680px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">💾 SQLite Database Maintenance & Hot Backup</h3>
+                    <button id="closeDbMaintenanceModalBtn" class="modal-close-btn" type="button">&times;</button>
+                </div>
+                <div id="dbMaintenanceModalBody">
+                    Loading database health & storage statistics...
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── SOC Keyboard Hotkeys Cheatsheet Modal ─── -->
+        <div id="hotkeysModal" class="modal-overlay hidden" aria-hidden="true" style="z-index: 10000;">
+            <div class="modal-card" style="max-width: 580px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">⌨️ SOC Command Keyboard Shortcuts</h3>
+                    <button id="closeHotkeysModalBtn" class="modal-close-btn" type="button">&times;</button>
+                </div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary);">
+                    <table class="data-table" style="font-size: 0.8rem; margin-top: 0.5rem;">
+                        <thead>
+                            <tr>
+                                <th>Key Combination</th>
+                                <th>Action / Target</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><kbd>Ctrl + K</kbd> / <kbd>Cmd + K</kbd></td><td>Open Global Quick Command Palette</td></tr>
+                            <tr><td><kbd>?</kbd> or <kbd>Shift + /</kbd></td><td>Open this Keyboard Shortcuts Guide</td></tr>
+                            <tr><td><kbd>Space</kbd></td><td>Toggle Pause / Resume Live Threat Stream</td></tr>
+                            <tr><td><kbd>W</kbd></td><td>Launch Fullscreen SOC Defense War Room</td></tr>
+                            <tr><td><kbd>B</kbd></td><td>Open Batch Forensic Multi-URL Inspector</td></tr>
+                            <tr><td><kbd>F</kbd></td><td>Open Threat Intel Feeds (URLhaus / PhishTank)</td></tr>
+                            <tr><td><kbd>N</kbd></td><td>Open NSRC 997 & National Fraud Portal</td></tr>
+                            <tr><td><kbd>Q</kbd></td><td>Open Quishing QR-Code Scanner</td></tr>
+                            <tr><td><kbd>P</kbd></td><td>Open Autonomous Incident Playbooks</td></tr>
+                            <tr><td><kbd>D</kbd></td><td>Open Database Health & Backup Manager</td></tr>
+                            <tr><td><kbd>1</kbd> / <kbd>2</kbd> / <kbd>3</kbd> / <kbd>4</kbd></td><td>Set Simulator Speed (1x, 2x, 5x, 10x)</td></tr>
+                            <tr><td><kbd>ESC</kbd></td><td>Close all open modals and overlays</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

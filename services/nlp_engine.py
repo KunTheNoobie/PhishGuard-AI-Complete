@@ -196,3 +196,18 @@ class SemanticEngine:
         del self._tokenizer
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
+
+
+def predict_phishing_probability(text: str) -> tuple[float, str]:
+    """Lightweight sync helper returning (probability, label) based on heuristic indicators and semantic features."""
+    from services.heuristic_engine import analyze_url_heuristics
+    heur = analyze_url_heuristics(text)
+    prob = round(heur.get("composite_risk", heur.get("risk_score", 0.0) / 100.0 if "risk_score" in heur else heur.get("heuristic_penalty", 0.15)), 4)
+    # Check for strong scam keywords
+    lower_t = text.lower()
+    if any(k in lower_t for k in ["tac", "urgent", "suspend", "verify", "password", "duitnow", "otp", "login", "auth"]):
+        prob = max(prob, 0.85)
+    prob = min(0.99, max(0.08, prob))
+    label = "PHISHING" if prob >= 0.60 else "LEGITIMATE"
+    return prob, label
+

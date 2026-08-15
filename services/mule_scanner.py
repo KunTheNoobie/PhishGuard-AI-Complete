@@ -157,3 +157,24 @@ class MuleScanner:
             "quishing_detected": qr_result.get("quishing_threat", False),
         }
 
+    def extract_accounts(self, text: str) -> list[dict[str, str]]:
+        """Synchronously extract account numbers matched against bank regexes."""
+        results: list[dict[str, str]] = []
+        for bank_name, pattern in self._bank_patterns.items():
+            matches = pattern.findall(text)
+            for m in matches:
+                results.append({"bank_name": bank_name, "account_number": m, "matched_text": m})
+        generic_matches = self._generic_pattern.findall(text)
+        for gm in generic_matches:
+            if not any(r["account_number"] == gm for r in results):
+                results.append({"bank_name": "Generic Bank / DuitNow", "account_number": gm, "matched_text": gm})
+        return results
+
+    def scan_text(self, text: str) -> list[Any]:
+        """Convenience wrapper returning extracted account structures."""
+        from collections import namedtuple
+        Match = namedtuple("Match", ["account_number", "bank_name", "matched_text"])
+        raw = self.extract_accounts(text)
+        return [Match(r["account_number"], r["bank_name"], r["matched_text"]) for r in raw]
+
+

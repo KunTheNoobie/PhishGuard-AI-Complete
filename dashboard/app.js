@@ -2661,8 +2661,600 @@ if ($quishingScanBtn && $quishingInput) {
     });
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// ULTIMATE SYSTEM FINALIZATION & FUTURE-PROOFING CONTROLLERS
+// ═══════════════════════════════════════════════════════════════════
+
+// DOM References
+const $openCommandPaletteBtn = document.getElementById("openCommandPaletteBtn");
+const $commandPaletteModal = document.getElementById("commandPaletteModal");
+const $closeCommandPaletteBtn = document.getElementById("closeCommandPaletteBtn");
+const $commandPaletteInput = document.getElementById("commandPaletteInput");
+const $commandPaletteList = document.getElementById("commandPaletteList");
+
+const $openBatchInspectBtn = document.getElementById("openBatchInspectBtn");
+const $batchInspectModal = document.getElementById("batchInspectModal");
+const $closeBatchInspectModalBtn = document.getElementById("closeBatchInspectModalBtn");
+const $batchTabUrlsBtn = document.getElementById("batchTabUrlsBtn");
+const $batchTabEmailBtn = document.getElementById("batchTabEmailBtn");
+const $batchInputText = document.getElementById("batchInputText");
+const $runBatchInspectBtn = document.getElementById("runBatchInspectBtn");
+const $batchInspectResultsBox = document.getElementById("batchInspectResultsBox");
+let batchInspectMode = "urls";
+
+const $openThreatFeedsBtn = document.getElementById("openThreatFeedsBtn");
+const $threatFeedsModal = document.getElementById("threatFeedsModal");
+const $closeThreatFeedsModalBtn = document.getElementById("closeThreatFeedsModalBtn");
+const $threatFeedsModalBody = document.getElementById("threatFeedsModalBody");
+
+const $openDbMaintenanceBtn = document.getElementById("openDbMaintenanceBtn");
+const $dbMaintenanceModal = document.getElementById("dbMaintenanceModal");
+const $closeDbMaintenanceModalBtn = document.getElementById("closeDbMaintenanceModalBtn");
+const $dbMaintenanceModalBody = document.getElementById("dbMaintenanceModalBody");
+
+const $openHotkeysBtn = document.getElementById("openHotkeysBtn");
+const $hotkeysModal = document.getElementById("hotkeysModal");
+const $closeHotkeysModalBtn = document.getElementById("closeHotkeysModalBtn");
+
+let commandPaletteSelectedIndex = 0;
+let commandPaletteItems = [];
+let isStreamPaused = false;
+
+// ── 1. Global Command Palette (Ctrl+K) ──
+const BUILTIN_COMMANDS = [
+    { title: "⚡ Launch SOC War Room", category: "Action", handler: () => $openWarRoomBtn?.click() },
+    { title: "📥 Batch Multi-URL & Email Inspector", category: "Module", handler: () => openBatchInspectModal() },
+    { title: "🌐 Threat Feeds Syndication (URLhaus / PhishTank)", category: "Module", handler: () => openThreatFeedsModal() },
+    { title: "🏛️ Malaysian NSRC 997 / NFP Gateway", category: "Module", handler: () => openNsrcModal() },
+    { title: "📷 Quishing QR-Code Scanner", category: "Module", handler: () => $openQuishingBtn?.click() },
+    { title: "🤖 Autonomous Incident Playbooks", category: "Module", handler: () => openPlaybooksModal() },
+    { title: "🎯 Pre-Emptive Typosquatting Radar", category: "Module", handler: () => openTyposquatModal() },
+    { title: "📑 Executive CISO Briefing Report", category: "Report", handler: () => $openCisoReportBtn?.click() },
+    { title: "🛡️ DNS Sinkhole & SIEM Exporter", category: "Export", handler: () => $openSinkholeModalBtn?.click() },
+    { title: "💾 SQLite Database & Hot Backup", category: "System", handler: () => openDbMaintenanceModal() },
+    { title: "🚨 Set DEFCON 1 (EMERGENCY LOCKDOWN)", category: "Defense", handler: () => setDefconLevel(1) },
+    { title: "⚠️ Set DEFCON 2 (Elevated Threat)", category: "Defense", handler: () => setDefconLevel(2) },
+    { title: "🛡️ Set DEFCON 3 (Normal Operations)", category: "Defense", handler: () => setDefconLevel(3) },
+    { title: "⏯️ Toggle Stream Pause / Resume", category: "Stream", handler: () => toggleStreamPause() },
+    { title: "📊 Export OASIS STIX 2.1 Threat Bundle", category: "Export", handler: () => exportStixBundle() },
+    { title: "📥 Export Threat Telemetry CSV", category: "Export", handler: () => $exportTelemetryCsvBtn?.click() },
+    { title: "📥 Export Threat Telemetry JSON", category: "Export", handler: () => $exportTelemetryJsonBtn?.click() },
+    { title: "⌨️ View Keyboard Shortcuts Cheatsheet", category: "Help", handler: () => openHotkeysModal() },
+];
+
+function openCommandPalette() {
+    if (!$commandPaletteModal || !$commandPaletteInput) return;
+    $commandPaletteModal.classList.remove("hidden");
+    $commandPaletteInput.value = "";
+    commandPaletteSelectedIndex = 0;
+    renderCommandPaletteList("");
+    setTimeout(() => $commandPaletteInput.focus(), 50);
+}
+
+function closeCommandPalette() {
+    if ($commandPaletteModal) $commandPaletteModal.classList.add("hidden");
+}
+
+function renderCommandPaletteList(query) {
+    if (!$commandPaletteList) return;
+    const q = (query || "").toLowerCase().trim();
+
+    let matches = [];
+
+    // 1. Match built-in commands
+    BUILTIN_COMMANDS.forEach(cmd => {
+        if (!q || cmd.title.toLowerCase().includes(q) || cmd.category.toLowerCase().includes(q)) {
+            matches.push({ ...cmd, isTelemetry: false });
+        }
+    });
+
+    // 2. Match live telemetry URLs & IDs
+    if (q) {
+        (telemetryData || []).slice(0, 100).forEach(t => {
+            if (t.malicious_url.toLowerCase().includes(q) || String(t.log_id) === q) {
+                matches.push({
+                    title: `🔍 Incident #${t.log_id}: ${t.malicious_url}`,
+                    category: `Threat [${(t.bert_score * 100).toFixed(0)}%]`,
+                    handler: () => openIncidentReport(t.log_id),
+                    isTelemetry: true
+                });
+            }
+        });
+
+        // 3. Match Mule accounts
+        (muleData || []).slice(0, 50).forEach(m => {
+            if (m.account_number.includes(q) || m.bank_name.toLowerCase().includes(q)) {
+                matches.push({
+                    title: `💳 Mule: ${m.account_number} (${m.bank_name})`,
+                    category: "Mule Syndicate",
+                    handler: () => triggerNsrcFreeze(m.account_number, m.bank_name),
+                    isTelemetry: false
+                });
+            }
+        });
+    }
+
+    commandPaletteItems = matches.slice(0, 15);
+
+    if (commandPaletteItems.length === 0) {
+        $commandPaletteList.innerHTML = `<div style="padding: 1.5rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">No matching commands, threat URLs, or mule accounts found.</div>`;
+        return;
+    }
+
+    if (commandPaletteSelectedIndex >= commandPaletteItems.length) {
+        commandPaletteSelectedIndex = 0;
+    }
+
+    $commandPaletteList.innerHTML = commandPaletteItems.map((item, idx) => `
+        <div class="cmd-item ${idx === commandPaletteSelectedIndex ? 'selected' : ''}" data-index="${idx}">
+            <div style="display: flex; align-items: center; gap: 8px; overflow: hidden;">
+                <span style="font-size: 0.85rem; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">${escapeHtml(item.title)}</span>
+            </div>
+            <span class="cmd-badge">${escapeHtml(item.category)}</span>
+        </div>
+    `).join("");
+
+    $commandPaletteList.querySelectorAll(".cmd-item").forEach(el => {
+        el.addEventListener("click", () => {
+            const idx = parseInt(el.getAttribute("data-index"), 10);
+            executeCommandPaletteItem(idx);
+        });
+    });
+}
+
+function executeCommandPaletteItem(index) {
+    const item = commandPaletteItems[index];
+    if (item && item.handler) {
+        closeCommandPalette();
+        item.handler();
+    }
+}
+
+if ($openCommandPaletteBtn) $openCommandPaletteBtn.addEventListener("click", openCommandPalette);
+if ($closeCommandPaletteBtn) $closeCommandPaletteBtn.addEventListener("click", closeCommandPalette);
+
+if ($commandPaletteInput) {
+    $commandPaletteInput.addEventListener("input", (e) => {
+        commandPaletteSelectedIndex = 0;
+        renderCommandPaletteList(e.target.value);
+    });
+
+    $commandPaletteInput.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowDown") {
+            e.preventDefault();
+            if (commandPaletteItems.length > 0) {
+                commandPaletteSelectedIndex = (commandPaletteSelectedIndex + 1) % commandPaletteItems.length;
+                renderCommandPaletteList($commandPaletteInput.value);
+            }
+        } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            if (commandPaletteItems.length > 0) {
+                commandPaletteSelectedIndex = (commandPaletteSelectedIndex - 1 + commandPaletteItems.length) % commandPaletteItems.length;
+                renderCommandPaletteList($commandPaletteInput.value);
+            }
+        } else if (e.key === "Enter") {
+            e.preventDefault();
+            executeCommandPaletteItem(commandPaletteSelectedIndex);
+        }
+    });
+}
+
+// ── 2. Universal Global Keyboard Shortcuts ──
+document.addEventListener("keydown", (e) => {
+    // Check if user is typing in an input or textarea
+    const isTyping = ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName) || document.activeElement?.isContentEditable;
+
+    // Ctrl+K / Cmd+K (Always triggers command palette)
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        openCommandPalette();
+        return;
+    }
+
+    if (isTyping) return;
+
+    if (e.key === "?" || (e.shiftKey && e.key === "/")) {
+        e.preventDefault();
+        openHotkeysModal();
+    } else if (e.code === "Space") {
+        e.preventDefault();
+        toggleStreamPause();
+    } else if (e.key.toLowerCase() === "w") {
+        e.preventDefault();
+        $openWarRoomBtn?.click();
+    } else if (e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        openBatchInspectModal();
+    } else if (e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        openThreatFeedsModal();
+    } else if (e.key.toLowerCase() === "n") {
+        e.preventDefault();
+        openNsrcModal();
+    } else if (e.key.toLowerCase() === "q") {
+        e.preventDefault();
+        $openQuishingBtn?.click();
+    } else if (e.key.toLowerCase() === "p") {
+        e.preventDefault();
+        openPlaybooksModal();
+    } else if (e.key.toLowerCase() === "d") {
+        e.preventDefault();
+        openDbMaintenanceModal();
+    } else if (["1", "2", "3", "4"].includes(e.key)) {
+        const speedMap = { "1": 1.0, "2": 2.0, "3": 5.0, "4": 10.0 };
+        setSimulationSpeed(speedMap[e.key]);
+        showCyberToast("info", "Simulator Speed", `Telemetry speed set to ${speedMap[e.key]}x`);
+    }
+});
+
+function toggleStreamPause() {
+    isStreamPaused = !isStreamPaused;
+    const statusDot = document.getElementById("statusDot");
+    const statusText = document.getElementById("statusText");
+
+    if (isStreamPaused) {
+        if (statusDot) statusDot.className = "status-dot offline";
+        if (statusText) statusText.textContent = "Paused";
+        showCyberToast("warning", "Stream Paused", "Live telemetry stream is paused. Press SPACE to resume.");
+    } else {
+        if (statusDot) statusDot.className = "status-dot live";
+        if (statusText) statusText.textContent = "Live";
+        showCyberToast("success", "Stream Resumed", "Live telemetry stream is active.");
+    }
+}
+
+// ── 3. Batch Forensic URL & Raw Email Inspector ──
+function openBatchInspectModal() {
+    if (!$batchInspectModal) return;
+    $batchInspectModal.classList.remove("hidden");
+    if ($batchInspectResultsBox) $batchInspectResultsBox.classList.add("hidden");
+}
+
+if ($openBatchInspectBtn) $openBatchInspectBtn.addEventListener("click", openBatchInspectModal);
+if ($closeBatchInspectModalBtn) $closeBatchInspectModalBtn.addEventListener("click", () => $batchInspectModal?.classList.add("hidden"));
+
+if ($batchTabUrlsBtn && $batchTabEmailBtn && $batchInputText) {
+    $batchTabUrlsBtn.addEventListener("click", () => {
+        batchInspectMode = "urls";
+        $batchTabUrlsBtn.className = "action-btn action-btn--primary";
+        $batchTabEmailBtn.className = "action-btn";
+        $batchInputText.placeholder = "Paste multiple URLs (one per line):\nhttp://maybank2u-auth.top/login\nhttps://cimbclicks-secure.xyz\nhttp://pbebank-tac-verify.net";
+    });
+
+    $batchTabEmailBtn.addEventListener("click", () => {
+        batchInspectMode = "email";
+        $batchTabEmailBtn.className = "action-btn action-btn--primary";
+        $batchTabUrlsBtn.className = "action-btn";
+        $batchInputText.placeholder = "Paste raw email headers & body (.eml):\nFrom: security@maybank2u-alerts.top\nSubject: URGENT: Verify Your TAC\nAuthentication-Results: spf=fail dkim=fail\n\nDear customer, please verify your account at http://maybank2u-tac.top and send RM 500 to Maybank 112233445566.";
+    });
+}
+
+if ($runBatchInspectBtn && $batchInputText) {
+    $runBatchInspectBtn.addEventListener("click", async () => {
+        const text = $batchInputText.value.trim();
+        if (!text) {
+            showCyberToast("warning", "Empty Input", "Please provide URLs or raw email text.");
+            return;
+        }
+
+        if ($batchInspectResultsBox) {
+            $batchInspectResultsBox.classList.remove("hidden");
+            $batchInspectResultsBox.innerHTML = `<div style="text-align: center; padding: 2rem;"><span class="status-dot live"></span> Executing parallel multi-vector security evaluations...</div>`;
+        }
+
+        try {
+            let payload = {};
+            if (batchInspectMode === "email") {
+                payload = { mode: "email", raw_text: text };
+            } else {
+                const urls = text.split("\n").map(u => u.trim()).filter(Boolean);
+                payload = { mode: "urls", urls };
+            }
+
+            const data = await apiFetch("/batch-inspect", {
+                method: "POST",
+                body: JSON.stringify(payload)
+            });
+
+            if (batchInspectMode === "email") {
+                renderEmailInspectionResults(data);
+            } else {
+                renderUrlBatchInspectionResults(data);
+            }
+            showCyberToast("success", "Batch Audit Complete", `Processed forensic inspection.`);
+        } catch (err) {
+            if ($batchInspectResultsBox) {
+                $batchInspectResultsBox.innerHTML = `<span style="color: #f87171;">Batch audit error: ${escapeHtml(err.message)}</span>`;
+            }
+        }
+    });
+}
+
+function renderEmailInspectionResults(data) {
+    if (!$batchInspectResultsBox) return;
+    const isSpoof = data.spoof_risk;
+    const isPhish = data.nlp_score >= 0.70;
+
+    $batchInspectResultsBox.innerHTML = `
+        <div class="batch-scorecard">
+            <div class="batch-scorecard-item">
+                <div style="font-size: 0.72rem; color: var(--text-muted);">Sender Spoof Risk</div>
+                <div style="font-size: 1.1rem; font-weight: 800; color: ${isSpoof ? '#f87171' : '#34d399'};">${isSpoof ? 'CRITICAL SPOOF' : 'VERIFIED'}</div>
+            </div>
+            <div class="batch-scorecard-item">
+                <div style="font-size: 0.72rem; color: var(--text-muted);">BERT NLP Risk</div>
+                <div style="font-size: 1.1rem; font-weight: 800; color: ${isPhish ? '#f87171' : '#34d399'};">${(data.nlp_score * 100).toFixed(1)}%</div>
+            </div>
+            <div class="batch-scorecard-item">
+                <div style="font-size: 0.72rem; color: var(--text-muted);">Embedded URLs</div>
+                <div style="font-size: 1.1rem; font-weight: 800; color: #fff;">${data.extracted_urls.length}</div>
+            </div>
+            <div class="batch-scorecard-item">
+                <div style="font-size: 0.72rem; color: var(--text-muted);">Mule Accounts</div>
+                <div style="font-size: 1.1rem; font-weight: 800; color: ${data.mule_matches.length ? '#f87171' : '#34d399'};">${data.mule_matches.length}</div>
+            </div>
+        </div>
+
+        <div style="background: rgba(15,23,42,0.8); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 0.85rem; font-size: 0.8rem; margin-bottom: 0.75rem;">
+            <div><strong>From:</strong> <code>${escapeHtml(data.from)}</code></div>
+            <div><strong>Subject:</strong> <code>${escapeHtml(data.subject)}</code></div>
+            <div style="margin-top: 4px; display: flex; gap: 8px;">
+                <span>SPF: <strong style="color: ${data.authentication_audit.spf === 'PASS' ? '#34d399' : '#f87171'};">${escapeHtml(data.authentication_audit.spf)}</strong></span>
+                <span>DKIM: <strong style="color: ${data.authentication_audit.dkim === 'PASS' ? '#34d399' : '#f87171'};">${escapeHtml(data.authentication_audit.dkim)}</strong></span>
+                <span>DMARC: <strong style="color: ${data.authentication_audit.dmarc === 'PASS' ? '#34d399' : '#f87171'};">${escapeHtml(data.authentication_audit.dmarc)}</strong></span>
+            </div>
+        </div>
+
+        ${data.extracted_urls.length ? `
+            <div style="margin-bottom: 0.75rem;">
+                <strong style="font-size: 0.82rem; color: #fff;">Extracted Links:</strong>
+                <ul style="margin: 4px 0 0 1.2rem; font-size: 0.78rem; font-family: monospace; color: var(--accent-cyan);">
+                    ${data.extracted_urls.map(u => `<li>${escapeHtml(u)}</li>`).join("")}
+                </ul>
+            </div>
+        ` : ''}
+
+        ${data.mule_matches.length ? `
+            <div>
+                <strong style="font-size: 0.82rem; color: #f87171;">Detected Mule Accounts:</strong>
+                <ul style="margin: 4px 0 0 1.2rem; font-size: 0.78rem; font-family: monospace; color: #fff;">
+                    ${data.mule_matches.map(m => `<li><strong>${escapeHtml(m.bank)}</strong>: ${escapeHtml(m.account)}</li>`).join("")}
+                </ul>
+            </div>
+        ` : ''}
+    `;
+}
+
+function renderUrlBatchInspectionResults(data) {
+    if (!$batchInspectResultsBox) return;
+    const rows = (data.results || []).map(r => `
+        <tr>
+            <td style="font-family: monospace; max-width: 220px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="${escapeHtml(r.url)}">${escapeHtml(r.url)}</td>
+            <td><strong style="color: #fff;">${escapeHtml(r.target_brand)}</strong></td>
+            <td><span class="brand-risk-badge ${r.composite_score >= 0.7 ? 'brand-risk-badge--critical' : 'brand-risk-badge--monitored'}">${(r.composite_score * 100).toFixed(1)}%</span></td>
+            <td><span class="brand-risk-badge ${r.verdict === 'CRITICAL_PHISH' ? 'brand-risk-badge--critical' : (r.verdict === 'SUSPICIOUS' ? 'brand-risk-badge--elevated' : 'brand-risk-badge--monitored')}">${escapeHtml(r.verdict)}</span></td>
+            <td>${r.heuristic_flags.length ? escapeHtml(r.heuristic_flags.join(", ")) : '<span style="color: var(--text-muted);">None</span>'}</td>
+        </tr>
+    `).join("");
+
+    $batchInspectResultsBox.innerHTML = `
+        <div class="batch-scorecard">
+            <div class="batch-scorecard-item">
+                <div style="font-size: 0.72rem; color: var(--text-muted);">Total Evaluated</div>
+                <div style="font-size: 1.25rem; font-weight: 800; color: #fff;">${data.total_analyzed}</div>
+            </div>
+            <div class="batch-scorecard-item">
+                <div style="font-size: 0.72rem; color: var(--text-muted);">High Risk Threats</div>
+                <div style="font-size: 1.25rem; font-weight: 800; color: #f87171;">${data.high_risk_count}</div>
+            </div>
+            <div class="batch-scorecard-item">
+                <div style="font-size: 0.72rem; color: var(--text-muted);">Benign / Safe</div>
+                <div style="font-size: 1.25rem; font-weight: 800; color: #34d399;">${data.benign_count}</div>
+            </div>
+            <div class="batch-scorecard-item">
+                <div style="font-size: 0.72rem; color: var(--text-muted);">Execution Latency</div>
+                <div style="font-size: 1.25rem; font-weight: 800; color: var(--accent-cyan); font-family: monospace;">${data.execution_time_ms}ms</div>
+            </div>
+        </div>
+
+        <table class="data-table" style="font-size: 0.78rem;">
+            <thead>
+                <tr>
+                    <th>Evaluated URL</th>
+                    <th>Target Entity</th>
+                    <th>Risk</th>
+                    <th>Verdict</th>
+                    <th>Heuristic Indicators</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${rows}
+            </tbody>
+        </table>
+    `;
+}
+
+// ── 4. Global Threat Intel Feeds (URLhaus / PhishTank) ──
+async function openThreatFeedsModal() {
+    if (!$threatFeedsModal || !$threatFeedsModalBody) return;
+    $threatFeedsModalBody.innerHTML = `<div style="text-align: center; padding: 2rem;"><span class="status-dot live"></span> Connecting to Global Threat Feed Syndication...</div>`;
+    $threatFeedsModal.classList.remove("hidden");
+
+    try {
+        const data = await apiFetch("/threat-feeds/status");
+        const rows = (data.recent_indicators || []).map(item => `
+            <tr>
+                <td style="font-family: monospace; max-width: 260px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="${escapeHtml(item.url)}">${escapeHtml(item.url)}</td>
+                <td><span class="cmd-badge">${escapeHtml(item.feed_source)}</span></td>
+                <td><strong style="color: #fff;">${escapeHtml(item.target_bank)}</strong></td>
+                <td><span class="brand-risk-badge brand-risk-badge--critical">${escapeHtml(item.threat_type)}</span></td>
+                <td style="font-size: 0.72rem; color: var(--text-muted);">${escapeHtml(item.date_added)}</td>
+            </tr>
+        `).join("");
+
+        $threatFeedsModalBody.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <div>
+                    <strong style="color: #fff; font-size: 0.95rem;">Active Threat Intelligence Syndication</strong>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Synced ${data.total_active_indicators} blacklisted banking targets &bull; Last Synced: ${escapeHtml(data.last_sync)}</div>
+                </div>
+                <button type="button" id="syncFeedsBtn" class="action-btn action-btn--primary">🔄 Sync Feeds Now</button>
+            </div>
+
+            <div style="margin-bottom: 1rem; display: flex; gap: 8px;">
+                <input type="text" id="checkFeedInput" class="search-input" style="flex: 1;" placeholder="Test a URL against synchronized global threat feeds..." />
+                <button type="button" id="checkFeedBtn" class="action-btn">Check Blacklist</button>
+            </div>
+            <div id="checkFeedResult" class="hidden" style="margin-bottom: 1rem; padding: 0.65rem; background: rgba(15,23,42,0.8); border-radius: 6px; font-size: 0.8rem;"></div>
+
+            <table class="data-table" style="font-size: 0.78rem;">
+                <thead>
+                    <tr>
+                        <th>Threat URL Indicator</th>
+                        <th>Feed Provider</th>
+                        <th>Target Institution</th>
+                        <th>Threat Type</th>
+                        <th>Ingested</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rows}
+                </tbody>
+            </table>
+        `;
+
+        document.getElementById("syncFeedsBtn")?.addEventListener("click", async () => {
+            try {
+                showCyberToast("info", "Syncing Feeds", "Fetching latest IOCs from URLhaus, PhishTank, and OpenPhish...");
+                await apiFetch("/threat-feeds/sync", { method: "POST" });
+                showCyberToast("success", "Feed Sync Complete", "Threat intelligence cache refreshed.");
+                openThreatFeedsModal();
+            } catch (e) {
+                showCyberToast("danger", "Sync Failed", e.message);
+            }
+        });
+
+        document.getElementById("checkFeedBtn")?.addEventListener("click", async () => {
+            const urlVal = document.getElementById("checkFeedInput")?.value.trim();
+            if (!urlVal) return;
+            const resBox = document.getElementById("checkFeedResult");
+            if (resBox) {
+                resBox.classList.remove("hidden");
+                resBox.innerHTML = "Checking global blacklist cache...";
+                const res = await apiFetch("/threat-feeds/check", {
+                    method: "POST",
+                    body: JSON.stringify({ url: urlVal })
+                });
+                if (res.is_blacklisted) {
+                    resBox.innerHTML = `<span style="color: #f87171; font-weight: 700;">🚨 MATCH FOUND in ${escapeHtml(res.feed_source)}</span>: ${escapeHtml(res.threat_type)} targeting ${escapeHtml(res.target_bank)} (Confidence: ${(res.confidence * 100).toFixed(0)}%)`;
+                } else {
+                    resBox.innerHTML = `<span style="color: #34d399; font-weight: 700;">✅ CLEAN</span>: URL not found in active external threat feed blacklists.`;
+                }
+            }
+        });
+    } catch (err) {
+        $threatFeedsModalBody.innerHTML = `<div style="color: #f87171; padding: 1.5rem;">Failed to load threat feeds: ${escapeHtml(err.message)}</div>`;
+    }
+}
+
+if ($openThreatFeedsBtn) $openThreatFeedsBtn.addEventListener("click", openThreatFeedsModal);
+if ($closeThreatFeedsModalBtn) $closeThreatFeedsModalBtn.addEventListener("click", () => $threatFeedsModal?.classList.add("hidden"));
+
+// ── 5. Database Maintenance & Hot Backup ──
+async function openDbMaintenanceModal() {
+    if (!$dbMaintenanceModal || !$dbMaintenanceModalBody) return;
+    $dbMaintenanceModalBody.innerHTML = `<div style="text-align: center; padding: 2rem;"><span class="status-dot live"></span> Inspecting SQLite health and page fragmentation...</div>`;
+    $dbMaintenanceModal.classList.remove("hidden");
+
+    try {
+        const stats = await apiFetch("/db/stats");
+        const tablesHtml = Object.entries(stats.table_row_counts || {}).map(([tbl, cnt]) => `
+            <div style="display: flex; justify-content: space-between; padding: 6px 10px; background: rgba(15,23,42,0.6); border-radius: 4px; font-size: 0.78rem;">
+                <span style="font-family: monospace; color: #fff;">${escapeHtml(tbl)}</span>
+                <strong style="color: var(--accent-cyan); font-family: monospace;">${cnt.toLocaleString()} rows</strong>
+            </div>
+        `).join("");
+
+        $dbMaintenanceModalBody.innerHTML = `
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+                <div style="background: rgba(15,23,42,0.85); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 1rem;">
+                    <span style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Database Storage Size</span>
+                    <div style="font-size: 1.5rem; font-weight: 800; color: #fff; font-family: monospace; margin-top: 4px;">${escapeHtml(stats.file_size_formatted)}</div>
+                    <span style="font-size: 0.72rem; color: #34d399;">● Mode: ${escapeHtml(stats.journal_mode)} (Zero-Lock Read/Write)</span>
+                </div>
+                <div style="background: rgba(15,23,42,0.85); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 1rem;">
+                    <span style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Integrity Status</span>
+                    <div style="font-size: 1.5rem; font-weight: 800; color: #34d399; font-family: monospace; margin-top: 4px;">HEALTHY</div>
+                    <span style="font-size: 0.72rem; color: var(--text-muted);">${stats.page_count} Pages &bull; ${stats.page_size} Bytes/Page</span>
+                </div>
+            </div>
+
+            <h4 style="margin: 0 0 0.5rem 0; font-size: 0.85rem; color: #fff;">📊 SQLite Table Allocations:</h4>
+            <div style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 1.25rem;">
+                ${tablesHtml}
+            </div>
+
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <a href="/api/v1/dashboard/db/backup" download="phishguard_backup.sqlite3" class="action-btn action-btn--primary" style="padding: 0.5rem 1rem; text-decoration: none;">
+                    💾 Download Live Hot Backup (.sqlite3)
+                </a>
+                <button type="button" id="optimizeDbBtn" class="action-btn" style="padding: 0.5rem 1rem;">
+                    ⚡ Run WAL Checkpoint & VACUUM
+                </button>
+                <button type="button" id="pruneDbBtn" class="action-btn action-btn--delete" style="padding: 0.5rem 1rem;">
+                    🧹 Prune Telemetry (Keep 500)
+                </button>
+            </div>
+        `;
+
+        document.getElementById("optimizeDbBtn")?.addEventListener("click", async () => {
+            try {
+                showCyberToast("info", "Optimizing Database", "Running WAL checkpoint and SQLite index optimization...");
+                const res = await apiFetch("/db/optimize", { method: "POST" });
+                showCyberToast("success", "Database Optimized", `Execution took ${res.execution_time_ms}ms.`);
+                openDbMaintenanceModal();
+            } catch (e) {
+                showCyberToast("danger", "Optimization Failed", e.message);
+            }
+        });
+
+        document.getElementById("pruneDbBtn")?.addEventListener("click", () => {
+            showCyberConfirm(
+                "Prune Database Telemetry",
+                "Are you sure you want to delete historical telemetry records and retain only the most recent 500 entries?",
+                async () => {
+                    try {
+                        const res = await apiFetch("/db/prune", {
+                            method: "POST",
+                            body: JSON.stringify({ keep_last_n: 500 })
+                        });
+                        showCyberToast("success", "Pruning Complete", `Deleted ${res.records_deleted} records. Retained ${res.records_retained}.`);
+                        openDbMaintenanceModal();
+                    } catch (e) {
+                        showCyberToast("danger", "Prune Failed", e.message);
+                    }
+                }
+            );
+        });
+    } catch (err) {
+        $dbMaintenanceModalBody.innerHTML = `<div style="color: #f87171; padding: 1.5rem;">Failed to load database stats: ${escapeHtml(err.message)}</div>`;
+    }
+}
+
+if ($openDbMaintenanceBtn) $openDbMaintenanceBtn.addEventListener("click", openDbMaintenanceModal);
+if ($closeDbMaintenanceModalBtn) $closeDbMaintenanceModalBtn.addEventListener("click", () => $dbMaintenanceModal?.classList.add("hidden"));
+
+// ── 6. Hotkeys Guide Modal ──
+function openHotkeysModal() {
+    if ($hotkeysModal) $hotkeysModal.classList.remove("hidden");
+}
+
+if ($openHotkeysBtn) $openHotkeysBtn.addEventListener("click", openHotkeysModal);
+if ($closeHotkeysModalBtn) $closeHotkeysModalBtn.addEventListener("click", () => $hotkeysModal?.classList.add("hidden"));
+
 // Initial load & stream
 async function masterRefresh() {
+    if (isStreamPaused) return;
     await refreshAll();
     await refreshBrandMatrix();
     if ($warRoomModal && !$warRoomModal.classList.contains("hidden")) {
