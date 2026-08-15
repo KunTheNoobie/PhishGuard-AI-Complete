@@ -1384,6 +1384,20 @@ body {
     margin-top: var(--space-lg);
 }
 
+/* Universal Scrollbar Elimination (Full scrollability without visible tracks) */
+html, body, *, *::before, *::after {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+}
+
+::-webkit-scrollbar,
+*::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
+}
+
 /* ═══════════════════════════════════════════════════════════════════
    CYBERPUNK TOAST NOTIFICATIONS & DIALOG SYSTEM
    ═══════════════════════════════════════════════════════════════════ */
@@ -1391,13 +1405,18 @@ body {
     position: fixed;
     top: 1.25rem;
     right: 1.25rem;
-    z-index: 9999;
+    z-index: 999999 !important;
     display: flex;
     flex-direction: column;
     gap: 0.65rem;
-    max-width: 420px;
+    max-width: 440px;
     width: calc(100% - 2.5rem);
     pointer-events: none;
+}
+
+.cyber-toast {
+    pointer-events: auto;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8), 0 0 15px rgba(6, 182, 212, 0.25);
 }
 
 .cyber-toast {

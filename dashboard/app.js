@@ -2048,10 +2048,12 @@ const $closePlaybookModalBtn = document.getElementById("closePlaybookModalBtn");
 const $dismissPlaybookBtn = document.getElementById("dismissPlaybookBtn");
 const $playbookModalContent = document.getElementById("playbookModalContent");
 
+let _lastExecutedPlaybookId = null;
+
 async function openPlaybooksModal() {
     if (!$playbookModal || !$playbookModalContent) return;
     $playbookModal.classList.remove("hidden");
-    $playbookModalContent.innerHTML = "Fetching autonomous SOC playbooks and execution history...";
+    $playbookModalContent.innerHTML = `<div style="text-align: center; padding: 2rem;"><span class="status-dot live"></span> Fetching autonomous SOC playbooks and execution telemetry...</div>`;
 
     try {
         const [pbData, histData] = await Promise.all([
@@ -2059,34 +2061,40 @@ async function openPlaybooksModal() {
             apiFetch("/playbooks/history")
         ]);
 
-        const playbooksHtml = (pbData.playbooks || []).map(p => `
-            <div style="background: rgba(15, 23, 42, 0.7); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 10px;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                    <strong style="color: #fff;">${escapeHtml(p.name)}</strong>
-                    <span style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; font-weight: 700;">${escapeHtml(p.severity)}</span>
+        const playbooksHtml = (pbData.playbooks || []).map(p => {
+            const wasRecentlyExecuted = _lastExecutedPlaybookId === p.id;
+            const actionBadge = wasRecentlyExecuted
+                ? `<span style="background: rgba(52, 211, 153, 0.15); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.4); padding: 4px 10px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; font-family: monospace;">✓ ENFORCEMENT DISPATCHED</span>`
+                : `<button class="action-btn action-btn--primary" id="btn-pb-${escapeHtml(p.id)}" style="padding: 4px 12px; font-size: 0.74rem;" onclick="manualRunPlaybook('${escapeJs(p.id)}')">⚡ Execute Remediation</button>`;
+
+            return `
+                <div style="background: rgba(15, 23, 42, 0.85); padding: 14px; border-radius: 8px; border: 1px solid ${wasRecentlyExecuted ? 'rgba(52, 211, 153, 0.5)' : 'var(--border-subtle)'}; margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <strong style="color: #fff; font-size: 0.9rem;">${escapeHtml(p.name)}</strong>
+                        <span class="brand-risk-badge ${p.severity === 'CRITICAL' ? 'brand-risk-badge--critical' : 'brand-risk-badge--elevated'}">${escapeHtml(p.severity)}</span>
+                    </div>
+                    <div style="font-size: 0.78rem; color: var(--accent-cyan); margin-bottom: 6px;">
+                        • <strong>Trigger:</strong> ${escapeHtml(p.trigger)}
+                    </div>
+                    <div style="font-size: 0.76rem; color: var(--text-secondary);">
+                        <strong>Automated Remediation Actions:</strong>
+                        <ul style="margin-top: 4px; padding-left: 18px; line-height: 1.5;">
+                            ${(p.actions || []).map(a => `<li>${escapeHtml(a)}</li>`).join("")}
+                        </ul>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px; flex-wrap: wrap; gap: 8px;">
+                        <span style="font-size: 0.72rem; color: var(--text-muted);">Target: Maybank Sovereign Gateway &bull; Auto-Defense</span>
+                        <div>${actionBadge}</div>
+                    </div>
                 </div>
-                <div style="font-size: 0.78rem; color: var(--accent-cyan); margin-bottom: 6px;">
-                    • <strong>Trigger:</strong> ${escapeHtml(p.trigger)}
-                </div>
-                <div style="font-size: 0.76rem; color: var(--text-secondary);">
-                    <strong>Automated Remediation Actions:</strong>
-                    <ul style="margin-top: 3px; padding-left: 18px; line-height: 1.4;">
-                        ${(p.actions || []).map(a => `<li>${escapeHtml(a)}</li>`).join("")}
-                    </ul>
-                </div>
-                <div style="text-align: right; margin-top: 8px;">
-                    <button class="action-btn action-btn--primary" style="padding: 2px 8px; font-size: 0.72rem;" onclick="manualRunPlaybook('${escapeHtml(p.id)}')">
-                        ⚡ Execute Remediation
-                    </button>
-                </div>
-            </div>
-        `).join("");
+            `;
+        }).join("");
 
         const historyHtml = (histData.history || []).slice(0, 5).map(h => `
-            <div style="background: rgba(255,255,255,0.03); padding: 8px 10px; border-radius: 6px; margin-bottom: 6px; font-size: 0.75rem;">
+            <div style="background: rgba(255,255,255,0.03); padding: 8px 10px; border-radius: 6px; margin-bottom: 6px; font-size: 0.75rem; border-left: 3px solid #34d399;">
                 <div style="display: flex; justify-content: space-between;">
-                    <strong>${escapeHtml(h.execution_id)} (${escapeHtml(h.playbook_name)})</strong>
-                    <span style="color: #34d399; font-weight: 700;">${escapeHtml(h.status)}</span>
+                    <strong style="color: #fff;">${escapeHtml(h.execution_id)} (${escapeHtml(h.playbook_name)})</strong>
+                    <span style="color: #34d399; font-weight: 700;">✓ ${escapeHtml(h.status)}</span>
                 </div>
                 <div style="color: var(--text-muted); margin-top: 2px;">
                     Target: <code>${escapeHtml(h.target_url)}</code>
@@ -2111,18 +2119,30 @@ async function openPlaybooksModal() {
 }
 
 async function manualRunPlaybook(playbookId) {
+    const btn = document.getElementById(`btn-pb-${playbookId}`);
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<span class="status-dot live"></span> Executing...`;
+    }
     try {
         const res = await apiFetch("/playbooks/run", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ playbook_id: playbookId, target_url: "https://maybank2u-secure-verify.top/auth", target_bank: "Maybank", confidence: 0.96 })
         });
-        showCyberToast("success", "Playbook Executed", `Execution ID: ${res.execution_id}`);
+        _lastExecutedPlaybookId = playbookId;
+        showCyberToast("success", "Remediation Executed", `Playbook ${res.execution_id} executed. Dispatched actions to SOC Gateway, Pi-hole & CCID.`);
         openPlaybooksModal();
     } catch (err) {
         showCyberToast("danger", "Execution Failed", err.message);
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = "⚡ Execute Remediation";
+        }
     }
 }
+
+window.manualRunPlaybook = manualRunPlaybook;
 
 if ($openPlaybooksBtn) $openPlaybooksBtn.addEventListener("click", openPlaybooksModal);
 if ($closePlaybookModalBtn) $closePlaybookModalBtn.addEventListener("click", () => $playbookModal?.classList.add("hidden"));
@@ -3328,10 +3348,10 @@ async function openMitreModal() {
                 <div style="background: rgba(15,23,42,0.85); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 10px; margin-bottom: 8px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                         <span style="font-family: monospace; font-weight: 800; color: var(--accent-cyan); font-size: 0.8rem;">${escapeHtml(tech.technique_id)}</span>
-                        <span class="brand-risk-badge ${tech.risk_level === 'CRITICAL' ? 'brand-risk-badge--critical' : 'brand-risk-badge--elevated'}">${escapeHtml(tech.risk_level)}</span>
+                        <span class="brand-risk-badge ${tech.risk_level === 'CRITICAL' ? 'brand-risk-badge--critical' : (tech.risk_level === 'HIGH' ? 'brand-risk-badge--elevated' : 'brand-risk-badge--monitored')}">${escapeHtml(tech.risk_level)}</span>
                     </div>
                     <strong style="color: #fff; font-size: 0.84rem; display: block; margin-bottom: 4px;">${escapeHtml(tech.name)}</strong>
-                    <p style="font-size: 0.76rem; color: var(--text-secondary); margin: 0 0 4px 0;">${escapeHtml(tech.description)}</p>
+                    <p style="font-size: 0.76rem; color: var(--text-secondary); margin: 0 0 6px 0; line-height: 1.4;">${escapeHtml(tech.description)}</p>
                     <div style="font-size: 0.72rem; color: #a5b4fc; background: rgba(99,102,241,0.1); padding: 4px 6px; border-radius: 4px; border: 1px solid rgba(99,102,241,0.2);">
                         🛡️ ${escapeHtml(tech.mitigation)}
                     </div>
@@ -3339,24 +3359,26 @@ async function openMitreModal() {
             `).join("");
 
             return `
-                <div style="flex: 1; min-width: 210px; background: rgba(10,15,30,0.6); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 10px;">
-                    <div style="margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 6px;">
-                        <span style="font-size: 0.68rem; font-family: monospace; color: var(--text-muted);">${escapeHtml(t.tactic_id)}</span>
-                        <h4 style="margin: 0; font-size: 0.9rem; color: #fff;">${escapeHtml(t.name)}</h4>
+                <div style="display: flex; flex-direction: column; background: rgba(10,15,30,0.6); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px;">
+                    <div style="margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 8px;">
+                        <span style="font-size: 0.68rem; font-family: monospace; color: var(--text-muted); text-transform: uppercase;">${escapeHtml(t.tactic_id)}</span>
+                        <h4 style="margin: 2px 0 0 0; font-size: 0.92rem; color: #fff;">${escapeHtml(t.name)}</h4>
                     </div>
-                    ${techList}
+                    <div style="flex: 1;">
+                        ${techList}
+                    </div>
                 </div>
             `;
         }).join("");
 
         $mitreModalBody.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 8px;">
                 <div>
                     <h3 style="margin: 0; color: #fff; font-size: 1rem;">${escapeHtml(data.framework)}</h3>
                     <div style="font-size: 0.75rem; color: var(--text-muted);">${data.total_tactics} Tactics &bull; ${data.total_techniques_covered} Techniques Covered &bull; Correlated with ${data.active_telemetry_correlated} Active Telemetry Threats</div>
                 </div>
             </div>
-            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: stretch;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; align-items: stretch;">
                 ${tacticsHtml}
             </div>
         `;
@@ -3367,6 +3389,14 @@ async function openMitreModal() {
 
 if ($openMitreBtn) $openMitreBtn.addEventListener("click", openMitreModal);
 if ($closeMitreModalBtn) $closeMitreModalBtn.addEventListener("click", () => $mitreModal?.classList.add("hidden"));
+
+// Attach feedback to Sinkhole download links
+document.querySelectorAll(".sinkhole-dl-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+        const txt = btn.textContent.trim();
+        showCyberToast("success", "SIEM Export Dispatched", `Generating & downloading ${txt} from live threat database.`);
+    });
+});
 
 // ── 8. Auto-Generated YARA & Suricata Rules Controller ──
 const $openYaraBtn = document.getElementById("openYaraBtn");

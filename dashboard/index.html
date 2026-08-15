@@ -1056,7 +1056,7 @@
 
         <!-- ─── DNS Sinkhole & SIEM Firewall Exporter Modal ─── -->
         <div id="sinkholeModal" class="modal-overlay hidden" aria-hidden="true">
-            <div class="modal-card" style="max-width: 620px;">
+            <div class="modal-card" style="max-width: 680px; width: 95vw; overflow-x: hidden;">
                 <div class="modal-header">
                     <h3 class="modal-title">🛡️ Automated DNS Sinkhole & SIEM Firewall Exporter</h3>
                     <button id="closeSinkholeModalBtn" class="modal-close-btn" type="button">&times;</button>
@@ -1064,16 +1064,16 @@
                 <div style="font-size: 0.85rem; color: var(--text-secondary);">
                     <p style="margin-bottom: 0.75rem;">Export real-time blocklists and IDS threat signatures generated from active quarantined domains:</p>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
-                        <a href="/api/v1/dashboard/export/sinkhole-rules?format=pihole" download="phishguard_pihole.txt" class="action-btn" style="padding: 0.75rem; justify-content: center;">
+                        <a href="/api/v1/dashboard/export/sinkhole-rules?format=pihole" download="phishguard_pihole.txt" class="action-btn sinkhole-dl-btn" style="padding: 0.75rem; justify-content: center;">
                             🍓 Pi-hole / AdGuard (.txt)
                         </a>
-                        <a href="/api/v1/dashboard/export/sinkhole-rules?format=hosts" download="phishguard_hosts.txt" class="action-btn" style="padding: 0.75rem; justify-content: center;">
+                        <a href="/api/v1/dashboard/export/sinkhole-rules?format=hosts" download="phishguard_hosts.txt" class="action-btn sinkhole-dl-btn" style="padding: 0.75rem; justify-content: center;">
                             💻 Windows / Linux Hosts
                         </a>
-                        <a href="/api/v1/dashboard/export/sinkhole-rules?format=bind" download="phishguard_bind_rpz.zone" class="action-btn" style="padding: 0.75rem; justify-content: center;">
+                        <a href="/api/v1/dashboard/export/sinkhole-rules?format=bind" download="phishguard_bind_rpz.zone" class="action-btn sinkhole-dl-btn" style="padding: 0.75rem; justify-content: center;">
                             🌐 BIND 9 RPZ Zone (.zone)
                         </a>
-                        <a href="/api/v1/dashboard/export/sinkhole-rules?format=suricata" download="phishguard_suricata.rules" class="action-btn" style="padding: 0.75rem; justify-content: center;">
+                        <a href="/api/v1/dashboard/export/sinkhole-rules?format=suricata" download="phishguard_suricata.rules" class="action-btn sinkhole-dl-btn" style="padding: 0.75rem; justify-content: center;">
                             🛡️ Suricata / Snort IDS (.rules)
                         </a>
                     </div>
@@ -1083,12 +1083,12 @@
 
         <!-- ─── Autonomous SOC Playbooks Monitor Modal ─── -->
         <div id="playbookModal" class="modal-overlay hidden" aria-hidden="true">
-            <div class="modal-card" style="max-width: 680px;">
+            <div class="modal-card" style="max-width: 860px; width: 95vw; overflow-x: hidden;">
                 <div class="modal-header">
                     <h3 class="modal-title">🤖 Autonomous SOC Incident Playbooks</h3>
                     <button id="closePlaybookModalBtn" class="modal-close-btn" type="button">&times;</button>
                 </div>
-                <div id="playbookModalContent" style="max-height: 60vh; overflow-y: auto; font-size: 0.84rem;">
+                <div id="playbookModalContent" style="max-height: 65vh; overflow-y: auto; overflow-x: hidden; font-size: 0.84rem;">
                     Loading playbooks & audit history...
                 </div>
             </div>
@@ -1096,12 +1096,12 @@
 
         <!-- ─── Pre-Emptive Homoglyph & Typosquat Radar Modal ─── -->
         <div id="typosquatModal" class="modal-overlay hidden" aria-hidden="true">
-            <div class="modal-card" style="max-width: 720px;">
+            <div class="modal-card" style="max-width: 860px; width: 95vw; overflow-x: hidden;">
                 <div class="modal-header">
                     <h3 class="modal-title">🎯 Pre-Emptive Typosquatting & Homoglyph Protection Radar</h3>
                     <button id="closeTyposquatModalBtn" class="modal-close-btn" type="button">&times;</button>
                 </div>
-                <div id="typosquatModalContent" style="max-height: 60vh; overflow-y: auto; font-size: 0.84rem;">
+                <div id="typosquatModalContent" style="max-height: 65vh; overflow-y: auto; overflow-x: hidden; font-size: 0.84rem;">
                     Scanning 10 banking entities for homoglyph and bit-squat variants...
                 </div>
             </div>
@@ -1323,40 +1323,40 @@
 
         <!-- ─── MITRE ATT&CK Enterprise Matrix Modal ─── -->
         <div id="mitreModal" class="modal-overlay hidden" aria-hidden="true">
-            <div class="modal-card" style="max-width: 960px; max-height: 90vh; display: flex; flex-direction: column;">
+            <div class="modal-card" style="max-width: 1080px; width: 95vw; max-height: 90vh; display: flex; flex-direction: column; overflow-x: hidden;">
                 <div class="modal-header">
                     <h3 class="modal-title">🎯 MITRE ATT&CK® v14 Enterprise Matrix & CTI Mapping</h3>
                     <button class="modal-close-btn" id="closeMitreModalBtn" type="button">&times;</button>
                 </div>
-                <div class="modal-body" id="mitreModalBody" style="overflow-y: auto; padding-right: 6px;"></div>
+                <div class="modal-body" id="mitreModalBody" style="overflow-y: auto; overflow-x: hidden;"></div>
             </div>
         </div>
 
         <!-- ─── Auto-Generated YARA & Suricata Rules Modal ─── -->
         <div id="yaraRulesModal" class="modal-overlay hidden" aria-hidden="true">
-            <div class="modal-card" style="max-width: 860px; max-height: 90vh; display: flex; flex-direction: column;">
+            <div class="modal-card" style="max-width: 960px; width: 95vw; max-height: 90vh; display: flex; flex-direction: column; overflow-x: hidden;">
                 <div class="modal-header">
                     <h3 class="modal-title">🛡️ Auto-Generated YARA & Suricata / Snort Rulesets</h3>
                     <button class="modal-close-btn" id="closeYaraRulesModalBtn" type="button">&times;</button>
                 </div>
-                <div class="modal-body" id="yaraRulesBody" style="overflow-y: auto; padding-right: 6px;"></div>
+                <div class="modal-body" id="yaraRulesBody" style="overflow-y: auto; overflow-x: hidden;"></div>
             </div>
         </div>
 
         <!-- ─── Security Awareness & Red-Team Simulator Modal ─── -->
         <div id="redTeamModal" class="modal-overlay hidden" aria-hidden="true">
-            <div class="modal-card" style="max-width: 900px; max-height: 90vh; display: flex; flex-direction: column;">
+            <div class="modal-card" style="max-width: 960px; width: 95vw; max-height: 90vh; display: flex; flex-direction: column; overflow-x: hidden;">
                 <div class="modal-header">
                     <h3 class="modal-title">🏹 Enterprise Security Awareness & Phishing Red-Team Simulator</h3>
                     <button class="modal-close-btn" id="closeRedTeamModalBtn" type="button">&times;</button>
                 </div>
-                <div class="modal-body" id="redTeamModalBody" style="overflow-y: auto; padding-right: 6px;"></div>
+                <div class="modal-body" id="redTeamModalBody" style="overflow-y: auto; overflow-x: hidden;"></div>
             </div>
         </div>
 
         <!-- ─── Custom Cyberpunk Confirmation Dialog Modal ─── -->
         <div id="cyberConfirmModal" class="modal-overlay hidden" aria-hidden="true" style="z-index: 10000;">
-            <div class="modal-card" style="max-width: 480px; border: 1px solid var(--accent-indigo);">
+            <div class="modal-card" style="max-width: 480px; border: 1px solid var(--accent-indigo); overflow-x: hidden;">
                 <div class="modal-header">
                     <h3 class="modal-title" id="cyberConfirmTitle">🛡️ SOC Security Confirmation</h3>
                     <button class="modal-close-btn" type="button">&times;</button>
@@ -1373,7 +1373,7 @@
 
         <!-- ─── Custom Cyberpunk Rich Notice Modal ─── -->
         <div id="cyberNoticeModal" class="modal-overlay hidden" aria-hidden="true" style="z-index: 10000;">
-            <div class="modal-card" style="max-width: 600px; border: 1px solid var(--accent-cyan);">
+            <div class="modal-card" style="max-width: 600px; border: 1px solid var(--accent-cyan); overflow-x: hidden;">
                 <div class="modal-header">
                     <h3 class="modal-title" id="cyberNoticeTitle">📋 SOC Intelligence Notice</h3>
                     <button class="modal-close-btn" type="button">&times;</button>
@@ -1385,10 +1385,10 @@
             </div>
         </div>
 
-        <!-- ─── Cyberpunk Toast Notification Stack ─── -->
-        <div id="cyberToastContainer" class="cyber-toast-container" aria-live="polite"></div>
-
     </main>
+
+    <!-- ─── Cyberpunk Toast Notification Stack (Root level, always topmost) ─── -->
+    <div id="cyberToastContainer" class="cyber-toast-container" aria-live="polite"></div>
 
     <!-- ═══════════════════ FOOTER ═══════════════════ -->
     <footer class="footer">

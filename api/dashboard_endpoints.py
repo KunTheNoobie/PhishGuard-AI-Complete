@@ -1247,18 +1247,20 @@ async def export_sinkhole_rules(format: str = "pihole", request: Request = None)
     cursor = await db.execute("SELECT malicious_url FROM threat_telemetry LIMIT 500;")
     rows = await cursor.fetchall()
     
-    domains = []
+    domain_set = set(list(_QUARANTINED_DOMAINS.keys()))
     for r in rows:
-        url = r[0]
-        try:
-            p = urllib.parse.urlparse(url if url.startswith("http") else f"http://{url}")
-            d = p.netloc or url.split('/')[0]
-            if d:
-                domains.append(d)
-        except Exception:
-            continue
+        if r and r[0]:
+            url = r[0]
+            try:
+                p = urllib.parse.urlparse(url if url.startswith("http") else f"http://{url}")
+                d = p.netloc or url.split('/')[0]
+                d = d.split(':')[0].strip()
+                if d and "." in d:
+                    domain_set.add(d)
+            except Exception:
+                continue
             
-    rules_text = generate_sinkhole_rules(domains, format_type=format)
+    rules_text = generate_sinkhole_rules(list(domain_set), format_type=format)
     ext = "rules" if format == "suricata" else "zone" if format == "bind" else "txt"
     
     return Response(
@@ -1835,12 +1837,24 @@ async def get_yara_rules_endpoint(request: Request) -> dict[str, Any]:
     from services.yara_generator import generate_phishguard_yara_rules
     from urllib.parse import urlparse
     db = request.app.state.db
-    cursor = await db.execute("SELECT malicious_url FROM threat_telemetry ORDER BY log_id DESC LIMIT 10;")
+    cursor = await db.execute("SELECT malicious_url FROM threat_telemetry ORDER BY log_id DESC LIMIT 20;")
     rows = await cursor.fetchall()
-    domains = [urlparse(r[0]).netloc for r in rows if r and r[0]]
+    domains = set(list(_QUARANTINED_DOMAINS.keys()))
+    for r in rows:
+        if r and r[0]:
+            u = r[0]
+            if "://" not in u:
+                u = f"http://{u}"
+            try:
+                d = urlparse(u).netloc or u.split("/")[0]
+                d = d.split(":")[0].strip()
+                if d:
+                    domains.add(d)
+            except Exception:
+                pass
     return {
         "format": "YARA",
-        "rules": generate_phishguard_yara_rules(domains),
+        "rules": generate_phishguard_yara_rules(list(domains)),
         "generated_at": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
     }
 
@@ -1855,12 +1869,24 @@ async def get_suricata_rules_endpoint(request: Request) -> dict[str, Any]:
     from services.yara_generator import generate_suricata_snort_rules
     from urllib.parse import urlparse
     db = request.app.state.db
-    cursor = await db.execute("SELECT malicious_url FROM threat_telemetry ORDER BY log_id DESC LIMIT 10;")
+    cursor = await db.execute("SELECT malicious_url FROM threat_telemetry ORDER BY log_id DESC LIMIT 20;")
     rows = await cursor.fetchall()
-    domains = [urlparse(r[0]).netloc for r in rows if r and r[0]]
+    domains = set(list(_QUARANTINED_DOMAINS.keys()))
+    for r in rows:
+        if r and r[0]:
+            u = r[0]
+            if "://" not in u:
+                u = f"http://{u}"
+            try:
+                d = urlparse(u).netloc or u.split("/")[0]
+                d = d.split(":")[0].strip()
+                if d:
+                    domains.add(d)
+            except Exception:
+                pass
     return {
         "format": "Suricata / Snort",
-        "rules": generate_suricata_snort_rules(domains),
+        "rules": generate_suricata_snort_rules(list(domains)),
         "generated_at": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
     }
 
