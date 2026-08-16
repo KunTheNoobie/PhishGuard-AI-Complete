@@ -40,12 +40,24 @@ def analyze_url_heuristics(raw_url: str) -> dict[str, Any]:
     if "://" not in clean_url:
         clean_url = f"http://{clean_url}"
 
-    parsed = urlparse(clean_url)
-    hostname = (parsed.hostname or "").lower()
-    port = parsed.port
-
     indicators: list[str] = []
     heuristic_penalty: float = 0.0
+    hostname = ""
+    port = None
+
+    try:
+        parsed = urlparse(clean_url)
+        try:
+            hostname = (parsed.hostname or "").lower()
+        except Exception:
+            hostname = (parsed.netloc or "").split(":")[0].lower()
+
+        try:
+            port = parsed.port
+        except (ValueError, Exception):
+            port = None
+    except Exception:
+        hostname = ""
 
     # 1. Check for raw IP address hostname
     try:
