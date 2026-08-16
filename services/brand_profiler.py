@@ -16,8 +16,9 @@ import re
 from typing import Any, Final
 from urllib.parse import urlparse
 
-# Canonical Malaysian financial institutions and their official domain registries
-MALAYSIAN_FINANCIAL_BRANDS: Final[dict[str, dict[str, Any]]] = {
+# Canonical Global and Regional financial and tech institutions and their official domain registries
+GLOBAL_FINANCIAL_AND_TECH_BRANDS: Final[dict[str, dict[str, Any]]] = {
+    # ── Malaysian Financial Infrastructure ──
     "Maybank": {
         "official_domains": {"maybank2u.com.my", "maybank.com", "maybank.com.my"},
         "keywords": ["maybank", "maybank2u", "mae", "malayan banking"],
@@ -58,7 +59,64 @@ MALAYSIAN_FINANCIAL_BRANDS: Final[dict[str, dict[str, Any]]] = {
         "official_domains": {"touchngo.com.my", "tngdigital.com.my"},
         "keywords": ["touch n go", "tng ewallet", "touch 'n go"],
     },
+
+    # ── Global Tech & Cloud Giants ──
+    "Google": {
+        "official_domains": {"google.com", "accounts.google.com", "mail.google.com", "drive.google.com", "docs.google.com", "gmail.com"},
+        "keywords": ["google login", "google account", "gmail verification", "google drive shared", "google workspace"],
+    },
+    "Microsoft": {
+        "official_domains": {"microsoft.com", "live.com", "outlook.com", "office.com", "office365.com", "microsoftonline.com"},
+        "keywords": ["microsoft 365", "office 365", "outlook login", "onedrive shared", "microsoft security alert"],
+    },
+    "Apple": {
+        "official_domains": {"apple.com", "icloud.com", "itunes.apple.com"},
+        "keywords": ["apple id", "icloud verification", "apple pay locked", "apple security alert"],
+    },
+    "Amazon": {
+        "official_domains": {"amazon.com", "amazon.com.my", "aws.amazon.com", "primevideo.com"},
+        "keywords": ["amazon order", "amazon suspended", "prime membership", "aws console"],
+    },
+    "Meta / WhatsApp": {
+        "official_domains": {"whatsapp.com", "web.whatsapp.com", "facebook.com", "instagram.com", "meta.com"},
+        "keywords": ["whatsapp web", "whatsapp code", "facebook security", "instagram verification badge"],
+    },
+
+    # ── Global Fintech & Payment Gateways ──
+    "PayPal": {
+        "official_domains": {"paypal.com", "paypal.me"},
+        "keywords": ["paypal", "paypal invoice", "paypal transfer", "paypal security"],
+    },
+    "Netflix": {
+        "official_domains": {"netflix.com"},
+        "keywords": ["netflix", "netflix membership", "netflix payment failed", "netflix reactivate"],
+    },
+    "Crypto / Web3": {
+        "official_domains": {"binance.com", "coinbase.com", "metamask.io", "kraken.com", "trustwallet.com"},
+        "keywords": ["binance", "coinbase", "metamask", "seed phrase", "private key recovery", "claim airdrop"],
+    },
+
+    # ── Global Financial & Banking ──
+    "Chase / BoA / Wells Fargo": {
+        "official_domains": {"chase.com", "bankofamerica.com", "wellsfargo.com", "citi.com", "citibank.com"},
+        "keywords": ["chase online", "bank of america", "wells fargo", "citibank login"],
+    },
+    "HSBC / Standard Chartered / Barclays": {
+        "official_domains": {"hsbc.com", "hsbc.com.my", "hsbc.co.uk", "sc.com", "standardchartered.com", "barclays.co.uk"},
+        "keywords": ["hsbc", "hsbcnet", "standard chartered", "barclays online"],
+    },
+    "DBS / OCBC / UOB": {
+        "official_domains": {"dbs.com", "dbs.com.sg", "posb.com.sg", "ocbc.com", "ocbc.com.sg", "uob.com", "uob.com.sg"},
+        "keywords": ["dbs ibanking", "posb digibank", "ocbc internet banking", "uob personal internet banking"],
+    },
+    "Global Logistics (DHL/FedEx)": {
+        "official_domains": {"dhl.com", "fedex.com", "ups.com", "pos.com.my"},
+        "keywords": ["dhl parcel", "fedex tracking", "customs fee unpaid", "package delivery held"],
+    },
 }
+
+# Backward compatibility alias
+MALAYSIAN_FINANCIAL_BRANDS = GLOBAL_FINANCIAL_AND_TECH_BRANDS
 
 
 def profile_brand_impersonation(raw_url: str, text_content: str = "") -> dict[str, Any]:
@@ -76,8 +134,8 @@ def profile_brand_impersonation(raw_url: str, text_content: str = "") -> dict[st
     impersonation_score: float = 0.0
     matched_cues: list[str] = []
 
-    # Iterate through known financial brand profiles
-    for brand_name, brand_info in MALAYSIAN_FINANCIAL_BRANDS.items():
+    # Iterate through known financial and tech brand profiles
+    for brand_name, brand_info in GLOBAL_FINANCIAL_AND_TECH_BRANDS.items():
         official_domains = brand_info["official_domains"]
         keywords = brand_info["keywords"]
 

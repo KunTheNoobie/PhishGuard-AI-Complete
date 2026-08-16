@@ -7,17 +7,88 @@ function isSupportedPage() {
   return location.protocol === "http:" || location.protocol === "https:" || location.protocol === "file:";
 }
 
+function extractDeepText(rootNode, visited = new Set()) {
+  if (!rootNode || visited.has(rootNode)) return "";
+  visited.add(rootNode);
+
+  const textParts = [];
+  try {
+    const walker = document.createTreeWalker(
+      rootNode,
+      NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
+      null,
+      false
+    );
+
+    let node;
+    while ((node = walker.nextNode())) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const val = (node.nodeValue || "").trim();
+        if (val) textParts.push(val);
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        const el = node;
+        // Extract input placeholders, values, and accessibility labels
+        if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") {
+          if (el.placeholder) textParts.push(el.placeholder);
+          if (el.value && el.type !== "password") textParts.push(el.value);
+          if (el.getAttribute("aria-label")) textParts.push(el.getAttribute("aria-label"));
+        } else if (el.tagName === "BUTTON") {
+          if (el.innerText) textParts.push(el.innerText.trim());
+        } else if (el.tagName === "IMG") {
+          if (el.alt) textParts.push(el.alt);
+        }
+
+        // Recursively traverse open Shadow DOM roots (used in modern SPAs & Web Components)
+        if (el.shadowRoot) {
+          textParts.push(extractDeepText(el.shadowRoot, visited));
+        }
+
+        // Traverse accessible same-origin iframe documents
+        if (el.tagName === "IFRAME") {
+          try {
+            if (el.contentDocument && el.contentDocument.body) {
+              textParts.push(extractDeepText(el.contentDocument.body, visited));
+            }
+          } catch (_e) {}
+        }
+      }
+    }
+  } catch (_e) {}
+
+  return textParts.join(" ");
+}
+
 function getVisibleText() {
-  const text = document.body ? document.body.innerText : "";
-  return text.replace(/\s+/g, " ").trim().slice(0, PHISHGUARD_TEXT_LIMIT);
+  if (!document.body) return "";
+  try {
+    const deepText = extractDeepText(document.body);
+    const standardText = document.body.innerText || "";
+    const combined = `${standardText} ${deepText}`;
+    return combined.replace(/\s+/g, " ").trim().slice(0, PHISHGUARD_TEXT_LIMIT);
+  } catch (_e) {
+    const fallback = document.body ? document.body.innerText : "";
+    return fallback.replace(/\s+/g, " ").trim().slice(0, PHISHGUARD_TEXT_LIMIT);
+  }
 }
 
 function collectPageContext() {
+  const metaDesc = document.querySelector("meta[name='description']")?.getAttribute("content") || "";
+  const ogTitle = document.querySelector("meta[property='og:title']")?.getAttribute("content") || "";
+  const pageTitle = document.title || ogTitle || "";
+
+  let domStr = "";
+  try {
+    domStr = document.documentElement ? document.documentElement.outerHTML.slice(0, PHISHGUARD_DOM_LIMIT) : "";
+  } catch (_e) {
+    domStr = document.body ? document.body.innerHTML : "";
+  }
+
   return {
     url: location.href,
-    title: document.title || "",
-    visibleText: getVisibleText(),
-    domContent: document.documentElement.outerHTML.slice(0, PHISHGUARD_DOM_LIMIT)
+    title: pageTitle,
+    metaDescription: metaDesc,
+    visibleText: `${pageTitle} ${metaDesc} ${getVisibleText()}`.trim().slice(0, PHISHGUARD_TEXT_LIMIT),
+    domContent: domStr
   };
 }
 

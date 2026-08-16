@@ -5,12 +5,50 @@ const DOM_LIMIT = 3000000;
 
 const memoryResults = new Map();
 const OFFICIAL_BANK_DOMAINS = {
+  // Malaysian Financial Infrastructure
   "Maybank": ["maybank2u.com.my", "maybank.com", "maybank.com.my"],
   "CIMB": ["cimbclicks.com.my", "cimb.com.my", "cimbbank.com.my"],
   "Public Bank": ["pbebank.com", "pbebank.com.my", "publicbank.com.my"],
   "RHB": ["rhbgroup.com", "rhbnow.com", "rhbbank.com.my"],
-  "Hong Leong Bank": ["hlb.com.my"]
+  "Hong Leong Bank": ["hlb.com.my", "hongleongconnect.my"],
+  "AmBank": ["ambank.com.my", "ambankgroup.com"],
+  "Bank Islam": ["bankislam.com.my", "bankislam.biz"],
+  "Bank Rakyat": ["bankrakyat.com.my", "irakyat.com.my"],
+  "DuitNow / PayNet": ["duitnow.my", "paynet.my"],
+  "Touch 'n Go": ["touchngo.com.my", "tngdigital.com.my"],
+  // Global Tech & Cloud
+  "Google": ["google.com", "google.com.my", "googleapis.com", "accounts.google.com", "mail.google.com", "drive.google.com", "docs.google.com", "gmail.com"],
+  "Microsoft": ["microsoft.com", "live.com", "outlook.com", "office.com", "office365.com", "microsoftonline.com", "github.com"],
+  "Apple": ["apple.com", "icloud.com", "itunes.apple.com"],
+  "Amazon": ["amazon.com", "amazon.com.my", "aws.amazon.com", "primevideo.com"],
+  "Meta": ["whatsapp.com", "web.whatsapp.com", "facebook.com", "instagram.com", "meta.com"],
+  // Global Fintech & Banking
+  "PayPal": ["paypal.com", "paypal.me"],
+  "Netflix": ["netflix.com"],
+  "Stripe": ["stripe.com"],
+  "Chase": ["chase.com"],
+  "Bank of America": ["bankofamerica.com"],
+  "Wells Fargo": ["wellsfargo.com"],
+  "Citi": ["citi.com", "citibank.com"],
+  "HSBC": ["hsbc.com", "hsbc.com.my", "hsbc.co.uk"],
+  "Standard Chartered": ["sc.com", "standardchartered.com"],
+  "Barclays": ["barclays.co.uk", "barclays.com"],
+  "DBS / POSB": ["dbs.com", "dbs.com.sg", "posb.com.sg"],
+  "OCBC": ["ocbc.com", "ocbc.com.sg"],
+  "UOB": ["uob.com", "uob.com.sg"],
+  "Binance": ["binance.com"],
+  "Coinbase": ["coinbase.com"],
+  "MetaMask": ["metamask.io"]
 };
+
+// Recognized global safe platform domains
+const GLOBAL_SAFE_DOMAINS_SET = new Set([
+  "google.com", "youtube.com", "youtu.be", "whatsapp.com", "facebook.com", "messenger.com", "instagram.com", "threads.net", "meta.com",
+  "microsoft.com", "live.com", "outlook.com", "office.com", "office365.com", "github.com", "linkedin.com", "apple.com", "icloud.com",
+  "amazon.com", "aws.amazon.com", "twitter.com", "x.com", "reddit.com", "wikipedia.org", "spotify.com", "netflix.com", "discord.com", "telegram.org",
+  "tiktok.com", "zoom.us", "zoom.com", "slack.com", "paypal.com", "stripe.com", "wise.com", "revolut.com", "shopee.com.my", "lazada.com.my",
+  "cloudflare.com", "openai.com", "chatgpt.com", "claude.ai", "anthropic.com", "bing.com", "yahoo.com", "duckduckgo.com"
+]);
 
 function storageGet(defaults) {
   return new Promise((resolve) => {
@@ -236,6 +274,15 @@ function hostFromUrl(url) {
 function isOfficialBankDomain(host) {
   if (!host) return false;
   const cleanHost = host.replace(/^www\./, "").toLowerCase();
+
+  // Check global safe platforms
+  for (const safe of GLOBAL_SAFE_DOMAINS_SET) {
+    if (cleanHost === safe || cleanHost.endsWith(`.${safe}`)) {
+      return true;
+    }
+  }
+
+  // Check official financial/tech brand domains
   for (const [, domains] of Object.entries(OFFICIAL_BANK_DOMAINS)) {
     for (const official of domains) {
       if (cleanHost === official || cleanHost.endsWith(`.${official}`)) {
