@@ -3729,6 +3729,127 @@ function initSseStream() {
     } catch (_e) {}
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// MASTER DEMO SUITE & INTERACTIVE SAMPLE INSERTERS
+// ═══════════════════════════════════════════════════════════════════
+
+// 1. Quick Scanner Demo Sample Button
+const demoScans = [
+    "http://maybank2u-security-update.top/login",
+    "PDRM Traffic Summons Alert: Settle summons immediately via Maybank account 112233445566",
+    "https://cimbclicks-secure-auth.xyz/login.php",
+    "http://pbebank-tac-verify.net",
+    "https://www.maybank2u.com.my/home/m2u/common/login.do"
+];
+let demoScanIdx = 0;
+document.getElementById("quickScanDemoBtn")?.addEventListener("click", () => {
+    const target = demoScans[demoScanIdx % demoScans.length];
+    demoScanIdx++;
+    if ($quickScanInput) {
+        $quickScanInput.value = target;
+        showCyberToast("info", "Demo Sample Populated", `Loaded target: ${target}`);
+    }
+});
+
+// 2. Quishing Demo Sample Button
+document.getElementById("quishingInsertDemoBtn")?.addEventListener("click", () => {
+    const qIn = document.getElementById("quishingInput");
+    if (qIn) {
+        qIn.value = "duitnow://pay?acc=112233445566&bank=Maybank&amount=150.00&ref=PDRM-SAMAN-9921";
+        showCyberToast("info", "Demo Quishing Loaded", "Populated DuitNow EMVCo QR code payload.");
+        document.getElementById("quishingScanBtn")?.click();
+    }
+});
+
+// 3. Typosquat Radar Demo Domain Button
+document.getElementById("typosquatInsertDemoBtn")?.addEventListener("click", () => {
+    showCyberToast("info", "Typosquat Scan Refreshed", "Loaded 10 monitored banking domains & homoglyphs.");
+    openTyposquatModal();
+});
+
+// 4. Master Demo Modal Controller
+const $masterDemoBtn = document.getElementById("masterDemoBtn");
+const $masterDemoModal = document.getElementById("masterDemoModal");
+const $closeMasterDemoModalBtn = document.getElementById("closeMasterDemoModalBtn");
+
+function openMasterDemoModal() {
+    if ($masterDemoModal) $masterDemoModal.classList.remove("hidden");
+}
+function closeMasterDemoModal() {
+    if ($masterDemoModal) $masterDemoModal.classList.add("hidden");
+}
+
+if ($masterDemoBtn) $masterDemoBtn.addEventListener("click", openMasterDemoModal);
+if ($closeMasterDemoModalBtn) $closeMasterDemoModalBtn.addEventListener("click", closeMasterDemoModal);
+
+// Scenario Triggers inside Master Demo Modal
+document.getElementById("demoTriggerMaybankBtn")?.addEventListener("click", () => {
+    closeMasterDemoModal();
+    if ($quickScanInput) {
+        $quickScanInput.value = "http://maybank2u-security-update.top/login";
+        $quickScanForm?.dispatchEvent(new Event("submit", { cancelable: true }));
+    }
+    showCyberToast("info", "Scenario Demo Launched", "Maybank2u phishing clone scenario analyzed.");
+});
+
+document.getElementById("demoTriggerMuleBtn")?.addEventListener("click", () => {
+    closeMasterDemoModal();
+    if ($quickScanInput) {
+        $quickScanInput.value = "PDRM Traffic Summons Alert: Settle summons via Maybank mule 112233445566";
+        $quickScanForm?.dispatchEvent(new Event("submit", { cancelable: true }));
+    }
+    showCyberToast("info", "Scenario Demo Launched", "PDRM CCID mule syndicate scenario analyzed.");
+});
+
+document.getElementById("demoTriggerQuishBtn")?.addEventListener("click", () => {
+    closeMasterDemoModal();
+    if ($quishingModal) $quishingModal.classList.remove("hidden");
+    const qIn = document.getElementById("quishingInput");
+    if (qIn) {
+        qIn.value = "duitnow://pay?acc=112233445566&bank=Maybank&amount=150.00&ref=PDRM-SAMAN-9921";
+        document.getElementById("quishingScanBtn")?.click();
+    }
+    showCyberToast("info", "Scenario Demo Launched", "PayNet Quishing scanner scenario activated.");
+});
+
+document.getElementById("demoTriggerNsrcBtn")?.addEventListener("click", () => {
+    closeMasterDemoModal();
+    openNsrcModal();
+    showCyberToast("success", "Scenario Demo Launched", "NSRC 997 & National Fraud Portal gateway opened.");
+});
+
+document.getElementById("demoMasterEngageAllBtn")?.addEventListener("click", async () => {
+    closeMasterDemoModal();
+    // 1. Engage simulation at fast speed
+    if ($simSpeedSelect) {
+        $simSpeedSelect.value = "2.0";
+        $simSpeedSelect.dispatchEvent(new Event("change"));
+    }
+    if (!$simToggleBtn?.classList.contains("on")) {
+        await handleSimToggle();
+    }
+    // 2. Pre-populate quick scan
+    if ($quickScanInput) {
+        $quickScanInput.value = "http://maybank2u-auth-verify.top/login";
+    }
+    // 3. Pre-populate batch scan
+    const bIn = document.getElementById("batchInputText");
+    if (bIn) {
+        bIn.value = "http://maybank2u-auth.top/login\nhttps://cimbclicks-secure.xyz\nhttp://pbebank-tac-verify.net\nhttp://pdrm-saman-online.xyz\nhttps://www.maybank2u.com.my";
+    }
+    // 4. Pre-populate quishing
+    const qIn = document.getElementById("quishingInput");
+    if (qIn) {
+        qIn.value = "duitnow://pay?acc=112233445566&bank=Maybank&amount=150.00&ref=PDRM-SAMAN-9921";
+    }
+    // 5. Pre-populate bulk mules
+    const bMule = document.getElementById("bulkMuleText");
+    if (bMule) {
+        bMule.value = "112233445566, Maybank, WhatsApp, 5\n558844887979, CIMB Bank, Telegram, 12\n988812259332, Hong Leong Bank, ShopeePay, 4\n334455667788, Public Bank, Facebook Marketplace, 7\n778899001122, Touch n Go eWallet, Mudah.my, 6";
+    }
+    showCyberToast("success", "✨ Master Demo Engaged", "All sample datasets & live simulated multi-modal threat feeds active!");
+});
+
 // Initial load & stream
 async function masterRefresh() {
     if (isStreamPaused) return;
@@ -3744,6 +3865,7 @@ refreshSystemHealth();
 initSseStream();
 setInterval(masterRefresh, REFRESH_MS);
 setInterval(refreshSystemHealth, 10_000);
+
 
 
 
