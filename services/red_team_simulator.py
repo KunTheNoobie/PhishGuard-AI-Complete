@@ -84,18 +84,48 @@ def get_available_campaign_templates() -> list[dict[str, Any]]:
     return SIMULATION_TEMPLATES
 
 
+import random
+
+
 def launch_simulated_red_team_campaign(template_id: str, target_count: int = 50) -> dict[str, Any]:
-    """Simulate launching an enterprise red-team phishing campaign."""
+    """Simulate launching an enterprise red-team phishing campaign with scenario-specific realistic telemetry."""
     tpl = next((t for t in SIMULATION_TEMPLATES if t["id"] == template_id), SIMULATION_TEMPLATES[0])
     
-    # Calculate realistic training simulation telemetry
-    opened_count = int(target_count * 0.72)
-    clicked_count = int(target_count * 0.22)
-    submitted_count = int(target_count * 0.08)
-    blocked_by_phishguard = clicked_count  # PhishGuard-AI proactively blocked all clickers!
+    # 1. Base open rate by vector medium
+    if "SMS" in tpl["vector"] or "WhatsApp" in tpl["vector"]:
+        base_open_pct = random.uniform(0.82, 0.94)
+    else:
+        base_open_pct = random.uniform(0.60, 0.76)
+
+    opened_count = max(1, min(target_count, int(round(target_count * base_open_pct))))
+
+    # 2. Base click rate by benchmark and difficulty
+    try:
+        benchmark_pct = float(tpl.get("benchmark_click_rate", "20%").replace("%", "")) / 100.0
+    except Exception:
+        benchmark_pct = 0.20
+
+    # Add realistic run-to-run variance (+/- 3%)
+    actual_click_pct = max(0.05, min(0.60, benchmark_pct + random.uniform(-0.03, 0.04)))
+    clicked_count = max(1, min(opened_count, int(round(target_count * actual_click_pct))))
+
+    # 3. Credential submission attempts (typically 30-50% of clickers)
+    sub_pct = random.uniform(0.28, 0.48)
+    submitted_count = max(0, int(round(clicked_count * sub_pct)))
+
+    # PhishGuard-AI browser extension proactively blocked all employee click attempts!
+    blocked_by_phishguard = clicked_count
+
+    # Department breakdown simulation
+    dept_distribution = [
+        {"department": "Finance & Accounting", "vulnerable_staff": max(0, int(clicked_count * 0.35)), "risk": "HIGH"},
+        {"department": "General Workforce", "vulnerable_staff": max(0, int(clicked_count * 0.40)), "risk": "MEDIUM"},
+        {"department": "Human Resources", "vulnerable_staff": max(0, int(clicked_count * 0.15)), "risk": "ELEVATED"},
+        {"department": "IT & Engineering", "vulnerable_staff": max(0, int(clicked_count * 0.10)), "risk": "LOW"},
+    ]
 
     return {
-        "campaign_id": f"CAMP-{int(time.time())}",
+        "campaign_id": f"CAMP-{int(time.time())}-{random.randint(100, 999)}",
         "template": tpl,
         "launch_timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
         "recipients_targeted": target_count,
@@ -107,7 +137,9 @@ def launch_simulated_red_team_campaign(template_id: str, target_count: int = 50)
             "blocked_by_phishguard_extension": blocked_by_phishguard,
             "simulated_data_loss_prevented": "100%",
             "vulnerability_rate": f"{round((clicked_count / target_count) * 100, 1)}%",
-            "phishguard_defense_efficacy": "100.0% Protection Rate"
+            "open_rate": f"{round((opened_count / target_count) * 100, 1)}%",
+            "phishguard_defense_efficacy": "100.0% Protection Rate",
+            "department_breakdown": dept_distribution
         },
         "verdict": "CAMPAIGN_EXECUTED_SUCCESSFULLY"
     }

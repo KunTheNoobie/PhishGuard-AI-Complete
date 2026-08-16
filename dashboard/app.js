@@ -3046,51 +3046,84 @@ if ($commandPaletteInput) {
     });
 }
 
+// ── Helper: Toggle Modal Open / Close ──
+function toggleModal(modalEl, openFn) {
+    if (!modalEl) return;
+    if (!modalEl.classList.contains("hidden")) {
+        modalEl.classList.add("hidden");
+    } else {
+        if (openFn) openFn();
+        else modalEl.classList.remove("hidden");
+    }
+}
+window.toggleModal = toggleModal;
+
+async function setSimulationSpeed(speedVal) {
+    const valStr = String(speedVal);
+    if ($simSpeedSelect) {
+        $simSpeedSelect.value = valStr;
+    }
+    try {
+        await apiFetch("/simulator/speed", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ speed: parseFloat(valStr) })
+        });
+    } catch (_e) {}
+}
+window.setSimulationSpeed = setSimulationSpeed;
+
 // ── 2. Universal Global Keyboard Shortcuts ──
 document.addEventListener("keydown", (e) => {
     // Check if user is typing in an input or textarea
     const isTyping = ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName) || document.activeElement?.isContentEditable;
 
-    // Ctrl+K / Cmd+K (Always triggers command palette)
+    // Ctrl+K / Cmd+K (Toggles command palette)
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        openCommandPalette();
+        toggleModal($commandPaletteModal, openCommandPalette);
         return;
     }
 
     if (isTyping) return;
 
-    if (e.key === "?" || (e.shiftKey && e.key === "/")) {
+    if (e.key === "?" || (e.shiftKey && (e.key === "/" || e.code === "Slash"))) {
         e.preventDefault();
-        openHotkeysModal();
+        toggleModal($hotkeysModal, openHotkeysModal);
     } else if (e.code === "Space") {
         e.preventDefault();
         toggleStreamPause();
     } else if (e.key.toLowerCase() === "w") {
         e.preventDefault();
-        $openWarRoomBtn?.click();
+        toggleModal($warRoomModal, () => {
+            $warRoomModal?.classList.remove("hidden");
+            setTimeout(initWarRoomTrajectoryCanvas, 150);
+            updateWarRoomTicker();
+        });
     } else if (e.key.toLowerCase() === "b") {
         e.preventDefault();
-        openBatchInspectModal();
+        toggleModal($batchInspectModal, openBatchInspectModal);
     } else if (e.key.toLowerCase() === "f") {
         e.preventDefault();
-        openThreatFeedsModal();
+        toggleModal($threatFeedsModal, openThreatFeedsModal);
     } else if (e.key.toLowerCase() === "n") {
         e.preventDefault();
-        openNsrcModal();
+        toggleModal($nsrcModal, openNsrcModal);
     } else if (e.key.toLowerCase() === "q") {
         e.preventDefault();
-        $openQuishingBtn?.click();
+        toggleModal($quishingModal, openQuishingModal);
     } else if (e.key.toLowerCase() === "p") {
         e.preventDefault();
-        openPlaybooksModal();
+        toggleModal($playbookModal, openPlaybooksModal);
     } else if (e.key.toLowerCase() === "d") {
         e.preventDefault();
-        openDbMaintenanceModal();
+        toggleModal($dbMaintenanceModal, openDbMaintenanceModal);
     } else if (["1", "2", "3", "4"].includes(e.key)) {
-        const speedMap = { "1": 1.0, "2": 2.0, "3": 5.0, "4": 10.0 };
-        setSimulationSpeed(speedMap[e.key]);
-        showCyberToast("info", "Simulator Speed", `Telemetry speed set to ${speedMap[e.key]}x`);
+        const speedMap = { "1": "0.5", "2": "1.0", "3": "2.0", "4": "5.0" };
+        const labelMap = { "1": "0.5x (Slow)", "2": "1.0x (Live)", "3": "2.0x (Fast)", "4": "5.0x (Barrage)" };
+        const chosen = speedMap[e.key];
+        setSimulationSpeed(chosen);
+        showCyberToast("info", "Simulator Speed Set", `Simulation rate switched to ${labelMap[e.key]}`);
     }
 });
 
