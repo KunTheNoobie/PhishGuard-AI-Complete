@@ -115,6 +115,15 @@ async def log_threat_telemetry(
         Inserted record primary key (`log_id`).
     """
     import asyncio
+    # Check if this exact URL was already logged in recent records to prevent duplicate spam
+    cursor = await db.execute(
+        "SELECT log_id FROM threat_telemetry WHERE malicious_url = ? ORDER BY log_id DESC LIMIT 1;",
+        (url,)
+    )
+    recent = await cursor.fetchone()
+    if recent:
+        return recent[0]
+
     insert_sql: str = (
         "INSERT INTO threat_telemetry (malicious_url, bert_score) "
         "VALUES (?, ?);"

@@ -425,16 +425,30 @@ class CreateMuleRequest(BaseModel):
 
 @router.post(
     "/mule-registry",
-    summary="Add or update a mule account",
-    response_description="Created or updated mule record.",
+    summary="Add a mule account",
+    response_description="Created mule record or 409 Conflict on duplicate.",
 )
 async def create_mule(payload: CreateMuleRequest, request: Request) -> dict[str, Any]:
-    """Add a new mule account or increment existing report count."""
+    """Add a new mule account, checking for duplicates and rejecting existing records."""
     db = request.app.state.db
+    account_clean = payload.account_number.strip()
+
+    # Query if account number already exists
+    cursor = await db.execute(
+        "SELECT id, bank_name, platform_flagged, report_count FROM mule_registry WHERE account_number = ?;",
+        (account_clean,)
+    )
+    existing = await cursor.fetchone()
+    if existing:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Duplicate Record Error: Mule account '{account_clean}' is already registered under {existing[1]} (Flagged via {existing[2]}, {existing[3]} incident reports). Duplicate entries are not allowed."
+        )
+
     record = await add_mule_account(
-        account_number=payload.account_number,
-        bank_name=payload.bank_name,
-        platform_flagged=payload.platform_flagged,
+        account_number=account_clean,
+        bank_name=payload.bank_name.strip(),
+        platform_flagged=payload.platform_flagged.strip(),
         report_count=payload.report_count,
         db=db,
     )
@@ -890,17 +904,29 @@ class BulkMuleRequest(BaseModel):
     summary="Bulk import mule accounts from CSV or JSON list",
 )
 async def bulk_import_mules(payload: BulkMuleRequest, request: Request) -> dict[str, Any]:
-    """Batch ingest mule accounts from multiline text or structured list with deduplication."""
+    """Batch ingest mule accounts with strict deduplication against existing database records."""
     db = request.app.state.db
     imported = 0
-    duplicates = 0
+    duplicates: list[str] = []
+    seen_in_batch: set[str] = set()
     records = []
+
+    # Fetch all existing registered account numbers to perform fast O(1) duplicate checks
+    cur = await db.execute("SELECT account_number FROM mule_registry;")
+    existing_rows = await cur.fetchall()
+    existing_accounts: set[str] = {r[0].strip() for r in existing_rows}
 
     # Process structured items
     if payload.items:
         for item in payload.items:
+            acc = item.account_number.strip()
+            if acc in existing_accounts or acc in seen_in_batch:
+                duplicates.append(acc)
+                continue
+            seen_in_batch.add(acc)
+            existing_accounts.add(acc)
             rec = await add_mule_account(
-                account_number=item.account_number.strip(),
+                account_number=acc,
                 bank_name=item.bank_name.strip(),
                 platform_flagged=item.platform_flagged.strip(),
                 report_count=item.report_count,
@@ -918,26 +944,36 @@ async def bulk_import_mules(payload: BulkMuleRequest, request: Request) -> dict[
                 continue  # Skip header
             
             acc = parts[0]
+            if len(acc) < 6:
+                continue
+
+            if acc in existing_accounts or acc in seen_in_batch:
+                duplicates.append(acc)
+                continue
+
             bank = parts[1] if len(parts) > 1 else "Other Bank"
             platform = parts[2] if len(parts) > 2 else "Bulk Import"
             reports = int(parts[3]) if len(parts) > 3 and parts[3].isdigit() else 1
 
-            if len(acc) >= 6:
-                rec = await add_mule_account(
-                    account_number=acc,
-                    bank_name=bank,
-                    platform_flagged=platform,
-                    report_count=reports,
-                    db=db,
-                )
-                imported += 1
-                records.append(rec)
+            seen_in_batch.add(acc)
+            existing_accounts.add(acc)
+            rec = await add_mule_account(
+                account_number=acc,
+                bank_name=bank,
+                platform_flagged=platform,
+                report_count=reports,
+                db=db,
+            )
+            imported += 1
+            records.append(rec)
 
     return {
-        "success": True,
+        "success": imported > 0 or len(duplicates) == 0,
         "imported_count": imported,
-        "duplicate_count": duplicates,
+        "duplicate_count": len(duplicates),
+        "duplicate_accounts": duplicates[:10],
         "total_imported": len(records),
+        "message": f"Successfully ingested {imported} new account(s)." + (f" ({len(duplicates)} duplicate(s) rejected)" if duplicates else ""),
     }
 
 

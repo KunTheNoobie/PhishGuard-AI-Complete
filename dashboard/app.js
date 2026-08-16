@@ -1248,7 +1248,7 @@ function closeAddMuleModal() {
 async function handleAddMuleSubmit(e) {
     e.preventDefault();
     $saveMuleBtn.disabled = true;
-    $saveMuleBtn.textContent = "Saving...";
+    $saveMuleBtn.textContent = "Validating...";
 
     const payload = {
         account_number: $muleAccountInput.value.trim(),
@@ -1256,6 +1256,15 @@ async function handleAddMuleSubmit(e) {
         platform_flagged: $mulePlatformInput.value.trim() || "Manual Admin Entry",
         report_count: parseInt($muleReportsInput.value, 10) || 1
     };
+
+    // Client-side instant duplicate check
+    const existingClient = (muleData || []).find(m => String(m.account_number).trim() === payload.account_number);
+    if (existingClient) {
+        showCyberToast("danger", "Duplicate Account Rejected", `Account ${payload.account_number} is already registered under ${existingClient.bank_name}! Duplicate entry avoided.`);
+        $saveMuleBtn.disabled = false;
+        $saveMuleBtn.textContent = "Add to Registry";
+        return;
+    }
 
     try {
         await apiFetch("/mule-registry", {
@@ -1267,7 +1276,7 @@ async function handleAddMuleSubmit(e) {
         await refreshAll();
         showCyberToast("success", "Mule Ingested", `Account ${payload.account_number} (${payload.bank_name}) registered.`);
     } catch (err) {
-        showCyberToast("danger", "Registration Failed", err.message);
+        showCyberToast("danger", "Duplicate / Validation Error", err.message);
     } finally {
         $saveMuleBtn.disabled = false;
         $saveMuleBtn.textContent = "Add to Registry";
@@ -1390,7 +1399,10 @@ async function refreshSystemHealth() {
     } catch (_e) {}
 }
 
+let isSystemAudioEnabled = false;
+
 function playAlertSound(type = "warning") {
+    if (!isSystemAudioEnabled) return;
     try {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         if (!AudioContext) return;
@@ -1561,7 +1573,7 @@ if ($bulkMuleForm) {
         if ($bulkImportStatus) {
             $bulkImportStatus.style.display = "block";
             $bulkImportStatus.style.color = "var(--accent-cyan)";
-            $bulkImportStatus.textContent = "Processing and validating batch accounts...";
+            $bulkImportStatus.textContent = "Processing and deduplicating batch accounts...";
         }
 
         try {
@@ -1571,19 +1583,29 @@ if ($bulkMuleForm) {
                 body: JSON.stringify({ raw_csv: text })
             });
 
-            if ($bulkImportStatus) {
-                $bulkImportStatus.style.color = "#34d399";
-                $bulkImportStatus.textContent = `✅ Successfully ingested ${res.imported_count} mule accounts!`;
+            if (res.imported_count === 0 && res.duplicate_count > 0) {
+                if ($bulkImportStatus) {
+                    $bulkImportStatus.style.color = "#f87171";
+                    $bulkImportStatus.textContent = `⚠️ All ${res.duplicate_count} account(s) already exist in the database! Duplicate data avoided.`;
+                }
+                showCyberToast("warning", "Duplicates Rejected", `All ${res.duplicate_count} accounts were already registered in the database.`);
+            } else {
+                if ($bulkImportStatus) {
+                    $bulkImportStatus.style.color = "#34d399";
+                    $bulkImportStatus.textContent = `✅ Successfully ingested ${res.imported_count} new accounts! (${res.duplicate_count} duplicate(s) skipped)`;
+                }
+                showCyberToast("success", "Batch Ingest Complete", `Added ${res.imported_count} new accounts (${res.duplicate_count} duplicates avoided).`);
+                setTimeout(() => {
+                    closeBulkMuleModal();
+                    refreshAll();
+                }, 1200);
             }
-            setTimeout(() => {
-                closeBulkMuleModal();
-                refreshAll();
-            }, 1200);
         } catch (err) {
             if ($bulkImportStatus) {
                 $bulkImportStatus.style.color = "#f87171";
                 $bulkImportStatus.textContent = "Batch import failed: " + err.message;
             }
+            showCyberToast("danger", "Bulk Ingestion Error", err.message);
         }
     });
 }
