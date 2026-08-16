@@ -263,10 +263,6 @@ function normalizeSettledResult(settled) {
   };
 }
 
-async function getCustomTrustedDomains() {
-  const data = await storageGet(["custom_trusted_domains"]);
-  return data.custom_trusted_domains || {};
-}
 
 async function isCustomTrustedDomain(host) {
   if (!host) return false;

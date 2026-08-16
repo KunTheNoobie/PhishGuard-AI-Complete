@@ -61,6 +61,22 @@ function sendRuntimeMessage(message) {
   });
 }
 
+async function getStoredConfig() {
+  try {
+    const response = await sendRuntimeMessage({ type: "PHISHGUARD_GET_SETTINGS" });
+    if (response && response.settings) {
+      return {
+        apiBaseUrl: response.settings.apiBaseUrl || "http://127.0.0.1:8000",
+        apiToken: response.settings.apiToken || "phishguard_secret_key_2026"
+      };
+    }
+  } catch (_e) {}
+  return {
+    apiBaseUrl: "http://127.0.0.1:8000",
+    apiToken: "phishguard_secret_key_2026"
+  };
+}
+
 function queryActiveTab() {
   return new Promise((resolve) => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {

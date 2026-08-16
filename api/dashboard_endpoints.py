@@ -19,7 +19,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Final, Optional, Dict, List
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, HTTPException
 
 import asyncio
 import json
@@ -144,11 +144,14 @@ async def get_system_health(request: Request) -> dict[str, Any]:
     cache = getattr(request.app.state, "cache", None)
     cache_entries = len(cache._cache) if cache and hasattr(cache, "_cache") else 0
     
-    nlp_engine = getattr(request.app.state, "nlp_engine", None)
-    bert_loaded = nlp_engine is not None and hasattr(nlp_engine, "is_ready") and nlp_engine.is_ready
+    engine = getattr(request.app.state, "semantic_engine", getattr(request.app.state, "nlp_engine", None))
+    bert_loaded = engine is not None and getattr(engine, "_model", None) is not None
 
-    visual_detector = getattr(request.app.state, "visual_detector", None)
-    yolo_loaded = visual_detector is not None
+    try:
+        from api.visual import _detector
+        yolo_loaded = _detector is not None and getattr(_detector, "model", None) is not None
+    except Exception:
+        yolo_loaded = False
 
     return {
         "status": "healthy",
@@ -162,7 +165,7 @@ async def get_system_health(request: Request) -> dict[str, Any]:
             "bert_semantic": "loaded" if bert_loaded else "mock_or_offline",
             "yolov8_visual": "loaded" if yolo_loaded else "mock_or_offline",
         },
-        "sse_subscribers": len(_SSE_CLIENTS),
+        "sse_subscribers": len(_SSE_SUBSCRIBERS),
     }
 
 
