@@ -212,6 +212,53 @@
             margin-top: 1.25rem;
             line-height: 1.4;
         }
+
+        /* ─── Vector Switcher Segmented Bar ─── */
+        .vector-switcher-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            max-width: 860px;
+            margin: 0 auto 1.25rem auto;
+            width: 100%;
+        }
+
+        .vector-tab {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: #94a3b8;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            white-space: nowrap;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .vector-tab:hover {
+            background: rgba(30, 41, 59, 0.85);
+            color: #f1f5f9;
+            border-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-1px);
+        }
+
+        .vector-tab.active {
+            background: rgba(14, 165, 233, 0.18);
+            border-color: #38bdf8;
+            color: #38bdf8;
+            box-shadow: 0 0 16px rgba(56, 189, 248, 0.35);
+        }
+
+        @media (max-width: 820px) {
+            .vector-switcher-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
     </style>
     <script>
         function applyTheme(t) {
@@ -279,25 +326,29 @@
 
     <main class="test-site-container">
         <!-- Attack Vector Switcher Toolbar -->
-        <div style="margin-bottom: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center;">
-            <button type="button" class="action-btn action-btn--primary" id="vecMaybankBtn" onclick="switchVector('maybank')" style="font-size: 0.8rem; padding: 6px 14px;">
-                🐯 Vector A: Maybank2u TAC Phishing
+        <div class="vector-switcher-grid">
+            <button type="button" class="vector-tab active" id="vecMaybankBtn" onclick="switchVector('maybank')">
+                <span class="vector-tab-icon">🐯</span>
+                <span class="vector-tab-text">Vector A: Maybank2u TAC</span>
             </button>
-            <button type="button" class="action-btn" id="vecPdrmBtn" onclick="switchVector('pdrm')" style="font-size: 0.8rem; padding: 6px 14px;">
-                🚔 Vector B: PDRM Traffic Summons
+            <button type="button" class="vector-tab" id="vecPdrmBtn" onclick="switchVector('pdrm')">
+                <span class="vector-tab-icon">🚔</span>
+                <span class="vector-tab-text">Vector B: PDRM Summons</span>
             </button>
-            <button type="button" class="action-btn" id="vecEpfBtn" onclick="switchVector('epf')" style="font-size: 0.8rem; padding: 6px 14px;">
-                🏛️ Vector C: KWSP / EPF Grant Claim
+            <button type="button" class="vector-tab" id="vecEpfBtn" onclick="switchVector('epf')">
+                <span class="vector-tab-icon">🏛️</span>
+                <span class="vector-tab-text">Vector C: KWSP Aid Grant</span>
             </button>
-            <button type="button" class="action-btn" id="vecQuishBtn" onclick="switchVector('quishing')" style="font-size: 0.8rem; padding: 6px 14px;">
-                📱 Vector D: PayNet DuitNow Quishing QR
+            <button type="button" class="vector-tab" id="vecQuishBtn" onclick="switchVector('quishing')">
+                <span class="vector-tab-icon">📱</span>
+                <span class="vector-tab-text">Vector D: DuitNow Quishing</span>
             </button>
         </div>
 
         <!-- Control Banner -->
         <div class="sim-control-banner">
             <div>
-                <strong id="bannerVectorTitle">⚠️ Simulated Financial Phishing Target:</strong>
+                <strong id="bannerVectorTitle">⚠️ Simulated Threat Vector: Maybank2u Alert</strong>
                 <span id="bannerVectorDesc">Contains deceptive Maybank branding and flagged money mule account <code>112233445566</code> for extension & sandbox verification.</span>
             </div>
             <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
@@ -439,7 +490,7 @@
         // ── Vector Switching Logic ──
         const VECTORS = {
             maybank: {
-                title: "🐯 Maybank2u Alert",
+                title: "Maybank2u Alert",
                 desc: "Contains deceptive Maybank branding and flagged money mule account 112233445566.",
                 icon: "🐯",
                 heading: "Akaun Bank Anda Telah Digantung Sementara",
@@ -461,7 +512,7 @@
                 footer: "Official Security Notice • Malayan Banking Berhad (Co. Reg. 196001000142)<br/>Protected under Bank Negara Malaysia Cyber Regulations."
             },
             pdrm: {
-                title: "🚔 PDRM e-Saman Portal",
+                title: "PDRM e-Saman Portal",
                 desc: "Simulated law enforcement intimidation vector demanding immediate traffic fine settlement via mule account 558844887979.",
                 icon: "🚔",
                 heading: "Waran Tangkap & Saman Trafik Tertunggak",
@@ -483,7 +534,7 @@
                 footer: "Polis Diraja Malaysia (PDRM) &bull; Bahagian Siasatan & Penguatkuasaan Trafik (JSPT)<br/>Kementerian Dalam Negeri Malaysia."
             },
             epf: {
-                title: "🏛️ KWSP / EPF e-Pengeluaran",
+                title: "KWSP / EPF e-Pengeluaran",
                 desc: "Simulated government cash aid & retirement grant phishing harvesting bank credentials into RHB mule 990011223344.",
                 icon: "🏛️",
                 heading: "Tuntutan Bantuan Sara Hidup KWSP 2026",
@@ -505,7 +556,7 @@
                 footer: "Kumpulan Wang Simpanan Pekerja (KWSP) &bull; Employees Provident Fund Malaysia."
             },
             quishing: {
-                title: "📱 PayNet DuitNow QR Aid",
+                title: "PayNet DuitNow QR Aid",
                 desc: "Simulated Quishing (QR Phishing) attack using fraudulent EMVCo DuitNow QR code payload targeting instant funds transfer.",
                 icon: "📱",
                 heading: "Imbas Kod QR DuitNow Untuk Tuntut RM500",
@@ -532,12 +583,12 @@
             const v = VECTORS[type] || VECTORS.maybank;
             ['vecMaybankBtn', 'vecPdrmBtn', 'vecEpfBtn', 'vecQuishBtn'].forEach(id => {
                 const btn = document.getElementById(id);
-                if (btn) btn.className = "action-btn";
+                if (btn) btn.classList.remove("active");
             });
-            if (type === 'maybank') document.getElementById('vecMaybankBtn')?.classList.add('action-btn--primary');
-            if (type === 'pdrm') document.getElementById('vecPdrmBtn')?.classList.add('action-btn--primary');
-            if (type === 'epf') document.getElementById('vecEpfBtn')?.classList.add('action-btn--primary');
-            if (type === 'quishing') document.getElementById('vecQuishBtn')?.classList.add('action-btn--primary');
+            if (type === 'maybank') document.getElementById('vecMaybankBtn')?.classList.add('active');
+            if (type === 'pdrm') document.getElementById('vecPdrmBtn')?.classList.add('active');
+            if (type === 'epf') document.getElementById('vecEpfBtn')?.classList.add('active');
+            if (type === 'quishing') document.getElementById('vecQuishBtn')?.classList.add('active');
 
             document.getElementById('bannerVectorTitle').textContent = `⚠️ Simulated Threat Vector: ${v.title}`;
             document.getElementById('bannerVectorDesc').textContent = v.desc;
