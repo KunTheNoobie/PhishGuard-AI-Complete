@@ -122,7 +122,7 @@ async def simulate_live_threats(state) -> None:
             bank_name, bank_domains = random.choice(all_banks)
             chosen_domain = random.choice(bank_domains)
             malicious_url = f"http://{chosen_domain}/auth/login?session={random.randint(10000, 99999)}"
-            score = round(random.uniform(0.78, 0.99), 4)
+            score = round(random.uniform(0.93, 0.995), 4)
             await state.db.execute(
                 "INSERT INTO threat_telemetry (malicious_url, bert_score) VALUES (?, ?)",
                 (malicious_url, score)
