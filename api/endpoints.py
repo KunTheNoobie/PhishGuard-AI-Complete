@@ -282,23 +282,55 @@ async def analyse_semantics(
     )
 
     # ── 5. Orchestration Verdict ──
-    is_threat: bool = bert_result["is_malicious"] or mule_result["mule_detected"]
+    is_threat: bool = bert_result["is_malicious"] or mule_result["mule_detected"] or bool(mule_result.get("flagged_accounts"))
     verdict: str = VERDICT_BLOCK if is_threat else VERDICT_SAFE
 
-    # ── 6. Background Telemetry (fire-and-forget) ──
-    # Only persist entries for detected threats to keep the telemetry
-    # table focused on actionable intelligence (§5.2).
+    # ── 6. Live Telemetry & Mule Registry Ingestion ──
     if is_threat:
-        background_tasks.add_task(
-            log_threat_telemetry,
-            url=str(payload.url),
-            score=bert_result["confidence"],
-            db=db,
-        )
-        logger.info(
-            "[%s] Telemetry write scheduled (background).",
-            transaction_id,
-        )
+        try:
+            log_id = await log_threat_telemetry(
+                url=str(payload.url),
+                score=bert_result["confidence"],
+                db=db,
+            )
+            # Register / increment flagged accounts in mule registry
+            flagged = mule_result.get("flagged_accounts", [])
+            for acc in flagged:
+                acc_num = str(acc.get("account_number", "")).strip()
+                bank_name = acc.get("bank_name", "Malaysian Banking Entity")
+                if acc_num:
+                    await db.execute(
+                        """
+                        INSERT INTO mule_registry (account_number, bank_name, platform_flagged, report_count)
+                        VALUES (?, ?, 'Browser Extension Live Intercept', 1)
+                        ON CONFLICT(account_number) DO UPDATE SET report_count = report_count + 1;
+                        """,
+                        (acc_num, bank_name),
+                    )
+            # If scam page had extracted bank accounts, register them as suspected mules
+            if bert_result["is_malicious"] and not flagged:
+                for acc_num in mule_result.get("accounts_extracted", []):
+                    clean_acc = str(acc_num).strip()
+                    if clean_acc:
+                        await db.execute(
+                            """
+                            INSERT INTO mule_registry (account_number, bank_name, platform_flagged, report_count)
+                            VALUES (?, 'Maybank / Interbank', 'AI Browser Extension Live Threat Detection', 1)
+                            ON CONFLICT(account_number) DO UPDATE SET report_count = report_count + 1;
+                            """,
+                            (clean_acc,),
+                        )
+            await db.commit()
+
+            from api.dashboard_endpoints import broadcast_threat_event
+            asyncio.create_task(broadcast_threat_event("new_threat", {
+                "log_id": log_id,
+                "malicious_url": str(payload.url),
+                "bert_score": round(bert_result["confidence"], 4),
+                "timestamp": "Just now",
+            }))
+        except Exception as e:
+            logger.warning("[%s] Real-time telemetry ingestion error: %s", transaction_id, e)
 
     # ── 7. Assemble Response ──
     response = AnalysisResponse(

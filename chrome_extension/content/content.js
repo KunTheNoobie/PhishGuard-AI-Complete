@@ -112,28 +112,41 @@ function showFullScreenBlockScreen(result) {
     boxSizing: "border-box"
   });
 
-  document.documentElement.appendChild(overlay);
+  const targetParent = document.body || document.documentElement;
+  if (targetParent) {
+    targetParent.appendChild(overlay);
+  }
 
-  document.getElementById("phishguard-safety-btn").addEventListener("click", () => {
-    if (window.history.length > 1) {
-      window.history.back();
-    } else {
-      window.location.href = "about:blank";
-    }
-  });
+  const safetyBtn = document.getElementById("phishguard-safety-btn");
+  if (safetyBtn) {
+    safetyBtn.addEventListener("click", () => {
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.location.href = "about:blank";
+      }
+    });
+  }
 
-  document.getElementById("phishguard-proceed-btn").addEventListener("click", () => {
-    overlay.remove();
-    showTopBanner(result);
-  });
+  const proceedBtn = document.getElementById("phishguard-proceed-btn");
+  if (proceedBtn) {
+    proceedBtn.addEventListener("click", () => {
+      overlay.remove();
+      showTopBanner(result);
+    });
+  }
 }
 
 function showWarningBanner(result) {
-  if (result.risk_level === "dangerous" || result.final_verdict === "BLOCK_RENDER") {
+  if (!result) return;
+  const isBlock = result.risk_level === "dangerous" || result.final_verdict === "BLOCK_RENDER" || (result.mule_scan && result.mule_scan.mule_detected);
+  if (isBlock) {
     showFullScreenBlockScreen(result);
     return;
   }
-  showTopBanner(result);
+  if (result.risk_level === "suspicious") {
+    showTopBanner(result);
+  }
 }
 
 function showTopBanner(result) {
@@ -204,7 +217,10 @@ function showTopBanner(result) {
     lineHeight: "1"
   });
 
-  document.documentElement.appendChild(banner);
+  const parent = document.body || document.documentElement;
+  if (parent) {
+    parent.appendChild(banner);
+  }
 }
 
 const PHISHGUARD_KEYWORD_CLASS = "phishguard-ai-keyword-highlight";
@@ -483,11 +499,7 @@ function autoScanOnPageLoad() {
   requestVisualAnalysis()
     .then((response) => {
       if (response && response.result) {
-        if (response.result.risk_level === "dangerous" || response.result.final_verdict === "BLOCK_RENDER") {
-          showFullScreenBlockScreen(response.result);
-        } else if (response.result.risk_level === "suspicious") {
-          showTopBanner(response.result);
-        }
+        showWarningBanner(response.result);
       }
     })
     .catch((_err) => {

@@ -94,49 +94,30 @@ async def log_threat_telemetry(
     score: float,
     db: aiosqlite.Connection,
 ) -> int:
-    """Persist a malicious-URL detection event to the telemetry table.
+    """Persist a malicious-URL detection event to the telemetry table and broadcast in real time.
 
-    This method is designed to be invoked as a **background task** via
-    ``BackgroundTasks`` or directly during synchronous scans.
-
-    Parameters
-    ----------
-    url : str
-        The URL flagged as malicious by the BERT pipeline.
-    score : float
-        The BERT confidence score associated with the malicious
-        classification.
-    db : aiosqlite.Connection
-        Active database connection (injected).
-
-    Returns
-    -------
-    int
-        Inserted record primary key (`log_id`).
+    This method is invoked during scans (manual, automated extension scans, or simulated)
+    to guarantee every threat is captured and instantly visible on the SOC dashboard.
     """
     import asyncio
-    # Check if this exact URL was already logged in recent records to prevent duplicate spam
-    cursor = await db.execute(
-        "SELECT log_id FROM threat_telemetry WHERE malicious_url = ? ORDER BY log_id DESC LIMIT 1;",
-        (url,)
-    )
-    recent = await cursor.fetchone()
-    if recent:
-        return recent[0]
+    from datetime import datetime, timezone
+
+    now_iso: str = datetime.now(timezone.utc).isoformat()
 
     insert_sql: str = (
-        "INSERT INTO threat_telemetry (malicious_url, bert_score) "
-        "VALUES (?, ?);"
+        "INSERT INTO threat_telemetry (malicious_url, bert_score, timestamp) "
+        "VALUES (?, ?, ?);"
     )
 
-    cursor = await db.execute(insert_sql, (url, score))
+    cursor = await db.execute(insert_sql, (url, score, now_iso))
     await db.commit()
     log_id: int = cursor.lastrowid or 0
 
     logger.info(
-        "TELEMETRY — Logged malicious URL '%s' (score=%.4f).",
+        "TELEMETRY — Logged malicious URL '%s' (score=%.4f, log_id=%d).",
         url,
         score,
+        log_id,
     )
 
     try:
@@ -147,8 +128,8 @@ async def log_threat_telemetry(
             "bert_score": round(score, 4),
             "timestamp": "Just now",
         }))
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug("Telemetry broadcast note: %s", e)
 
     return log_id
 

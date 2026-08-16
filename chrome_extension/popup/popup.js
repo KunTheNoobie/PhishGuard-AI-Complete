@@ -427,15 +427,23 @@ async function scanActivePage() {
     }
 
     renderScanning(tab);
-    await ensureContentScriptInjected(tab.id);
-
     let response = null;
     try {
       response = await sendTabMessage(tab.id, { type: "PHISHGUARD_RUN_SCAN" });
     } catch (_e) {
-      // Re-inject content script and retry
-      await ensureContentScriptInjected(tab.id);
-      response = await sendTabMessage(tab.id, { type: "PHISHGUARD_RUN_SCAN" });
+      // Re-inject content script or fall back to background execution
+      try {
+        await ensureContentScriptInjected(tab.id);
+        response = await sendTabMessage(tab.id, { type: "PHISHGUARD_RUN_SCAN" });
+      } catch (_err) {
+        response = await sendRuntimeMessage({ type: "PHISHGUARD_RESCAN_ACTIVE_TAB" });
+      }
+    }
+
+    if (!response || !response.ok) {
+      try {
+        response = await sendRuntimeMessage({ type: "PHISHGUARD_RESCAN_ACTIVE_TAB" });
+      } catch (_e) {}
     }
 
     if (response && response.ok && response.result) {

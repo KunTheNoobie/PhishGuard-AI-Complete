@@ -89,20 +89,19 @@ function captureVisibleTab(windowId) {
 }
 
 function updateActionBadge(tabId, result) {
-  if (!tabId || !chrome.action) return;
+  if (!chrome.action) return;
   const isBlock = result.final_verdict === "BLOCK_RENDER" || result.risk_level === "dangerous" || (result.mule_scan && result.mule_scan.mule_detected);
   const isSuspicious = result.risk_level === "suspicious";
 
-  if (isBlock) {
-    chrome.action.setBadgeText({ tabId, text: "!" });
-    chrome.action.setBadgeBackgroundColor({ tabId, color: "#ef4444" });
-  } else if (isSuspicious) {
-    chrome.action.setBadgeText({ tabId, text: "?" });
-    chrome.action.setBadgeBackgroundColor({ tabId, color: "#f59e0b" });
-  } else {
-    chrome.action.setBadgeText({ tabId, text: "OK" });
-    chrome.action.setBadgeBackgroundColor({ tabId, color: "#10b981" });
+  const text = isBlock ? "!" : (isSuspicious ? "?" : "OK");
+  const color = isBlock ? "#ef4444" : (isSuspicious ? "#f59e0b" : "#10b981");
+
+  if (tabId && typeof tabId === "number") {
+    chrome.action.setBadgeText({ tabId, text });
+    chrome.action.setBadgeBackgroundColor({ tabId, color });
   }
+  chrome.action.setBadgeText({ text });
+  chrome.action.setBadgeBackgroundColor({ color });
 }
 
 async function saveResult(tabId, result) {
@@ -110,9 +109,13 @@ async function saveResult(tabId, result) {
     ...result,
     analyzed_at: new Date().toISOString()
   };
-  memoryResults.set(tabId, payload);
-  await sessionSet({ [`phishguard_result_${tabId}`]: payload });
-  updateActionBadge(tabId, payload);
+  if (tabId && typeof tabId === "number") {
+    memoryResults.set(tabId, payload);
+    await sessionSet({ [`phishguard_result_${tabId}`]: payload });
+    updateActionBadge(tabId, payload);
+  } else {
+    updateActionBadge(null, payload);
+  }
   return payload;
 }
 
@@ -490,8 +493,17 @@ function evaluateOfflineHeuristics(pagePayload) {
 }
 
 async function analyzePage(tab, pagePayload) {
-  if (!tab || typeof tab.id !== "number") {
-    throw new Error("Missing active tab information.");
+  let targetTabId = tab && typeof tab.id === "number" ? tab.id : null;
+  let targetWindowId = tab && typeof tab.windowId === "number" ? tab.windowId : undefined;
+
+  if (!targetTabId) {
+    const activeTabs = await new Promise((resolve) => {
+      chrome.tabs.query({ active: true, currentWindow: true }, resolve);
+    });
+    if (activeTabs && activeTabs[0]) {
+      targetTabId = activeTabs[0].id;
+      targetWindowId = activeTabs[0].windowId;
+    }
   }
 
   const host = hostFromUrl(pagePayload.url);
@@ -514,12 +526,16 @@ async function analyzePage(tab, pagePayload) {
     result.page_url = pagePayload.url;
     result.page_title = pagePayload.title || "";
     result.page_host = host;
-    const saved = await saveResult(tab.id, result);
-    sendWarningToTab(tab.id, saved);
-    return saved;
+    if (targetTabId) {
+      const saved = await saveResult(targetTabId, result);
+      sendWarningToTab(targetTabId, saved);
+      return saved;
+    }
+    updateActionBadge(null, result);
+    return result;
   }
 
-  const screenshot = await captureVisibleTab(tab.windowId);
+  const screenshot = await captureVisibleTab(targetWindowId);
   const settings = await getSettings();
   const [visualSettled, semanticSettled] = await Promise.allSettled([
     callVisualBackend(settings, pagePayload, screenshot),
@@ -546,17 +562,21 @@ async function analyzePage(tab, pagePayload) {
   result.page_url = pagePayload.url;
   result.page_title = pagePayload.title || "";
   result.page_host = hostFromUrl(pagePayload.url);
-  const saved = await saveResult(tab.id, result);
-  sendWarningToTab(tab.id, saved);
 
-  if (saved.risk_level === "dangerous") {
-    sendNativeNotification(
-      "PhishGuard-AI Threat Intercepted",
-      `High-risk phishing activity blocked on ${result.page_host || "webpage"}.`
-    );
+  if (targetTabId) {
+    const saved = await saveResult(targetTabId, result);
+    sendWarningToTab(targetTabId, saved);
+    if (saved.risk_level === "dangerous" || saved.final_verdict === "BLOCK_RENDER") {
+      sendNativeNotification(
+        "PhishGuard-AI Threat Intercepted",
+        `High-risk phishing activity blocked on ${result.page_host || "webpage"}.`
+      );
+    }
+    return saved;
   }
 
-  return saved;
+  updateActionBadge(null, result);
+  return result;
 }
 
 
