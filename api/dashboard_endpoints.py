@@ -640,9 +640,10 @@ async def get_distributions(request: Request) -> dict[str, Any]:
         for k, v in sorted(infra_counts.items(), key=lambda x: x[1], reverse=True)
     ]
 
-    # Timeline distribution (consecutive rolling 8-hour threat velocity buckets)
+    # Timeline distribution (consecutive rolling 8-hour threat velocity buckets in Malaysia Time GMT+8 / MYT)
     import datetime
-    now = datetime.datetime.now(datetime.timezone.utc)
+    myt_tz = datetime.timezone(datetime.timedelta(hours=8))
+    now = datetime.datetime.now(myt_tz)
 
     # Total threats in database
     total_threats_cur = await db.execute("SELECT COUNT(*) FROM threat_telemetry;")
@@ -664,11 +665,13 @@ async def get_distributions(request: Request) -> dict[str, Any]:
     timeline = []
     for idx, i in enumerate(range(7, -1, -1)):
         dt = now - datetime.timedelta(hours=i)
-        key = dt.strftime("%Y-%m-%dT%H")
+        key_utc = (dt.astimezone(datetime.timezone.utc)).strftime("%Y-%m-%dT%H")
+        key_local = dt.strftime("%Y-%m-%dT%H")
         label = dt.strftime("%H:00")
 
-        raw_count = hour_map.get(key, (0, 0.88))[0]
-        score_val = hour_map.get(key, (0, 0.88))[1] or 0.88
+        # Check both local and UTC hour keys in telemetry
+        raw_count = hour_map.get(key_local, (0, 0.88))[0] or hour_map.get(key_utc, (0, 0.88))[0]
+        score_val = hour_map.get(key_local, (0, 0.88))[1] or hour_map.get(key_utc, (0, 0.88))[1] or 0.88
 
         factor = profile_factors[idx]
         baseline = int(base_volume * factor)

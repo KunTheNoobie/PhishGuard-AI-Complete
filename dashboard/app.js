@@ -444,12 +444,15 @@ window.resetDonutSlice = resetDonutSlice;
 
 function renderTimelineBars(timeline) {
     if (!timeline || !timeline.length) {
-        // Fallback default balanced velocity timeline
-        timeline = [
-            { time: "18:00", count: 18 }, { time: "19:00", count: 24 }, { time: "20:00", count: 32 },
-            { time: "21:00", count: 28 }, { time: "22:00", count: 38 }, { time: "23:00", count: 34 },
-            { time: "00:00", count: 42 }, { time: "01:00", count: 39 }
-        ];
+        // Fallback dynamic rolling hours using local time (GMT+8)
+        const now = new Date();
+        const fallbackCounts = [18, 24, 32, 28, 38, 34, 42, 39];
+        timeline = [];
+        for (let i = 7; i >= 0; i--) {
+            const d = new Date(now.getTime() - i * 3600000);
+            const hourLabel = String(d.getHours()).padStart(2, "0") + ":00";
+            timeline.push({ time: hourLabel, count: fallbackCounts[7 - i] });
+        }
     }
 
     const counts = timeline.map(t => t.count);
