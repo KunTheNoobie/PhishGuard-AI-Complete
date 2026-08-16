@@ -1,4 +1,6 @@
 const statusPill = document.getElementById("statusPill");
+const backendPingBadge = document.getElementById("backendPingBadge");
+const pingStatusText = document.getElementById("pingStatusText");
 const resultPanel = document.getElementById("resultPanel");
 const currentDomain = document.getElementById("currentDomain");
 const scanTime = document.getElementById("scanTime");
@@ -15,17 +17,22 @@ const apiToken = document.getElementById("apiToken");
 const saveSettingsButton = document.getElementById("saveSettingsButton");
 const trustSiteBtn = document.getElementById("trustSiteBtn");
 const reportSafeBtn = document.getElementById("reportSafeBtn");
+const copyVerdictBtn = document.getElementById("copyVerdictBtn");
 
 // Gauge DOM
 const gaugeProgress = document.getElementById("gaugeProgress");
 const gaugeScore = document.getElementById("gaugeScore");
 const flagMuleBtn = document.getElementById("flagMuleBtn");
 
-// Tabs & History DOM
+// Tabs & Views DOM
 const tabScannerBtn = document.getElementById("tabScannerBtn");
+const tabTrustedBtn = document.getElementById("tabTrustedBtn");
 const tabHistoryBtn = document.getElementById("tabHistoryBtn");
 const scannerView = document.getElementById("scannerView");
+const trustedView = document.getElementById("trustedView");
 const historyView = document.getElementById("historyView");
+const trustedList = document.getElementById("trustedList");
+const clearTrustedBtn = document.getElementById("clearTrustedBtn");
 const historyList = document.getElementById("historyList");
 const clearHistoryBtn = document.getElementById("clearHistoryBtn");
 
@@ -281,6 +288,7 @@ function renderResult(result) {
   if (domain && domain !== "No domain" && domain !== "Unknown domain" && domain !== "Current Webpage") {
     trustSiteBtn.classList.remove("hidden");
     if (reportSafeBtn) reportSafeBtn.classList.remove("hidden");
+    if (copyVerdictBtn) copyVerdictBtn.classList.remove("hidden");
     if (result.custom_trusted) {
       trustSiteBtn.classList.add("trusted");
       trustSiteBtn.textContent = `✓ Trusted (${domain})`;
@@ -293,6 +301,7 @@ function renderResult(result) {
   } else {
     trustSiteBtn.classList.add("hidden");
     if (reportSafeBtn) reportSafeBtn.classList.add("hidden");
+    if (copyVerdictBtn) copyVerdictBtn.classList.add("hidden");
   }
 
   // Flag Mule to NSRC Button
@@ -305,6 +314,51 @@ function renderResult(result) {
       flagMuleBtn.classList.add("hidden");
     }
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TRUSTED SITES MANAGEMENT
+// ═══════════════════════════════════════════════════════════════════
+
+async function renderTrustedDomains() {
+  const response = await sendRuntimeMessage({ type: "PHISHGUARD_GET_TRUSTED_DOMAINS" });
+  const trusted = (response && response.trusted) || {};
+  const entries = Object.entries(trusted);
+
+  if (!entries.length) {
+    trustedList.innerHTML = '<div class="history-empty">No custom trusted domains registered yet.</div>';
+    return;
+  }
+
+  const now = Date.now();
+  trustedList.innerHTML = entries.map(([domain, expiry]) => {
+    const remainingHrs = Math.max(0, Math.round((expiry - now) / (1000 * 60 * 60)));
+    return `
+      <div class="history-item">
+        <div class="history-item-left">
+          <span class="history-domain">${domain}</span>
+          <span class="history-time">Expires in ~${remainingHrs}h</span>
+        </div>
+        <button class="clear-btn" style="color: #f87171; font-weight: 700;" onclick="removeTrustedDomain('${domain}')">✕ Remove</button>
+      </div>
+    `;
+  }).join("");
+}
+
+window.removeTrustedDomain = async function(domain) {
+  const response = await sendRuntimeMessage({ type: "PHISHGUARD_GET_TRUSTED_DOMAINS" });
+  const trusted = (response && response.trusted) || {};
+  delete trusted[domain];
+  await chrome.storage.sync.set({ custom_trusted_domains: trusted });
+  renderTrustedDomains();
+  scanActivePage();
+};
+
+async function clearAllTrusted() {
+  if (!confirm("Revoke all custom trusted domains?")) return;
+  await chrome.storage.sync.set({ custom_trusted_domains: {} });
+  renderTrustedDomains();
+  scanActivePage();
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -386,6 +440,25 @@ function handleReportSafe() {
   alert(`Domain '${domain}' has been whitelisted and recorded as safe.`);
 }
 
+function handleCopyVerdict() {
+  if (!activeScanResult) return;
+  const r = activeScanResult;
+  const domain = r.page_host || hostFromUrl(r.page_url) || "Unknown Webpage";
+  const summary = 
+`🛡️ PhishGuard-AI Threat Scan Verdict
+• Target: ${domain} (${r.page_url || "N/A"})
+• Risk Assessment: ${(r.risk_level || "SAFE").toUpperCase()}
+• Orchestration Verdict: ${r.final_verdict || "SAFE"}
+• Details: ${r.reason || "Verified authentic page."}
+• Scanned At: ${r.analyzed_at || new Date().toISOString()}`;
+
+  navigator.clipboard.writeText(summary).then(() => {
+    alert("📋 Scan verdict copied to clipboard!");
+  }).catch(() => {
+    alert(summary);
+  });
+}
+
 async function handleFlagMule(mules) {
   const acc = (mules && mules.length > 0)
     ? mules[0].account_number
@@ -416,22 +489,47 @@ async function handleFlagMule(mules) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// BACKEND PING & LATENCY MONITOR
+// ═══════════════════════════════════════════════════════════════════
+
+async function checkBackendHealthPing() {
+  try {
+    const config = await getStoredConfig();
+    const start = performance.now();
+    const res = await fetch(`${config.apiBaseUrl}/health`, { method: "GET" });
+    const latency = Math.round(performance.now() - start);
+
+    if (res.ok && backendPingBadge) {
+      backendPingBadge.className = "ping-badge online";
+      backendPingBadge.textContent = `● SOC (${latency}ms)`;
+      if (pingStatusText) pingStatusText.textContent = `Connected (${latency}ms)`;
+    } else {
+      throw new Error();
+    }
+  } catch (_e) {
+    if (backendPingBadge) {
+      backendPingBadge.className = "ping-badge offline";
+      backendPingBadge.textContent = "● Autonomous";
+      if (pingStatusText) pingStatusText.textContent = "Offline Protection Active";
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // TABS SWITCHING
 // ═══════════════════════════════════════════════════════════════════
 
 function showTab(tab) {
-  if (tab === "scanner") {
-    tabScannerBtn.classList.add("active");
-    tabHistoryBtn.classList.remove("active");
-    scannerView.classList.add("active");
-    historyView.classList.remove("active");
-  } else {
-    tabScannerBtn.classList.remove("active");
-    tabHistoryBtn.classList.add("active");
-    scannerView.classList.remove("active");
-    historyView.classList.add("active");
-    renderHistory();
-  }
+  tabScannerBtn.classList.toggle("active", tab === "scanner");
+  tabTrustedBtn.classList.toggle("active", tab === "trusted");
+  tabHistoryBtn.classList.toggle("active", tab === "history");
+
+  scannerView.classList.toggle("active", tab === "scanner");
+  trustedView.classList.toggle("active", tab === "trusted");
+  historyView.classList.toggle("active", tab === "history");
+
+  if (tab === "trusted") renderTrustedDomains();
+  if (tab === "history") renderHistory();
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -452,7 +550,6 @@ async function refreshResult() {
   if (response && response.result) {
     renderResult(response.result);
   } else {
-    // Automatically trigger immediate scan when popup is opened
     scanActivePage();
   }
 }
@@ -472,7 +569,6 @@ async function scanActivePage() {
     try {
       response = await sendTabMessage(tab.id, { type: "PHISHGUARD_RUN_SCAN" });
     } catch (_e) {
-      // Re-inject content script or fall back to background execution
       try {
         await ensureContentScriptInjected(tab.id);
         response = await sendTabMessage(tab.id, { type: "PHISHGUARD_RUN_SCAN" });
@@ -524,6 +620,7 @@ async function saveSettings() {
     }
   });
   saveSettingsButton.textContent = "Saved";
+  checkBackendHealthPing();
   window.setTimeout(() => {
     saveSettingsButton.textContent = "Save Settings";
   }, 1000);
@@ -539,14 +636,19 @@ if (openDashboardBtn) {
 
 // Event Listeners
 tabScannerBtn.addEventListener("click", () => showTab("scanner"));
+tabTrustedBtn.addEventListener("click", () => showTab("trusted"));
 tabHistoryBtn.addEventListener("click", () => showTab("history"));
+clearTrustedBtn.addEventListener("click", clearAllTrusted);
 clearHistoryBtn.addEventListener("click", clearHistory);
 trustSiteBtn.addEventListener("click", handleTrustDomain);
 if (reportSafeBtn) reportSafeBtn.addEventListener("click", handleReportSafe);
+if (copyVerdictBtn) copyVerdictBtn.addEventListener("click", handleCopyVerdict);
 scanButton.addEventListener("click", scanActivePage);
 saveSettingsButton.addEventListener("click", saveSettings);
 
 loadSettings();
 refreshResult();
 renderHistory();
+checkBackendHealthPing();
+setInterval(checkBackendHealthPing, 15000);
 

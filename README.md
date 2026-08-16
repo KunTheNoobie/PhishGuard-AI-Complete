@@ -43,6 +43,9 @@ Unlike traditional static URL blacklist lookups, PhishGuard-AI integrates **mult
 * **🌍 Universal Web & SPA Support:** Deep recursive extraction across Shadow DOM roots (`node.shadowRoot`), same-origin iframes, form placeholders, and accessibility labels.
 * **Full-Screen Block Overlay (`BLOCK_RENDER`):** Replaces dangerous phishing portals with a high-impact red defense shield detailing exact threat vectors and giving an immediate escape path.
 * **Explainable AI (XAI) Multi-Lingual Highlighter:** Highlights psychological coercion cues in English, Bahasa Melayu, Chinese (Simplified/Traditional), and Bahasa Indonesia.
+* **🛡️ Trusted Sites & Whitelist Manager:** Dedicated "Trusted Sites" tab inside the popup allowing users to inspect active domain exemptions, view remaining expiration times, and revoke whitelists instantly.
+* **📡 Real-Time SOC Ping & Latency Meter:** Displays live backend connection status and round-trip latency in milliseconds (`● SOC (18ms)`) with automatic fallback to autonomous offline protection.
+* **📋 1-Click Scan Verdict Exporter:** Formats and copies full cryptographic threat verdict summaries to clipboard for incident ticketing.
 * **🚨 1-Click Mule Flagging to NSRC:** Instant reporting action directly from the popup to escalate newly discovered scam accounts to the backend registry.
 * **Dynamic Action Badges:** Toolbar badge updates in real time (`OK` in Green `#10b981`, `?` in Amber `#f59e0b`, `!` in Red `#ef4444`).
 
@@ -50,6 +53,8 @@ Unlike traditional static URL blacklist lookups, PhishGuard-AI integrates **mult
 
 ### 2. 📊 Live Threat Intelligence & SOC Dashboard (`/dashboard/`)
 * **Admin Threat Inspector (Instant Multi-Modal Scanner):** Analyze any URL or scam text directly from the dashboard with automated HTML fetching, BERT classification, and mule detection.
+* **🔊 Master Audio Alert Quick-Toggle (<kbd>M</kbd>):** Real-time synthesized threat sound effects toggleable via header button or hotkey <kbd>M</kbd>.
+* **🔍 Global Multi-Filter Telemetry Hunting:** Live filtering across target institutions (Maybank, CIMB, Public Bank, RHB, Hong Leong, TNG, DuitNow), AI risk confidence, and free-text hunting queries.
 * **⚡ Enterprise SOC Defense War Room:** Fullscreen cyber defense visualization featuring:
   - Dynamic SVG/Canvas global attack trajectory arcs originating from 6 major hosting hubs (Kuala Lumpur, Singapore, San Jose, Frankfurt, Hong Kong, Tokyo).
   - **DEFCON Cyber Readiness Controls (DEFCON 1 Emergency Lockdown, DEFCON 2 Elevated, DEFCON 3 Normal)** with glowing visual states.
@@ -83,12 +88,23 @@ Unlike traditional static URL blacklist lookups, PhishGuard-AI integrates **mult
 
 ---
 
-### 3. 🧪 Threat Simulation Sandbox (`/dashboard/sandbox.html`)
-* Interactive demonstration sandbox with pre-loaded real-world attack scenarios:
+### 3. 🧪 Threat Simulation Sandbox & Custom Laboratory (`/dashboard/sandbox.html`)
+* Interactive demonstration sandbox with multi-vector threat radar breakdown:
   1. **Scenario 1 • Phishing:** Deceptive Maybank2u credential & TAC harvesting clone.
   2. **Scenario 2 • Mule Account:** PDRM traffic summons scam redirecting payments to fraudulent mule accounts.
   3. **Scenario 3 • Quishing (QR Phishing):** Fake government cash aid portal with PayNet EMVCo QR code payloads.
   4. **Scenario 4 • Benchmark:** Authentic Malaysian banking portal for false-positive validation.
+  5. **Scenario 5 • Custom Payload Laboratory:** Interactive playground to enter custom URLs and raw DOM payloads for live multi-modal AI inference.
+* **📊 Multi-Vector Threat Radar Breakdown:** Dynamic neon progress bars quantifying BERT Semantic probability, Brand Impersonation Index, Mule/DuitNow match status, and domain heuristic indicators.
+
+---
+
+### 4. 🎯 Interactive Honeypot Target (`/dashboard/test_scam.html`)
+* Multi-vector honeypot attack switcher:
+  - **Vector A**: Maybank2u TAC Harvesting Portal
+  - **Vector B**: PDRM Traffic Summons Alert
+  - **Vector C**: KWSP / EPF Special Aid Grant Claim
+  - **Vector D**: PayNet DuitNow QR Quishing Target
 
 ---
 

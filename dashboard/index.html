@@ -484,6 +484,11 @@
                 ⚡ Command <kbd style="font-size: 0.65rem; background: rgba(0,0,0,0.4); padding: 1px 4px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.1);">Ctrl+K</kbd>
             </button>
 
+            <!-- Master Audio Alert Toggle -->
+            <button id="masterAudioMuteBtn" class="action-btn" style="height: 32px; padding: 0 8px; font-size: 0.8rem;" type="button" title="Toggle Threat Sound Effects (Hotkey: M)">
+                🔊 Audio: ON
+            </button>
+
             <!-- Theme Settings -->
             <div class="header__status-group" title="Theme Customization">
                 <select id="themeSelector" class="page-size-select" style="height: 32px;" title="Switch Theme">
@@ -839,6 +844,16 @@
                 </div>
                 <div class="panel__actions">
                     <input type="text" id="telemetrySearch" class="search-input" placeholder="Search by URL / ID / bank: / score:>..." />
+                    <select id="telemetryBankFilter" class="filter-select" aria-label="Filter by target bank">
+                        <option value="all">All Institutions</option>
+                        <option value="maybank">Maybank</option>
+                        <option value="cimb">CIMB Bank</option>
+                        <option value="public">Public Bank</option>
+                        <option value="rhb">RHB Bank</option>
+                        <option value="hong leong">Hong Leong</option>
+                        <option value="touch 'n go">Touch 'n Go</option>
+                        <option value="duitnow">DuitNow / PayNet</option>
+                    </select>
                     <select id="telemetryScoreFilter" class="filter-select" aria-label="Filter by AI confidence">
                         <option value="all">All Confidence</option>
                         <option value="high">High Risk (&ge;85%)</option>

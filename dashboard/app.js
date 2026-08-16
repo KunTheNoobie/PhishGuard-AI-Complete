@@ -224,12 +224,16 @@ let currentReportLogId      = null;
 const $telemetryBody        = document.getElementById("telemetryBody");
 const $telemetryCount       = document.getElementById("telemetryCount");
 const $telemetrySearch      = document.getElementById("telemetrySearch");
+const $telemetryBankFilter  = document.getElementById("telemetryBankFilter");
 const $telemetryScoreFilter = document.getElementById("telemetryScoreFilter");
 const $exportTelemetryCsvBtn= document.getElementById("exportTelemetryCsvBtn");
 const $exportTelemetryJsonBtn= document.getElementById("exportTelemetryJsonBtn");
 const $telemetryPageInfo    = document.getElementById("telemetryPageInfo");
 const $telemetryPageSize    = document.getElementById("telemetryPageSize");
 const $telemetryPageButtons = document.getElementById("telemetryPageButtons");
+const $masterAudioMuteBtn   = document.getElementById("masterAudioMuteBtn");
+
+let telemetryBankFilterValue = "all";
 
 const $muleBody             = document.getElementById("muleBody");
 const $muleCount            = document.getElementById("muleCount");
@@ -909,7 +913,12 @@ function renderTelemetry() {
         filtered = filtered.filter(e => evaluateHuntingFilter(e, telemetryFilterText));
     }
 
-    // 4. Score filter
+    // 4. Institution Dropdown Filter
+    if (telemetryBankFilterValue && telemetryBankFilterValue !== "all") {
+        filtered = filtered.filter(e => evaluateHuntingFilter(e, `bank:${telemetryBankFilterValue}`));
+    }
+
+    // 5. Score filter
     if (telemetryScoreFilter === "high") {
         filtered = filtered.filter(e => e.bert_score >= 0.85);
     } else if (telemetryScoreFilter === "medium") {
@@ -1640,10 +1649,42 @@ $telemetrySearch.addEventListener("input", (e) => {
     renderTelemetry();
 });
 
+if ($telemetryBankFilter) {
+    $telemetryBankFilter.addEventListener("change", (e) => {
+        telemetryBankFilterValue = e.target.value;
+        telemetryPagination.page = 1;
+        renderTelemetry();
+    });
+}
+
 $telemetryScoreFilter.addEventListener("change", (e) => {
     telemetryScoreFilter = e.target.value;
     telemetryPagination.page = 1;
     renderTelemetry();
+});
+
+function toggleMasterAudio() {
+    isSystemAudioEnabled = !isSystemAudioEnabled;
+    if ($masterAudioMuteBtn) {
+        $masterAudioMuteBtn.textContent = isSystemAudioEnabled ? "🔊 Audio: ON" : "🔇 Audio: MUTED";
+        $masterAudioMuteBtn.style.color = isSystemAudioEnabled ? "#34d399" : "#94a3b8";
+    }
+    showCyberToast(isSystemAudioEnabled ? "success" : "info", "Audio Alerts", isSystemAudioEnabled ? "Threat alert sound effects enabled." : "Threat alert sounds muted.");
+}
+
+if ($masterAudioMuteBtn) {
+    $masterAudioMuteBtn.addEventListener("click", toggleMasterAudio);
+}
+
+// Global hotkey 'M' for Audio Mute Toggle (when not typing in form inputs)
+window.addEventListener("keydown", (e) => {
+    if (e.key === "m" || e.key === "M") {
+        const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : "";
+        if (activeTag !== "input" && activeTag !== "textarea" && activeTag !== "select") {
+            e.preventDefault();
+            toggleMasterAudio();
+        }
+    }
 });
 
 if ($telemetryPageSize) {

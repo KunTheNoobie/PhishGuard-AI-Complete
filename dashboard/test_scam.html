@@ -278,13 +278,29 @@
     <div id="cyberToastContainer" class="cyber-toast-container"></div>
 
     <main class="test-site-container">
+        <!-- Attack Vector Switcher Toolbar -->
+        <div style="margin-bottom: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center;">
+            <button type="button" class="action-btn action-btn--primary" id="vecMaybankBtn" onclick="switchVector('maybank')" style="font-size: 0.8rem; padding: 6px 14px;">
+                🐯 Vector A: Maybank2u TAC Phishing
+            </button>
+            <button type="button" class="action-btn" id="vecPdrmBtn" onclick="switchVector('pdrm')" style="font-size: 0.8rem; padding: 6px 14px;">
+                🚔 Vector B: PDRM Traffic Summons
+            </button>
+            <button type="button" class="action-btn" id="vecEpfBtn" onclick="switchVector('epf')" style="font-size: 0.8rem; padding: 6px 14px;">
+                🏛️ Vector C: KWSP / EPF Grant Claim
+            </button>
+            <button type="button" class="action-btn" id="vecQuishBtn" onclick="switchVector('quishing')" style="font-size: 0.8rem; padding: 6px 14px;">
+                📱 Vector D: PayNet DuitNow Quishing QR
+            </button>
+        </div>
+
         <!-- Control Banner -->
         <div class="sim-control-banner">
             <div>
-                <strong>⚠️ Simulated Financial Phishing Target:</strong>
-                <span>Contains deceptive Maybank branding and flagged money mule account <code>112233445566</code> for extension & sandbox verification.</span>
+                <strong id="bannerVectorTitle">⚠️ Simulated Financial Phishing Target:</strong>
+                <span id="bannerVectorDesc">Contains deceptive Maybank branding and flagged money mule account <code>112233445566</code> for extension & sandbox verification.</span>
             </div>
-            <div style="display: flex; gap: 0.5rem;">
+            <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
                 <a href="sandbox.html" class="action-btn action-btn--primary" style="text-decoration: none; font-size: 0.78rem; padding: 0.4rem 0.8rem;">
                     🎮 Inspect in Sandbox
                 </a>
@@ -295,59 +311,84 @@
         </div>
 
         <!-- Simulated Phishing Target Card -->
-        <div class="phish-card">
+        <div class="phish-card" id="phishCardContainer">
             <div class="phish-header">
                 <div class="phish-header-brand">
-                    <span style="font-size: 1.6rem;">🐯</span>
-                    <span class="phish-header-title">Maybank2u Alert</span>
+                    <span id="phishIcon" style="font-size: 1.6rem;">🐯</span>
+                    <span id="phishHeaderTitle" class="phish-header-title">Maybank2u Alert</span>
                 </div>
-                <span class="phish-header-badge">Urgent Action</span>
+                <span id="phishHeaderBadge" class="phish-header-badge">Urgent Action</span>
             </div>
 
             <div class="phish-body">
                 <div class="phish-alert-box">
-                    <h3>Akaun Bank Anda Telah Digantung Sementara</h3>
-                    <p>Your Maybank online banking account has been temporarily flagged for suspicious activity. Immediate identity and TAC verification is required within 2 hours to avoid permanent suspension.</p>
+                    <h3 id="phishAlertHeading">Akaun Bank Anda Telah Digantung Sementara</h3>
+                    <p id="phishAlertBody">Your Maybank online banking account has been temporarily flagged for suspicious activity. Immediate identity and TAC verification is required within 2 hours to avoid permanent suspension.</p>
                 </div>
 
-                <div class="mule-account-card">
-                    <h4>PDRM Verification Deposit Account</h4>
+                <div class="mule-account-card" id="muleCardArea">
+                    <h4 id="muleCardTitle">PDRM Verification Deposit Account</h4>
                     <div class="mule-detail-row">
                         <span>Designated Institution:</span>
-                        <span>Maybank Berhad</span>
+                        <span id="muleBankName">Maybank Berhad</span>
                     </div>
                     <div class="mule-detail-row">
                         <span>Recipient Name:</span>
-                        <span>PDRM CCID Escrow Officer</span>
+                        <span id="muleRecipient">PDRM CCID Escrow Officer</span>
                     </div>
                     <div class="mule-detail-row">
                         <span>Account Number:</span>
-                        <strong>112233445566</strong>
+                        <strong id="muleAccountNum">112233445566</strong>
                     </div>
                 </div>
 
+                <div id="quishingQrArea" style="display: none; text-align: center; margin: 1rem 0; padding: 1rem; background: rgba(0,0,0,0.3); border-radius: 8px; border: 1px dashed rgba(255,255,255,0.15);">
+                    <div style="font-weight: 700; color: #fbbf24; margin-bottom: 8px;">📲 Scan DuitNow QR to Receive Immediate RM500 Grant</div>
+                    <div style="display: inline-block; padding: 10px; background: #fff; border-radius: 8px;">
+                        <svg width="140" height="140" viewBox="0 0 100 100">
+                            <!-- Simulated QR Pattern -->
+                            <rect width="100" height="100" fill="#ffffff"/>
+                            <rect x="10" y="10" width="25" height="25" fill="#000000"/>
+                            <rect x="15" y="15" width="15" height="15" fill="#ffffff"/>
+                            <rect x="18" y="18" width="9" height="9" fill="#000000"/>
+                            <rect x="65" y="10" width="25" height="25" fill="#000000"/>
+                            <rect x="70" y="15" width="15" height="15" fill="#ffffff"/>
+                            <rect x="73" y="18" width="9" height="9" fill="#000000"/>
+                            <rect x="10" y="65" width="25" height="25" fill="#000000"/>
+                            <rect x="15" y="70" width="15" height="15" fill="#ffffff"/>
+                            <rect x="18" y="73" width="9" height="9" fill="#000000"/>
+                            <rect x="42" y="15" width="15" height="15" fill="#ed1c24"/>
+                            <rect x="45" y="42" width="12" height="12" fill="#000000"/>
+                            <rect x="62" y="48" width="18" height="12" fill="#000000"/>
+                            <rect x="42" y="65" width="14" height="20" fill="#000000"/>
+                            <rect x="65" y="68" width="22" height="18" fill="#000000"/>
+                        </svg>
+                    </div>
+                    <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 6px; font-family: monospace;">EMVCo Payload: 00020101021126330013my.com.paynet0112112233445566</div>
+                </div>
+
                 <form class="phish-form" id="scamForm">
-                    <div class="form-group">
-                        <label for="usernameInput">Maybank2u Username / NRIC Number</label>
+                    <div class="form-group" id="userGroup">
+                        <label for="usernameInput" id="userLabel">Maybank2u Username / NRIC Number</label>
                         <input type="text" id="usernameInput" placeholder="e.g. johndoe99 / 990101-14-1234" required />
                     </div>
 
-                    <div class="form-group">
-                        <label for="passwordInput">Online Banking Password</label>
+                    <div class="form-group" id="passGroup">
+                        <label for="passwordInput" id="passLabel">Online Banking Password</label>
                         <input type="password" id="passwordInput" placeholder="••••••••••••" required />
                     </div>
 
-                    <div class="form-group">
-                        <label for="tacInput">6-Digit TAC / OTP Code (Sent to your phone)</label>
+                    <div class="form-group" id="tacGroup">
+                        <label for="tacInput" id="tacLabel">6-Digit TAC / OTP Code (Sent to your phone)</label>
                         <input type="text" id="tacInput" maxlength="6" placeholder="123456" required />
                     </div>
 
-                    <button type="submit" class="phish-submit-btn">
+                    <button type="submit" class="phish-submit-btn" id="submitBtn">
                         🔒 Verify Account & Release Hold
                     </button>
                 </form>
 
-                <p class="phish-footer-notice">
+                <p class="phish-footer-notice" id="footerNotice">
                     Official Security Notice &bull; Malayan Banking Berhad (Co. Reg. 196001000142)<br/>
                     Protected under Bank Negara Malaysia Cyber Regulations.
                 </p>
@@ -395,6 +436,137 @@
         }
         updateSimStatus();
 
+        // ── Vector Switching Logic ──
+        const VECTORS = {
+            maybank: {
+                title: "🐯 Maybank2u Alert",
+                desc: "Contains deceptive Maybank branding and flagged money mule account 112233445566.",
+                icon: "🐯",
+                heading: "Akaun Bank Anda Telah Digantung Sementara",
+                body: "Your Maybank online banking account has been temporarily flagged for suspicious activity. Immediate identity and TAC verification is required within 2 hours to avoid permanent suspension.",
+                badge: "Urgent Action",
+                muleTitle: "PDRM Verification Deposit Account",
+                muleBank: "Maybank Berhad",
+                muleRecipient: "PDRM CCID Escrow Officer",
+                muleAccount: "112233445566",
+                showMule: true,
+                showQr: false,
+                userLabel: "Maybank2u Username / NRIC Number",
+                userPlaceholder: "e.g. johndoe99 / 990101-14-1234",
+                passLabel: "Online Banking Password",
+                showPass: true,
+                tacLabel: "6-Digit TAC / OTP Code",
+                showTac: true,
+                btnText: "🔒 Verify Account & Release Hold",
+                footer: "Official Security Notice • Malayan Banking Berhad (Co. Reg. 196001000142)<br/>Protected under Bank Negara Malaysia Cyber Regulations."
+            },
+            pdrm: {
+                title: "🚔 PDRM e-Saman Portal",
+                desc: "Simulated law enforcement intimidation vector demanding immediate traffic fine settlement via mule account 558844887979.",
+                icon: "🚔",
+                heading: "Waran Tangkap & Saman Trafik Tertunggak",
+                body: "Notis Peringatan Akhir: Waran tangkap mahkamah telah dikeluarkan atas nama pemilik kenderaan. Sila jelaskan kompaun RM150 ke akaun mahkamah dalam masa 24 jam.",
+                badge: "Court Summons",
+                muleTitle: "Mahkamah Majistret Kuala Lumpur Trust Account",
+                muleBank: "CIMB Bank Berhad",
+                muleRecipient: "Koperal Ahmad (Unit Saman Trafik)",
+                muleAccount: "558844887979",
+                showMule: true,
+                showQr: false,
+                userLabel: "No. Kad Pengenalan (NRIC) / No. Plat Kenderaan",
+                userPlaceholder: "e.g. 881212-14-5555 / WXY 1234",
+                passLabel: "Nombor Telefon Bimbit Pemandu",
+                showPass: false,
+                tacLabel: "Jumlah Kompaun Yang Hendak Dibayar (RM)",
+                showTac: false,
+                btnText: "🚨 Selesai Saman Segera (RM150)",
+                footer: "Polis Diraja Malaysia (PDRM) &bull; Bahagian Siasatan & Penguatkuasaan Trafik (JSPT)<br/>Kementerian Dalam Negeri Malaysia."
+            },
+            epf: {
+                title: "🏛️ KWSP / EPF e-Pengeluaran",
+                desc: "Simulated government cash aid & retirement grant phishing harvesting bank credentials into RHB mule 990011223344.",
+                icon: "🏛️",
+                heading: "Tuntutan Bantuan Sara Hidup KWSP 2026",
+                body: "Permohonan pengeluaran khas bantuan sara hidup RM500 anda telah diluluskan. Sila sahkan maklumat akaun bank anda untuk pemindahan kredit terus.",
+                badge: "Grant Approved",
+                muleTitle: "Akaun Pemindahan Kredit Bantuan",
+                muleBank: "RHB Bank Berhad",
+                muleRecipient: "KWSP Payout Disbursing Agent",
+                muleAccount: "990011223344",
+                showMule: true,
+                showQr: false,
+                userLabel: "No. Ahli KWSP / No. Kad Pengenalan",
+                userPlaceholder: "e.g. 12345678 / 900505-10-1234",
+                passLabel: "Kata Laluan i-Akaun KWSP",
+                showPass: true,
+                tacLabel: "Kod Pengesahan TAC / SMS",
+                showTac: true,
+                btnText: "💰 Sahkan Maklumat & Terima RM500",
+                footer: "Kumpulan Wang Simpanan Pekerja (KWSP) &bull; Employees Provident Fund Malaysia."
+            },
+            quishing: {
+                title: "📱 PayNet DuitNow QR Aid",
+                desc: "Simulated Quishing (QR Phishing) attack using fraudulent EMVCo DuitNow QR code payload targeting instant funds transfer.",
+                icon: "📱",
+                heading: "Imbas Kod QR DuitNow Untuk Tuntut RM500",
+                body: "Pemberian Bantuan Kredit Digital Nasional: Buka aplikasi perbankan mudah alih anda dan imbas kod DuitNow QR di bawah untuk pengesahan segera.",
+                badge: "QR Quishing",
+                muleTitle: "DuitNow PayNet Proxy Target",
+                muleBank: "PayNet / DuitNow National Switch",
+                muleRecipient: "Sindiket e-Tunai Mule",
+                muleAccount: "00020101021126330013my.com.paynet0112112233445566",
+                showMule: false,
+                showQr: true,
+                userLabel: "Nama Penuh Mengikut MyKad",
+                userPlaceholder: "e.g. Ahmad bin Abdullah",
+                passLabel: "Nombor Telefon DuitNow",
+                showPass: false,
+                tacLabel: "Kod Rujukan Transaksi",
+                showTac: false,
+                btnText: "📲 Sahkan Transaksi DuitNow QR",
+                footer: "PayNet Malaysia &bull; Payments Network Malaysia Sdn Bhd (Co. Reg. 200801035403)."
+            }
+        };
+
+        function switchVector(type) {
+            const v = VECTORS[type] || VECTORS.maybank;
+            ['vecMaybankBtn', 'vecPdrmBtn', 'vecEpfBtn', 'vecQuishBtn'].forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn) btn.className = "action-btn";
+            });
+            if (type === 'maybank') document.getElementById('vecMaybankBtn')?.classList.add('action-btn--primary');
+            if (type === 'pdrm') document.getElementById('vecPdrmBtn')?.classList.add('action-btn--primary');
+            if (type === 'epf') document.getElementById('vecEpfBtn')?.classList.add('action-btn--primary');
+            if (type === 'quishing') document.getElementById('vecQuishBtn')?.classList.add('action-btn--primary');
+
+            document.getElementById('bannerVectorTitle').textContent = `⚠️ Simulated Threat Vector: ${v.title}`;
+            document.getElementById('bannerVectorDesc').textContent = v.desc;
+            document.getElementById('phishIcon').textContent = v.icon;
+            document.getElementById('phishHeaderTitle').textContent = v.title;
+            document.getElementById('phishHeaderBadge').textContent = v.badge;
+            document.getElementById('phishAlertHeading').textContent = v.heading;
+            document.getElementById('phishAlertBody').textContent = v.body;
+
+            const muleArea = document.getElementById('muleCardArea');
+            if (muleArea) {
+                muleArea.style.display = v.showMule ? "block" : "none";
+                document.getElementById('muleCardTitle').textContent = v.muleTitle;
+                document.getElementById('muleBankName').textContent = v.muleBank;
+                document.getElementById('muleRecipient').textContent = v.muleRecipient;
+                document.getElementById('muleAccountNum').textContent = v.muleAccount;
+            }
+
+            const qrArea = document.getElementById('quishingQrArea');
+            if (qrArea) qrArea.style.display = v.showQr ? "block" : "none";
+
+            document.getElementById('userLabel').textContent = v.userLabel;
+            document.getElementById('usernameInput').placeholder = v.userPlaceholder;
+            document.getElementById('passGroup').style.display = v.showPass ? "block" : "none";
+            document.getElementById('tacGroup').style.display = v.showTac ? "block" : "none";
+            document.getElementById('submitBtn').textContent = v.btnText;
+            document.getElementById('footerNotice').innerHTML = v.footer;
+        }
+
         document.getElementById("scamForm")?.addEventListener("submit", (e) => {
             e.preventDefault();
             const toast = document.createElement("div");
@@ -403,7 +575,7 @@
                 <div class="cyber-toast__icon">🚨</div>
                 <div class="cyber-toast__content">
                     <div class="cyber-toast__title">PhishGuard Autonomous Intercept</div>
-                    <div>Simulated credential harvesting submission blocked. Mule Account 112233445566 quarantined.</div>
+                    <div>Simulated credential harvesting submission blocked. Flagged attack vector neutralized.</div>
                 </div>
             `;
             document.getElementById("cyberToastContainer")?.appendChild(toast);

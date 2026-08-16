@@ -14,21 +14,28 @@
           <img src="../icons/icon48.png" alt="PhishGuard Cyber Shield" width="32" height="32" style="border-radius: 8px; box-shadow: 0 0 12px rgba(99, 102, 241, 0.4);" />
           <div>
             <h1>PhishGuard-AI</h1>
-            <p>Enterprise Browser Shield</p>
+            <p id="pingStatusText">Enterprise Browser Shield</p>
           </div>
         </div>
-        <span id="statusPill" class="status-pill neutral">Waiting</span>
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <span id="backendPingBadge" class="ping-badge online" title="Backend Connectivity Status">● SOC</span>
+          <span id="statusPill" class="status-pill neutral">Waiting</span>
+        </div>
       </header>
 
       <!-- ─── Navigation Tabs ─── -->
       <nav class="popup-tabs">
         <button id="tabScannerBtn" class="tab-btn active" type="button">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
           Scanner
         </button>
+        <button id="tabTrustedBtn" class="tab-btn" type="button">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Trusted
+        </button>
         <button id="tabHistoryBtn" class="tab-btn" type="button">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          Scan History
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          History
         </button>
       </nav>
 
@@ -61,8 +68,9 @@
           <ul id="logoList" class="logo-list"></ul>
 
           <div class="result-actions">
-            <button id="trustSiteBtn" class="action-pill-btn hidden" type="button">✓ Trust Domain (24h)</button>
+            <button id="trustSiteBtn" class="action-pill-btn hidden" type="button">✓ Trust Domain</button>
             <button id="reportSafeBtn" class="action-pill-btn hidden" type="button">🛡️ Report Safe</button>
+            <button id="copyVerdictBtn" class="action-pill-btn hidden" type="button" title="Copy formatted verdict summary">📋 Copy Verdict</button>
             <button id="flagMuleBtn" class="action-pill-btn hidden" style="background: rgba(239,68,68,0.2); border-color: #ef4444; color: #f87171;" type="button">🚨 Flag Mule to NSRC</button>
           </div>
         </section>
@@ -93,7 +101,7 @@
         </button>
 
         <details class="settings">
-          <summary>Backend & Connection</summary>
+          <summary>Backend & Settings</summary>
           <label>
             API Base URL
             <input id="apiBaseUrl" type="text" autocomplete="off" placeholder="http://127.0.0.1:8000">
@@ -109,6 +117,16 @@
         </details>
       </div>
 
+      <!-- ─── TRUSTED SITES VIEW ─── -->
+      <div id="trustedView" class="tab-view">
+        <div class="history-header">
+          <span class="history-title">Custom Trusted Domains</span>
+          <button id="clearTrustedBtn" class="clear-btn" type="button">Revoke All</button>
+        </div>
+        <div id="trustedList" class="history-list">
+          <div class="history-empty">No custom trusted domains registered yet.</div>
+        </div>
+      </div>
 
       <!-- ─── HISTORY VIEW ─── -->
       <div id="historyView" class="tab-view">

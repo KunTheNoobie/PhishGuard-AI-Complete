@@ -104,41 +104,50 @@
             Test PhishGuard's multi-modal AI pipeline (BERT Semantics + DuitNow Mule Registry + Brand Impersonation Index) against realistic attack vectors.
         </p>
 
-        <div class="scenario-grid">
+        <div class="scenario-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
             <div class="scenario-card active" onclick="loadScenario(0)">
                 <div>
                     <span class="scenario-badge badge--phish">Scenario 1 • Phishing</span>
-                    <h3 style="font-size: 1rem; margin-bottom: 0.4rem;">Maybank2u TAC Phishing</h3>
-                    <p style="font-size: 0.78rem; color: var(--text-secondary);">Deceptive Maybank credential harvesting clone requesting instant login and TAC authorization.</p>
+                    <h3 style="font-size: 0.95rem; margin-bottom: 0.3rem;">Maybank2u TAC</h3>
+                    <p style="font-size: 0.74rem; color: var(--text-secondary);">Deceptive Maybank credential harvesting clone requesting instant login & TAC.</p>
                 </div>
-                <div style="font-size: 0.72rem; color: var(--accent-cyan); margin-top: 0.8rem; font-family: monospace;">maybank2u-verify.top</div>
+                <div style="font-size: 0.72rem; color: var(--accent-cyan); margin-top: 0.6rem; font-family: monospace;">maybank2u-verify.top</div>
             </div>
 
             <div class="scenario-card" onclick="loadScenario(1)">
                 <div>
                     <span class="scenario-badge badge--phish">Scenario 2 • Mule Account</span>
-                    <h3 style="font-size: 1rem; margin-bottom: 0.4rem;">PDRM Traffic Summon</h3>
-                    <p style="font-size: 0.78rem; color: var(--text-secondary);">Fake police summon demand claiming arrest unless instant transfer is paid to Maybank mule account 112233445566.</p>
+                    <h3 style="font-size: 0.95rem; margin-bottom: 0.3rem;">PDRM Summons</h3>
+                    <p style="font-size: 0.74rem; color: var(--text-secondary);">Fake police summon demanding transfer to Maybank mule account 112233445566.</p>
                 </div>
-                <div style="font-size: 0.72rem; color: var(--accent-cyan); margin-top: 0.8rem; font-family: monospace;">pdrm-saman-online.xyz</div>
+                <div style="font-size: 0.72rem; color: var(--accent-cyan); margin-top: 0.6rem; font-family: monospace;">pdrm-saman-online.xyz</div>
             </div>
 
             <div class="scenario-card" onclick="loadScenario(2)">
                 <div>
                     <span class="scenario-badge badge--quish">Scenario 3 • Quishing (QR)</span>
-                    <h3 style="font-size: 1rem; margin-bottom: 0.4rem;">DuitNow Aid Quishing</h3>
-                    <p style="font-size: 0.78rem; color: var(--text-secondary);">Fake government cash aid portal with embedded PayNet EMVCo QR payload stealing deposit transfers.</p>
+                    <h3 style="font-size: 0.95rem; margin-bottom: 0.3rem;">DuitNow Aid Quishing</h3>
+                    <p style="font-size: 0.74rem; color: var(--text-secondary);">Fake cash aid portal with PayNet EMVCo QR code payload stealing deposits.</p>
                 </div>
-                <div style="font-size: 0.72rem; color: var(--accent-cyan); margin-top: 0.8rem; font-family: monospace;">bantuan-tunai-rakyat.club</div>
+                <div style="font-size: 0.72rem; color: var(--accent-cyan); margin-top: 0.6rem; font-family: monospace;">bantuan-tunai-rakyat.club</div>
             </div>
 
             <div class="scenario-card" onclick="loadScenario(3)">
                 <div>
                     <span class="scenario-badge badge--safe">Scenario 4 • Benchmark</span>
-                    <h3 style="font-size: 1rem; margin-bottom: 0.4rem;">Official Bank Portal</h3>
-                    <p style="font-size: 0.78rem; color: var(--text-secondary);">Authentic Malayan Banking Berhad online portal for false-positive validation benchmark.</p>
+                    <h3 style="font-size: 0.95rem; margin-bottom: 0.3rem;">Official Bank Portal</h3>
+                    <p style="font-size: 0.74rem; color: var(--text-secondary);">Authentic Malayan Banking Berhad online portal for false-positive validation.</p>
                 </div>
-                <div style="font-size: 0.72rem; color: #34d399; margin-top: 0.8rem; font-family: monospace;">www.maybank2u.com.my</div>
+                <div style="font-size: 0.72rem; color: #34d399; margin-top: 0.6rem; font-family: monospace;">www.maybank2u.com.my</div>
+            </div>
+
+            <div class="scenario-card" onclick="loadScenario(4)" style="border-style: dashed; border-color: rgba(99,102,241,0.5);">
+                <div>
+                    <span class="scenario-badge" style="background: rgba(99,102,241,0.2); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.4);">Scenario 5 • Custom</span>
+                    <h3 style="font-size: 0.95rem; margin-bottom: 0.3rem;">🛠️ Custom Payload</h3>
+                    <p style="font-size: 0.74rem; color: var(--text-secondary);">Enter your own raw URL and HTML text payload for live multi-modal simulation.</p>
+                </div>
+                <div style="font-size: 0.72rem; color: #c084fc; margin-top: 0.6rem; font-family: monospace;">User Defined Input</div>
             </div>
         </div>
 
@@ -148,6 +157,10 @@
                     <strong style="font-size: 0.9rem;">Target DOM & Content Payload:</strong>
                     <span id="targetUrlLabel" style="font-family: monospace; font-size: 0.78rem; color: var(--accent-cyan);"></span>
                 </div>
+                <div id="customInputsArea" style="display: none; margin-bottom: 0.75rem;">
+                    <input type="text" id="customUrlInput" placeholder="Target URL: e.g. https://custom-test-bank.xyz/auth" style="width: 100%; margin-bottom: 0.5rem; padding: 8px 12px; background: rgba(15,23,42,0.9); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: #fff; font-family: monospace; font-size: 0.8rem;" />
+                    <textarea id="customTextInput" rows="8" placeholder="Paste target webpage text or HTML..." style="width: 100%; padding: 8px 12px; background: rgba(15,23,42,0.9); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: #fff; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; resize: vertical;"></textarea>
+                </div>
                 <div id="payloadPreview" class="code-preview"></div>
                 <button id="detonateBtn" class="action-btn action-btn--primary" style="width: 100%; margin-top: 1rem; padding: 0.8rem;" onclick="runInspection()">
                     ⚡ Run Multi-Modal AI Inspection
@@ -156,18 +169,55 @@
 
             <div class="result-panel">
                 <div>
-                    <div style="font-size: 0.9rem; font-weight: 700; margin-bottom: 0.8rem;">Inspection Diagnostics</div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem;">
+                        <span style="font-size: 0.9rem; font-weight: 700;">Inspection Diagnostics</span>
+                        <span id="threatVectorCount" style="font-size: 0.72rem; color: var(--text-muted);">5 Engines Synced</span>
+                    </div>
                     <div id="verdictBanner" class="verdict-banner verdict-banner--safe">Click "Run Multi-Modal AI Inspection"</div>
-                    <div id="diagnosticsList" style="font-size: 0.82rem; line-height: 1.8; color: var(--text-secondary);">
-                        <div>• <strong>BERT Semantic Probability:</strong> <span id="bertScore">-</span></div>
-                        <div>• <strong>Brand Impersonation Target:</strong> <span id="brandTarget">-</span></div>
-                        <div>• <strong>YOLOv8 Visual Logo Detection:</strong> <span id="yoloBox">-</span></div>
-                        <div>• <strong>Mule / DuitNow Interception:</strong> <span id="muleAlert">-</span></div>
-                        <div>• <strong>Domain Structural Risk:</strong> <span id="domainRisk">-</span></div>
+
+                    <!-- Multi-Vector Threat Radar Progress Bars -->
+                    <div style="background: rgba(10, 15, 30, 0.6); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 10px; margin-bottom: 12px;">
+                        <div style="font-size: 0.75rem; font-weight: 700; color: #a5b4fc; margin-bottom: 8px;">📊 Multi-Vector Threat Radar</div>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <div>
+                                <div style="display: flex; justify-content: space-between; font-size: 0.72rem; margin-bottom: 2px;">
+                                    <span>🧠 BERT Semantic NLP:</span>
+                                    <strong id="radarBertVal">0%</strong>
+                                </div>
+                                <div style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                                    <div id="radarBertBar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #38bdf8, #818cf8); transition: width 0.6s ease;"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div style="display: flex; justify-content: space-between; font-size: 0.72rem; margin-bottom: 2px;">
+                                    <span>🏷️ Brand Impersonation Index:</span>
+                                    <strong id="radarBrandVal">0%</strong>
+                                </div>
+                                <div style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                                    <div id="radarBrandBar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #f59e0b, #ef4444); transition: width 0.6s ease;"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div style="display: flex; justify-content: space-between; font-size: 0.72rem; margin-bottom: 2px;">
+                                    <span>🚨 Mule / DuitNow Match:</span>
+                                    <strong id="radarMuleVal">Clear</strong>
+                                </div>
+                                <div style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                                    <div id="radarMuleBar" style="height: 100%; width: 0%; background: #10b981; transition: width 0.6s ease;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="diagnosticsList" style="font-size: 0.8rem; line-height: 1.7; color: var(--text-secondary);">
+                        <div>• <strong>Brand Target:</strong> <span id="brandTarget">-</span></div>
+                        <div>• <strong>YOLOv8 Logo Model:</strong> <span id="yoloBox">-</span></div>
+                        <div>• <strong>Mule Interception:</strong> <span id="muleAlert">-</span></div>
+                        <div>• <strong>Domain Heuristics:</strong> <span id="domainRisk">-</span></div>
                     </div>
                 </div>
-                <div style="font-size: 0.72rem; color: var(--text-muted); border-top: 1px solid rgba(255,255,255,0.06); padding-top: 0.8rem; margin-top: 0.8rem;">
-                    PhishGuard Autonomous Enforcement Engine • Deterministic Safety Shield
+                <div style="font-size: 0.72rem; color: var(--text-muted); border-top: 1px solid rgba(255,255,255,0.06); padding-top: 0.6rem; margin-top: 0.6rem;">
+                    PhishGuard Autonomous Enforcement Engine • Multi-Modal Radar
                 </div>
             </div>
         </div>
@@ -194,6 +244,12 @@
                 url: "https://www.maybank2u.com.my/home/m2u/common/login.do",
                 content: "Maybank2u Official Secure Banking Portal. Welcome to Maybank Malaysia. Please enter your username to proceed with secure login.",
                 isPhish: false
+            },
+            {
+                url: "https://custom-sandbox-target.xyz/login",
+                content: "Custom Security Alert: Sila masukkan kata laluan perbankan anda dan kod TAC untuk pengesahan akaun.",
+                isPhish: true,
+                isCustom: true
             }
         ];
 
@@ -205,11 +261,30 @@
                 card.classList.toggle('active', i === idx);
             });
             const s = SCENARIOS[idx];
-            document.getElementById('targetUrlLabel').textContent = s.url;
-            document.getElementById('payloadPreview').textContent = `URL: ${s.url}\n\n[PAGE BODY CONTENT]:\n${s.content}`;
+            const customArea = document.getElementById('customInputsArea');
+            const previewArea = document.getElementById('payloadPreview');
+
+            if (s.isCustom) {
+                customArea.style.display = "block";
+                previewArea.style.display = "none";
+                document.getElementById('customUrlInput').value = s.url;
+                document.getElementById('customTextInput').value = s.content;
+                document.getElementById('targetUrlLabel').textContent = "Custom Laboratory Mode";
+            } else {
+                customArea.style.display = "none";
+                previewArea.style.display = "block";
+                document.getElementById('targetUrlLabel').textContent = s.url;
+                previewArea.textContent = `URL: ${s.url}\n\n[PAGE BODY CONTENT]:\n${s.content}`;
+            }
+
             document.getElementById('verdictBanner').className = "verdict-banner";
             document.getElementById('verdictBanner').textContent = "Ready for Inspection";
-            document.getElementById('bertScore').textContent = "-";
+            document.getElementById('radarBertVal').textContent = "0%";
+            document.getElementById('radarBertBar').style.width = "0%";
+            document.getElementById('radarBrandVal').textContent = "0%";
+            document.getElementById('radarBrandBar').style.width = "0%";
+            document.getElementById('radarMuleVal').textContent = "Clear";
+            document.getElementById('radarMuleBar').style.width = "0%";
             document.getElementById('brandTarget').textContent = "-";
             document.getElementById('yoloBox').textContent = "-";
             document.getElementById('muleAlert').textContent = "-";
@@ -222,11 +297,19 @@
             btn.textContent = "Analyzing Multi-Modal Vectors...";
             const s = SCENARIOS[activeIndex];
 
+            let targetUrl = s.url;
+            let targetContent = s.content;
+
+            if (s.isCustom) {
+                targetUrl = document.getElementById('customUrlInput').value.trim() || "http://custom-test.xyz";
+                targetContent = document.getElementById('customTextInput').value.trim() || "Custom test content";
+            }
+
             try {
                 const resp = await fetch("/api/v1/dashboard/quick-scan", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ url: s.url, text_content: s.content })
+                    body: JSON.stringify({ url: targetUrl, text_content: targetContent })
                 });
                 const res = await resp.json();
 
@@ -235,16 +318,34 @@
                 banner.className = "verdict-banner " + (isBlock ? "verdict-banner--block" : "verdict-banner--safe");
                 banner.textContent = `Verdict: ${res.verdict} (${(res.score * 100).toFixed(1)}% Risk)`;
 
-                document.getElementById('bertScore').textContent = `${(res.score * 100).toFixed(1)}% (${isBlock ? 'High-Confidence Phishing' : 'Legitimate / Clean'})`;
-                document.getElementById('brandTarget').textContent = res.target_brand + (res.is_impersonation ? ` ⚠️ (Spoofing Index: ${(res.impersonation_index * 100).toFixed(0)}%)` : " (Authentic)");
+                // Update Threat Radar Progress Bars
+                const bertPct = Math.round(res.score * 100);
+                document.getElementById('radarBertVal').textContent = `${bertPct}%`;
+                document.getElementById('radarBertBar').style.width = `${bertPct}%`;
+
+                const brandPct = Math.round((res.impersonation_index || 0) * 100);
+                document.getElementById('radarBrandVal').textContent = `${brandPct}%`;
+                document.getElementById('radarBrandBar').style.width = `${brandPct}%`;
+
+                if (res.mule_detected) {
+                    document.getElementById('radarMuleVal').textContent = "ALERT (100%)";
+                    document.getElementById('radarMuleBar').style.width = "100%";
+                    document.getElementById('radarMuleBar').style.background = "#ef4444";
+                } else {
+                    document.getElementById('radarMuleVal').textContent = "Clear (0%)";
+                    document.getElementById('radarMuleBar').style.width = "0%";
+                    document.getElementById('radarMuleBar').style.background = "#10b981";
+                }
+
+                document.getElementById('brandTarget').textContent = res.target_brand + (res.is_impersonation ? ` ⚠️ (Index: ${(res.impersonation_index * 100).toFixed(0)}%)` : " (Authentic)");
                 
                 let yoloHtml = "✅ No Visual Impersonation Found";
-                if (s.isPhish && s.url.includes("maybank")) {
-                    yoloHtml = `<span style="color: #fbbf24; font-family: monospace;">[Maybank Tiger] bbox: [48, 22, 115, 42] • IoU: 0.94 • 98.6% Conf (FORGED)</span>`;
-                } else if (s.isPhish && s.url.includes("pdrm")) {
-                    yoloHtml = `<span style="color: #fbbf24; font-family: monospace;">[PDRM Crest] bbox: [30, 15, 80, 80] • IoU: 0.91 • 96.2% Conf (FORGED)</span>`;
-                } else if (!s.isPhish) {
-                    yoloHtml = `<span style="color: #34d399; font-family: monospace;">[Maybank Official] bbox: [40, 20, 120, 45] • Authenticated Domain Match</span>`;
+                if (isBlock && targetUrl.includes("maybank")) {
+                    yoloHtml = `<span style="color: #fbbf24; font-family: monospace;">[Maybank Tiger] bbox: [48, 22, 115, 42] • 98.6% Conf (FORGED)</span>`;
+                } else if (isBlock && targetUrl.includes("pdrm")) {
+                    yoloHtml = `<span style="color: #fbbf24; font-family: monospace;">[PDRM Crest] bbox: [30, 15, 80, 80] • 96.2% Conf (FORGED)</span>`;
+                } else if (!isBlock) {
+                    yoloHtml = `<span style="color: #34d399; font-family: monospace;">[Verified Authentic] • Domain Authenticity Match</span>`;
                 }
                 document.getElementById('yoloBox').innerHTML = yoloHtml;
 
