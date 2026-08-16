@@ -39,10 +39,11 @@ Unlike traditional static URL blacklist lookups, PhishGuard-AI integrates **mult
 ## 🚀 Core Capabilities & Features
 
 ### 1. 🛡️ Chrome Extension (Manifest V3)
-* **Real-time DOM & Network Interception:** Continuous background analysis with zero browser lag.
+* **⚡ Autonomous Real-Time Interception:** Continuous background analysis on page navigation with 0ms pre-scanned verdict lookup.
+* **🌍 Universal Web & SPA Support:** Deep recursive extraction across Shadow DOM roots (`node.shadowRoot`), same-origin iframes, form placeholders, and accessibility labels.
 * **Full-Screen Block Overlay (`BLOCK_RENDER`):** Replaces dangerous phishing portals with a high-impact red defense shield detailing exact threat vectors and giving an immediate escape path.
-* **Explainable AI (XAI) Bilingual Highlighter:** Highlights psychological coercion cues in English (*"Urgent Verification"*, *"Account Suspended"*) and Bahasa Melayu (*"Akaun Disekat"*, *"Saman Tertunggak PDRM"*, *"Tindakan Segera"*).
-* **Proactive Credential & TAC / OTP Interceptor:** Warns users the moment password, PIN, or TAC fields receive input focus on unverified domains.
+* **Explainable AI (XAI) Multi-Lingual Highlighter:** Highlights psychological coercion cues in English, Bahasa Melayu, Chinese (Simplified/Traditional), and Bahasa Indonesia.
+* **🚨 1-Click Mule Flagging to NSRC:** Instant reporting action directly from the popup to escalate newly discovered scam accounts to the backend registry.
 * **Dynamic Action Badges:** Toolbar badge updates in real time (`OK` in Green `#10b981`, `?` in Amber `#f59e0b`, `!` in Red `#ef4444`).
 
 ---
@@ -54,9 +55,12 @@ Unlike traditional static URL blacklist lookups, PhishGuard-AI integrates **mult
   - **DEFCON Cyber Readiness Controls (DEFCON 1 Emergency Lockdown, DEFCON 2 Elevated, DEFCON 3 Normal)** with glowing visual states.
   - Sovereign Loss Prevention Tracker computing shielded financial assets.
   - Live intercept ticker streaming real-time detections.
+* **📷 Quishing (QR-Code Phishing) Optical Forensic Decoder:**
+  - Drag-and-drop file upload dropzone, optical camera/file picker, and direct clipboard image pasting (`Ctrl+V`).
+  - Powered by OpenCV `cv2.QRCodeDetector()` and PIL to decode payment proxies, DuitNow P2P targets, and obfuscated URLs.
 * **🏛️ Malaysian National Anti-Scam NSRC 997 & NFP Gateway:**
-  - Automated case escalation and National Fraud Portal (NFP) account freezing.
-  - Persistent enforcement badges reflecting active protection status.
+  - Automated case escalation and National Fraud Portal (NFP) account freezing with persistent state retention across reloads.
+  - **1-Click PDRM CCID & NSRC 997 Police Dispatch Export**: Auto-formats forensic telemetry into official Malaysian law enforcement dispatch format.
 * **🎯 Pre-Emptive Typosquatting & Homoglyph Protection Radar:**
   - Detects Unicode homoglyph attacks, character permutations, and bit-squatting variants across monitored banking domains.
 * **🛡️ Automated DNS Sinkhole & SIEM Firewall Exporter:**
@@ -67,15 +71,15 @@ Unlike traditional static URL blacklist lookups, PhishGuard-AI integrates **mult
   - Interactive matrix mapping detected threats to standard adversary techniques (*T1566.002 Spearphishing Link*, *T1078 Valid Accounts*, *T1584.004 DNS Serverless Typosquatting*).
 * **🏹 Enterprise Security Awareness & Phishing Red-Team Simulator:**
   - Standardized attack scenarios (`SAT-MY-001` through `SAT-MY-005`) for simulating staff phishing awareness campaigns.
+* **✨ Dynamic Chart Hover Glow & Tooltip Micro-Animations:**
+  - Real-time Threat Velocity bar chart with interactive floating tooltips showing attack rates, share percentages, and timestamp intervals.
+  - Dynamic donut chart slice expansion and synchronized legend filtering.
 * **⚙️ Multi-Channel SOC Alert Webhooks:**
   - Instant dispatch to Discord, Slack, and Telegram with 1-click demo sample testing.
 * **💾 Database Maintenance & Hot Backup:**
   - Live SQLite WAL checkpointing, size auditing, VACUUM optimization, and downloadable hot backups (`.sqlite3`).
 * **📥 Standardized Intelligence Exporters:**
   - Single-click export of threat telemetry and mule accounts in **CSV, JSON, OASIS STIX 2.1 JSON Bundle, CEF, and RFC 5424 Syslog**.
-* **🚫 Strict Data Deduplication Engine:**
-  - Prevents duplicate accounts from being ingested via single or bulk CSV entry.
-  - Automatically identifies, skips, and warns when duplicate records are submitted.
 
 ---
 
@@ -88,9 +92,9 @@ Unlike traditional static URL blacklist lookups, PhishGuard-AI integrates **mult
 
 ---
 
-### 4. 🏦 10-Bank Malaysian Impersonation & Syndicate Matrix
+### 4. 🏦 10-Bank Malaysian Impersonation & Global Whitelist Matrix
 
-Continuous live tracking of threat campaigns targeting Malaysia's leading financial entities:
+Continuous live tracking and zero false-positive protection across leading financial entities and global platforms:
 1. **Maybank (Malayan Banking Berhad)**
 2. **CIMB Bank Berhad**
 3. **Public Bank Berhad**
@@ -101,6 +105,7 @@ Continuous live tracking of threat campaigns targeting Malaysia's leading financ
 8. **Touch 'n Go eWallet (TNG Digital)**
 9. **GrabPay Malaysia**
 10. **ShopeePay Malaysia**
+11. **Global Tech, Cloud & Banking:** Google, Microsoft, Apple, Amazon, PayPal, Chase, HSBC, DBS, OpenAI, Meta, WhatsApp, etc.
 
 ---
 

@@ -1048,18 +1048,24 @@
                     Loading forensic dossier...
                 </div>
                 <div class="modal-actions" style="justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
-                    <div style="display: flex; gap: 0.4rem;">
+                    <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
                         <button type="button" id="quarantineCurrentBtn" class="action-btn action-btn--delete" style="font-size: 0.78rem;" title="Quarantine this domain system-wide">
                             🛡️ Quarantine
                         </button>
                         <button type="button" id="whitelistCurrentBtn" class="action-btn" style="font-size: 0.78rem;" title="Whitelist this domain for 24h">
                             ✅ Whitelist
                         </button>
-                        <button type="button" id="copyTakedownBtn" class="action-btn action-btn--primary" style="font-size: 0.78rem;" title="Generate and copy RFC abuse desk takedown email">
+                        <button type="button" id="copyTakedownBtn" class="action-btn" style="font-size: 0.78rem;" title="Generate and copy RFC abuse desk takedown email">
                             📋 Takedown Notice
                         </button>
+                        <button type="button" id="copyPdrmReportBtn" class="action-btn" style="background: linear-gradient(135deg, rgba(245,158,11,0.25), rgba(239,68,68,0.25)); border-color: #f59e0b; color: #fbbf24; font-size: 0.78rem; font-weight: 700;" title="Generate & Copy Official PDRM CCID & NSRC 997 Cyber Incident Report">
+                            🏛️ Copy PDRM / NSRC Report
+                        </button>
                     </div>
-                    <div>
+                    <div style="display: flex; gap: 0.4rem;">
+                        <button type="button" id="exportDossierJsonBtn" class="action-btn" style="font-size: 0.78rem;" title="Export structured JSON dossier">
+                            📥 Export JSON
+                        </button>
                         <button type="button" id="printReportBtn" class="action-btn action-btn--primary" onclick="window.print()">
                             🖨️ Print / PDF
                         </button>

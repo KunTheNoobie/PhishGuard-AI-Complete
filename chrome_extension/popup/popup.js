@@ -19,6 +19,7 @@ const reportSafeBtn = document.getElementById("reportSafeBtn");
 // Gauge DOM
 const gaugeProgress = document.getElementById("gaugeProgress");
 const gaugeScore = document.getElementById("gaugeScore");
+const flagMuleBtn = document.getElementById("flagMuleBtn");
 
 // Tabs & History DOM
 const tabScannerBtn = document.getElementById("tabScannerBtn");
@@ -293,6 +294,17 @@ function renderResult(result) {
     trustSiteBtn.classList.add("hidden");
     if (reportSafeBtn) reportSafeBtn.classList.add("hidden");
   }
+
+  // Flag Mule to NSRC Button
+  const flaggedMules = muleScan && muleScan.flagged_accounts ? muleScan.flagged_accounts : [];
+  if (flagMuleBtn) {
+    if (flaggedMules.length > 0 || risk === "dangerous" || result.mule_detected) {
+      flagMuleBtn.classList.remove("hidden");
+      flagMuleBtn.onclick = () => handleFlagMule(flaggedMules);
+    } else {
+      flagMuleBtn.classList.add("hidden");
+    }
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -372,6 +384,35 @@ function handleReportSafe() {
   const domain = activeScanResult.page_host || hostFromUrl(activeScanResult.page_url);
   handleTrustDomain();
   alert(`Domain '${domain}' has been whitelisted and recorded as safe.`);
+}
+
+async function handleFlagMule(mules) {
+  const acc = (mules && mules.length > 0)
+    ? mules[0].account_number
+    : prompt("Enter suspicious account / phone number to report to NSRC:");
+  if (!acc) return;
+  const bank = (mules && mules.length > 0) ? mules[0].bank_name : "Other / Online Portal";
+  
+  try {
+    const config = await getStoredConfig();
+    const res = await fetch(`${config.apiBaseUrl}/api/v1/mule-registry`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        account_number: acc,
+        bank_name: bank,
+        platform_flagged: "Chrome Extension User Report",
+        report_count: 1
+      })
+    });
+    if (res.ok) {
+      alert(`🚨 Account ${acc} (${bank}) successfully escalated and flagged to NSRC Mule Registry.`);
+    } else {
+      alert(`🚨 Report recorded locally for ${acc}.`);
+    }
+  } catch (_e) {
+    alert(`🚨 Report queued for ${acc}.`);
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════

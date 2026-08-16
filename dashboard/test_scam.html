@@ -256,21 +256,21 @@
         </nav>
 
         <div class="header__status">
-            <div class="header__status-group">
-                <select id="themeSelector" class="page-size-select" title="Switch Theme">
+            <div class="header__status-group" title="Theme Customization">
+                <select id="themeSelector" class="page-size-select" style="height: 32px;" title="Switch Theme">
                     <option value="cyberpunk">Cyber Neon</option>
                     <option value="matrix">Matrix Emerald</option>
                     <option value="abyss">OLED Abyss</option>
                 </select>
             </div>
-            <div class="header__status-group">
-                <button id="simToggleBtn" class="sim-toggle-btn off" type="button" title="Toggle Threat Simulator">
+            <div class="header__status-group" style="display: inline-flex; align-items: center; gap: 0.5rem; white-space: nowrap;">
+                <button id="simToggleBtn" class="sim-toggle-btn off" style="height: 32px; font-size: 0.78rem; padding: 0 0.85rem;" type="button" title="Toggle Threat Simulator">
                     ⚡ Simulation: OFF
                 </button>
-            </div>
-            <div class="header__status-group" style="padding: 0.3rem 0.6rem;">
-                <span class="status-dot error" id="statusDot"></span>
-                <span class="status-text" style="color: #f87171;" id="statusText">Scam Target Active</span>
+                <div style="display: inline-flex; align-items: center; gap: 6px; padding-left: 8px; border-left: 1px solid rgba(255,255,255,0.15);">
+                    <span class="status-dot error" id="statusDot"></span>
+                    <span class="status-text" style="color: #f87171; font-weight: 700; font-size: 0.78rem;" id="statusText">Scam Target Active</span>
+                </div>
             </div>
         </div>
     </header>
