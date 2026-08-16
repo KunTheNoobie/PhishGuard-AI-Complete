@@ -328,23 +328,64 @@
         .legend-color { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
         
         /* Threat Velocity Bars with Interactive Glow & Hover Tooltip */
-        .bar-chart-bars { display: flex; align-items: flex-end; gap: 8px; width: 100%; height: 140px; padding-top: 25px; }
-        .timeline-bar-col {
-            flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end;
-            position: relative; cursor: pointer; transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+        .chart-container#timelineChartContainer {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            height: 155px;
+            padding: 24px 6px 8px 6px;
         }
-        .timeline-bar-col:hover { transform: translateY(-4px); }
+        .bar-chart-bars {
+            display: flex;
+            align-items: flex-end;
+            gap: 4px;
+            width: 100%;
+            height: 105px;
+            position: relative;
+            margin-bottom: 12px;
+        }
+        .timeline-bar-col {
+            flex: 1 1 0px;
+            min-width: 0;
+            width: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100%;
+            justify-content: flex-end;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .timeline-bar-col:hover { transform: translateY(-4px); z-index: 20; }
         .timeline-bar {
-            width: 100%; background: linear-gradient(180deg, var(--accent-cyan), var(--accent-indigo));
-            border-radius: 3px 3px 0 0; min-height: 4px; transition: height 0.4s ease, background 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
+            width: 100%;
+            background: linear-gradient(180deg, var(--accent-cyan), var(--accent-indigo));
+            border-radius: 3px 3px 0 0;
+            min-height: 4px;
+            transition: height 0.4s ease, background 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
         }
         .timeline-bar-col:hover .timeline-bar {
             background: linear-gradient(180deg, #38bdf8, #818cf8, #c084fc);
             box-shadow: 0 0 16px rgba(56, 189, 248, 0.9), 0 0 28px rgba(129, 140, 248, 0.6);
             filter: brightness(1.25);
         }
-        .timeline-label { font-size: 0.65rem; color: var(--text-muted); margin-top: 4px; white-space: nowrap; transition: color 0.2s ease; }
-        .timeline-bar-col:hover .timeline-label { color: #38bdf8; font-weight: 700; text-shadow: 0 0 8px rgba(56, 189, 248, 0.6); }
+        .timeline-label {
+            position: absolute;
+            bottom: -18px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.60rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+            pointer-events: none;
+            transition: color 0.2s ease;
+        }
+        .timeline-bar-col:hover .timeline-label {
+            color: #38bdf8;
+            font-weight: 700;
+            text-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+        }
         
         .timeline-tooltip {
             position: absolute;

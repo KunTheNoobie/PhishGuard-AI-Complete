@@ -505,12 +505,14 @@ function renderTimelineBars(timeline) {
         const label = t.time.includes("T") ? t.time.split("T")[1].slice(0, 5) : t.time.slice(-5);
         const sharePct = totalDetections > 0 ? Math.round((t.count / totalDetections) * 100) : Math.round(100 / visibleData.length);
         
-        // Show labels with clean skip cadence so 24 bars never overcrowd the X-axis
-        let showLabel = true;
+        // Show clean periodic labels below the bars
+        let showLabel = false;
         if (activeTimelineRange === 24) {
             showLabel = (idx % 3 === 0 || idx === visibleData.length - 1);
         } else if (activeTimelineRange === 12) {
             showLabel = (idx % 2 === 0 || idx === visibleData.length - 1);
+        } else {
+            showLabel = true;
         }
 
         return `
@@ -520,7 +522,7 @@ function renderTimelineBars(timeline) {
                     <span class="timeline-tooltip-time">${label} (${sharePct}%)</span>
                 </div>
                 <div class="timeline-bar" style="height: ${heightPct}%;"></div>
-                <span class="timeline-label" style="opacity: ${showLabel ? '1' : '0.25'}; font-size: ${activeTimelineRange === 24 ? '0.58rem' : '0.65rem'};">${showLabel ? label : '·'}</span>
+                ${showLabel ? `<span class="timeline-label">${label}</span>` : ''}
             </div>
         `;
     }).join("");
