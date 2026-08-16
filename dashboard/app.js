@@ -2147,7 +2147,23 @@ const $closePlaybookModalBtn = document.getElementById("closePlaybookModalBtn");
 const $dismissPlaybookBtn = document.getElementById("dismissPlaybookBtn");
 const $playbookModalContent = document.getElementById("playbookModalContent");
 
-let _lastExecutedPlaybookId = null;
+function getEnforcedPlaybooks() {
+    try {
+        return JSON.parse(localStorage.getItem("phishguard_enforced_playbooks") || "{}");
+    } catch (_e) {
+        return {};
+    }
+}
+
+function setEnforcedPlaybook(playbookId, isEnforced, count = 1) {
+    const map = getEnforcedPlaybooks();
+    if (isEnforced) {
+        map[playbookId] = Math.max(1, (map[playbookId] || 0) + count);
+    } else {
+        delete map[playbookId];
+    }
+    localStorage.setItem("phishguard_enforced_playbooks", JSON.stringify(map));
+}
 
 async function openPlaybooksModal() {
     if (!$playbookModal || !$playbookModalContent) return;
@@ -2160,7 +2176,8 @@ async function openPlaybooksModal() {
             apiFetch("/playbooks/history")
         ]);
 
-        const executedCounts = {};
+        const localEnforced = getEnforcedPlaybooks();
+        const executedCounts = { ...localEnforced };
         (histData.history || []).forEach(h => {
             if (h.playbook_id) {
                 executedCounts[h.playbook_id] = (executedCounts[h.playbook_id] || 0) + 1;
@@ -2168,12 +2185,13 @@ async function openPlaybooksModal() {
         });
 
         const playbooksHtml = (pbData.playbooks || []).map(p => {
-            const count = executedCounts[p.id] || (_lastExecutedPlaybookId === p.id ? 1 : 0);
+            const count = executedCounts[p.id] || 0;
             const isEnforced = count > 0;
             const actionBadge = isEnforced
                 ? `<div style="display: flex; gap: 8px; align-items: center;">
                        <span style="background: rgba(52, 211, 153, 0.15); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.4); padding: 4px 10px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; font-family: monospace;">✓ ENFORCEMENT ACTIVE (${count}x)</span>
                        <button class="action-btn" id="btn-pb-${escapeHtml(p.id)}" style="padding: 3px 8px; font-size: 0.7rem;" onclick="manualRunPlaybook('${escapeJs(p.id)}')">⚡ Re-run</button>
+                       <button class="action-btn" style="padding: 3px 8px; font-size: 0.7rem; color: #f87171; border-color: rgba(239,68,68,0.4);" onclick="togglePlaybookEnforcement('${escapeJs(p.id)}')">⏸️ Disarm</button>
                    </div>`
                 : `<button class="action-btn action-btn--primary" id="btn-pb-${escapeHtml(p.id)}" style="padding: 4px 12px; font-size: 0.74rem;" onclick="manualRunPlaybook('${escapeJs(p.id)}')">⚡ Execute Remediation</button>`;
 
@@ -2240,8 +2258,8 @@ async function manualRunPlaybook(playbookId) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ playbook_id: playbookId, target_url: "https://maybank2u-secure-verify.top/auth", target_bank: "Maybank", confidence: 0.96 })
         });
-        _lastExecutedPlaybookId = playbookId;
-        showCyberToast("success", "Remediation Executed", `Playbook ${res.execution_id} executed. Dispatched actions to SOC Gateway, Pi-hole & CCID.`);
+        setEnforcedPlaybook(playbookId, true, 1);
+        showCyberToast("success", "Remediation Executed & Enforced", `Playbook ${res.execution_id} active. Enforcement state saved across reloads.`);
         openPlaybooksModal();
     } catch (err) {
         showCyberToast("danger", "Execution Failed", err.message);
@@ -2252,7 +2270,19 @@ async function manualRunPlaybook(playbookId) {
     }
 }
 
+function togglePlaybookEnforcement(playbookId) {
+    const localEnforced = getEnforcedPlaybooks();
+    if (localEnforced[playbookId]) {
+        setEnforcedPlaybook(playbookId, false);
+        showCyberToast("info", "Playbook Disarmed", `Playbook ${playbookId} enforcement set to STANDBY.`);
+        openPlaybooksModal();
+    } else {
+        manualRunPlaybook(playbookId);
+    }
+}
+
 window.manualRunPlaybook = manualRunPlaybook;
+window.togglePlaybookEnforcement = togglePlaybookEnforcement;
 
 if ($openPlaybooksBtn) $openPlaybooksBtn.addEventListener("click", openPlaybooksModal);
 if ($closePlaybookModalBtn) $closePlaybookModalBtn.addEventListener("click", () => $playbookModal?.classList.add("hidden"));
@@ -2410,8 +2440,8 @@ const $quishingScanBtn = document.getElementById("quishingScanBtn");
 const $quishingResultBox = document.getElementById("quishingResultBox");
 
 let warRoomAnimationId = null;
-let warRoomAudioEnabled = true;
-let currentDefconLevel = 2;
+let warRoomAudioEnabled = localStorage.getItem("phishguard_warroom_audio") !== "false";
+let currentDefconLevel = parseInt(localStorage.getItem("phishguard_defcon_level") || "2", 10);
 
 // ── 1. Visual Forensic Sandbox Inspector ──
 async function openVisualSandbox(logId) {
@@ -2625,6 +2655,7 @@ function initWarRoomTrajectoryCanvas() {
 
 function setDefconLevel(level) {
     currentDefconLevel = level;
+    localStorage.setItem("phishguard_defcon_level", String(level));
     const b1 = document.getElementById("defcon1Btn");
     const b2 = document.getElementById("defcon2Btn");
     const b3 = document.getElementById("defcon3Btn");
@@ -2700,8 +2731,10 @@ if ($closeWarRoomModalBtn) {
     });
 }
 if ($warRoomAudioToggleBtn) {
+    $warRoomAudioToggleBtn.textContent = warRoomAudioEnabled ? "🔊 Voice Alert: ON" : "🔇 Voice Alert: OFF";
     $warRoomAudioToggleBtn.addEventListener("click", () => {
         warRoomAudioEnabled = !warRoomAudioEnabled;
+        localStorage.setItem("phishguard_warroom_audio", String(warRoomAudioEnabled));
         $warRoomAudioToggleBtn.textContent = warRoomAudioEnabled ? "🔊 Voice Alert: ON" : "🔇 Voice Alert: OFF";
         showCyberToast("info", "Audio Announcer", warRoomAudioEnabled ? "Voice alerts enabled." : "Voice alerts muted.");
     });
@@ -2719,6 +2752,24 @@ function updateWarRoomTicker() {
     `).join("") || '<div style="color: var(--text-muted);">Listening for live intercepts...</div>';
 }
 
+function getFrozenNsrcCases() {
+    try {
+        return JSON.parse(localStorage.getItem("phishguard_frozen_nsrc_cases") || "{}");
+    } catch (_e) {
+        return {};
+    }
+}
+
+function setFrozenNsrcCase(muleAccount, isFrozen) {
+    const map = getFrozenNsrcCases();
+    if (isFrozen) {
+        map[muleAccount] = true;
+    } else {
+        delete map[muleAccount];
+    }
+    localStorage.setItem("phishguard_frozen_nsrc_cases", JSON.stringify(map));
+}
+
 // ── 3. Malaysian National Fraud Portal (NSRC / CCID / BNM NFP) ──
 async function openNsrcModal() {
     if (!$nsrcModal || !$nsrcModalBody) return;
@@ -2729,22 +2780,23 @@ async function openNsrcModal() {
         const data = await apiFetch("/nsrc/summary");
         if ($warRoomLossCounter) $warRoomLossCounter.textContent = data.total_losses_prevented_formatted;
 
+        const localFrozen = getFrozenNsrcCases();
         const casesHtml = (data.recent_intercept_cases || []).map(c => {
-            const isFrozen = c.nsrc_status === 'FROZEN';
+            const isFrozen = c.nsrc_status === 'FROZEN' || Boolean(localFrozen[c.mule_account]);
             const statusClass = isFrozen ? 'nsrc-status-frozen' :
                                 c.nsrc_status === 'ESCALATED' ? 'nsrc-status-escalated' : 'nsrc-status-investigating';
             const actionButtonHtml = isFrozen
                 ? `<div style="display: flex; gap: 8px; align-items: center;">
                        <span style="color: #34d399; font-size: 0.72rem; font-weight: 700; font-family: monospace; background: rgba(52,211,153,0.15); border: 1px solid rgba(52,211,153,0.4); border-radius: 4px; padding: 4px 10px;">✓ NFP FREEZE ENFORCED</span>
-                       <button class="action-btn" style="padding: 3px 8px; font-size: 0.7rem;" onclick="triggerNsrcFreeze('${escapeJs(c.mule_account)}', '${escapeJs(c.victim_bank)}')">⚡ Re-verify</button>
+                       <button class="action-btn" style="padding: 3px 8px; font-size: 0.7rem; color: #f87171; border-color: rgba(239,68,68,0.4);" onclick="triggerNsrcFreeze('${escapeJs(c.mule_account)}', '${escapeJs(c.victim_bank)}')">🔓 Lift Freeze</button>
                    </div>`
                 : `<button class="action-btn action-btn--primary" style="padding: 4px 12px; font-size: 0.72rem;" onclick="triggerNsrcFreeze('${escapeJs(c.mule_account)}', '${escapeJs(c.victim_bank)}')">⚡ NFP Multi-Bank Freeze</button>`;
 
             return `
-                <div style="background: rgba(15,23,42,0.85); border: 1px solid ${isFrozen ? 'rgba(52,211,153,0.5)' : 'var(--border-subtle)'}; border-radius: 8px; padding: 14px; margin-bottom: 0.75rem;">
+                <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid ${isFrozen ? 'rgba(52,211,153,0.5)' : 'var(--border-subtle)'}; border-radius: 8px; padding: 14px; margin-bottom: 0.75rem;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
                         <strong style="color: #fff; font-family: monospace;">📁 ${escapeHtml(c.case_ref)}</strong>
-                        <span class="${statusClass}">● ${escapeHtml(c.nsrc_status)}</span>
+                        <span class="${statusClass}">● ${isFrozen ? 'FROZEN (ACTIVE)' : escapeHtml(c.nsrc_status)}</span>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; font-size: 0.78rem; gap: 6px; color: var(--text-secondary); margin-bottom: 0.6rem;">
                         <span>Target: <strong style="color: #fff;">${escapeHtml(c.victim_bank)}</strong></span>
@@ -2783,25 +2835,46 @@ async function openNsrcModal() {
 }
 
 async function triggerNsrcFreeze(accountNumber, bankName) {
-    showCyberConfirm(
-        "NSRC Multi-Bank Freeze",
-        `Dispatch emergency freeze directive for mule account ${accountNumber} (${bankName}) across all 20+ National Fraud Portal member institutions?`,
-        async () => {
-            try {
-                const res = await apiFetch("/nsrc/escalate-freeze", {
-                    method: "POST",
-                    body: JSON.stringify({ account_number: accountNumber, bank_name: bankName })
-                });
-                showCyberToast("success", "Freeze Directive Dispatched", `Account ${accountNumber} frozen across all BNM NFP banks!`);
+    const localFrozen = getFrozenNsrcCases();
+    const isCurrentlyFrozen = Boolean(localFrozen[accountNumber]);
+
+    if (isCurrentlyFrozen) {
+        showCyberConfirm(
+            "Lift NFP Freeze",
+            `Are you sure you want to lift the emergency freeze for account ${accountNumber} (${bankName})?`,
+            async () => {
+                setFrozenNsrcCase(accountNumber, false);
+                try {
+                    await apiFetch("/nsrc/toggle-freeze", {
+                        method: "POST",
+                        body: JSON.stringify({ account_number: accountNumber, bank_name: bankName })
+                    });
+                } catch (_e) {}
+                showCyberToast("info", "Freeze Lifted", `Account ${accountNumber} restriction lifted and saved across reloads.`);
                 openNsrcModal();
-            } catch (err) {
-                showCyberToast("danger", "Freeze Failed", err.message);
             }
-        }
-    );
+        );
+    } else {
+        showCyberConfirm(
+            "NSRC Multi-Bank Freeze",
+            `Dispatch emergency freeze directive for mule account ${accountNumber} (${bankName}) across all 20+ National Fraud Portal member institutions?`,
+            async () => {
+                setFrozenNsrcCase(accountNumber, true);
+                try {
+                    await apiFetch("/nsrc/escalate-freeze", {
+                        method: "POST",
+                        body: JSON.stringify({ account_number: accountNumber, bank_name: bankName })
+                    });
+                } catch (_e) {}
+                showCyberToast("success", "Freeze Directive Dispatched", `Account ${accountNumber} frozen across all BNM NFP banks! Status saved across reloads.`);
+                openNsrcModal();
+            }
+        );
+    }
 }
 
 window.triggerNsrcFreeze = triggerNsrcFreeze;
+window.toggleNsrcFreeze = triggerNsrcFreeze;
 
 if ($openNsrcBtn) $openNsrcBtn.addEventListener("click", openNsrcModal);
 if ($closeNsrcModalBtn) $closeNsrcModalBtn.addEventListener("click", () => $nsrcModal?.classList.add("hidden"));

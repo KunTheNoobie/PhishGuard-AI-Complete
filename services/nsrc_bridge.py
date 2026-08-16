@@ -129,3 +129,42 @@ async def escalate_nsrc_emergency_freeze(
         "action_taken": "Automated DuitNow & Interbank outward transfer kill-switch activated.",
         "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
     }
+
+
+async def toggle_nsrc_emergency_freeze(
+    account_number: str,
+    bank_name: str,
+    db: aiosqlite.Connection,
+) -> dict[str, Any]:
+    """Toggle freeze directive on/off across BNM NFP member banks with persistent audit state."""
+    target_case = next((c for c in _MOCK_NSRC_CASES if c.get("mule_account") == account_number), None)
+    is_currently_frozen = target_case and target_case.get("nsrc_status") == "FROZEN"
+    new_status = "ESCALATED" if is_currently_frozen else "FROZEN"
+
+    if target_case:
+        target_case["nsrc_status"] = new_status
+
+    if new_status == "FROZEN":
+        await db.execute(
+            """
+            INSERT INTO mule_registry (account_number, bank_name, platform_flagged, report_count)
+            VALUES (?, ?, 'NSRC-997 Emergency Intercept', 10)
+            ON CONFLICT(account_number) DO UPDATE SET report_count = report_count + 5;
+            """,
+            (account_number, bank_name),
+        )
+        await db.commit()
+
+    case_ref = f"NSRC-2026-EMERGENCY-{abs(hash(account_number)) % 90000 + 10000}"
+    ccid_ref = f"PDRM/JSJK/2026/EMG-{abs(hash(account_number)) % 800000 + 100000}"
+
+    return {
+        "status": "FREEZE_DIRECTIVE_BROADCASTED" if new_status == "FROZEN" else "FREEZE_LIFTED",
+        "nsrc_status": new_status,
+        "case_reference": case_ref,
+        "ccid_investigation_dossier": ccid_ref,
+        "account_frozen": account_number,
+        "institution": bank_name,
+        "action_taken": "NFP outward transfer kill-switch active." if new_status == "FROZEN" else "NFP outward transfer restriction lifted.",
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    }

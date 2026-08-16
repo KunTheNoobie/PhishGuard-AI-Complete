@@ -1600,6 +1600,16 @@ async def escalate_nsrc_freeze(request: Request, payload: NsrcFreezeRequest) -> 
     return await escalate_nsrc_emergency_freeze(payload.account_number, payload.bank_name, request.app.state.db)
 
 
+@router.post(
+    "/nsrc/toggle-freeze",
+    summary="Toggle Account Emergency Freeze status across National Fraud Portal",
+    tags=["SOC Defense & Tactical Modules"],
+)
+async def toggle_nsrc_freeze_endpoint(request: Request, payload: NsrcFreezeRequest) -> dict[str, Any]:
+    from services.nsrc_bridge import toggle_nsrc_emergency_freeze
+    return await toggle_nsrc_emergency_freeze(payload.account_number, payload.bank_name, request.app.state.db)
+
+
 # ── 3. Quishing (QR-Code Phishing) Scanner ──
 
 class QuishingScanRequest(BaseModel):
