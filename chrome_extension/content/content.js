@@ -473,4 +473,31 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   return false;
 });
 
-// Screenshot capture needs the activeTab grant, so scan only after user action.
+// ═══════════════════════════════════════════════════════════════════
+// AUTONOMOUS REAL-TIME BACKGROUND AUTO-SCAN ON PAGE LOAD
+// ═══════════════════════════════════════════════════════════════════
+function autoScanOnPageLoad() {
+  if (!isSupportedPage()) return;
+  if (location.protocol !== "http:" && location.protocol !== "https:" && location.protocol !== "file:") return;
+
+  requestVisualAnalysis()
+    .then((response) => {
+      if (response && response.result) {
+        if (response.result.risk_level === "dangerous" || response.result.final_verdict === "BLOCK_RENDER") {
+          showFullScreenBlockScreen(response.result);
+        } else if (response.result.risk_level === "suspicious") {
+          showTopBanner(response.result);
+        }
+      }
+    })
+    .catch((_err) => {
+      // Heuristic engine handles offline/background cases gracefully
+    });
+}
+
+// Automatically trigger autonomous scan when page loads
+if (document.readyState === "complete" || document.readyState === "interactive") {
+  setTimeout(autoScanOnPageLoad, 200);
+} else {
+  window.addEventListener("DOMContentLoaded", () => setTimeout(autoScanOnPageLoad, 200));
+}

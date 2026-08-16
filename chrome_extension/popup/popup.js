@@ -411,7 +411,8 @@ async function refreshResult() {
   if (response && response.result) {
     renderResult(response.result);
   } else {
-    await renderEmptyState();
+    // Automatically trigger immediate scan when popup is opened
+    scanActivePage();
   }
 }
 

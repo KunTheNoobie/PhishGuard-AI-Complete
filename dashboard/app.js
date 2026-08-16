@@ -618,14 +618,19 @@ function renderGeoRadar(nodes) {
 
         svgHtml += `<circle cx="${conf.x}" cy="${conf.y}" r="4.5" fill="${color}" stroke="#ffffff" stroke-width="1.5" style="cursor: pointer;" onclick="toggleGeoFilter('${escapeJs(n.city)}', '${escapeJs(n.country_code)}')" />`;
 
-        const badgeWidth = text.length * 7.2 + 12;
-        const rectX = conf.align === "end" ? conf.labelX - badgeWidth : conf.labelX - 4;
-        const textAnchor = conf.align === "end" ? "end" : "start";
+        const badgeHeight = 18;
+        const charWidth = 6.4;
+        const paddingX = 14;
+        const badgeWidth = Math.round(text.length * charWidth + paddingX);
+        const rectX = conf.align === "end" ? (conf.labelX - badgeWidth) : (conf.align === "middle" ? (conf.labelX - badgeWidth / 2) : conf.labelX);
+        const rectY = conf.labelY - badgeHeight / 2;
+        const textCenterX = rectX + badgeWidth / 2;
+        const textCenterY = rectY + badgeHeight / 2;
 
         svgHtml += `
             <g style="cursor: pointer;" onclick="toggleGeoFilter('${escapeJs(n.city)}', '${escapeJs(n.country_code)}')">
-                <rect x="${rectX}" y="${conf.labelY - 12}" width="${badgeWidth}" height="16" rx="4" fill="${isSelected ? color : 'rgba(10, 15, 30, 0.88)'}" stroke="${color}" stroke-width="${isSelected ? 2 : 0.8}" />
-                <text x="${conf.labelX}" y="${conf.labelY}" fill="#ffffff" font-size="10.5" font-weight="600" font-family="'JetBrains Mono', monospace" text-anchor="${textAnchor}">${escapeHtml(text)}</text>
+                <rect x="${rectX}" y="${rectY}" width="${badgeWidth}" height="${badgeHeight}" rx="4" fill="${isSelected ? color : 'rgba(10, 15, 30, 0.90)'}" stroke="${color}" stroke-width="${isSelected ? 2 : 0.85}" />
+                <text x="${textCenterX}" y="${textCenterY}" fill="#ffffff" font-size="10" font-weight="600" font-family="'JetBrains Mono', monospace" text-anchor="middle" dominant-baseline="central">${escapeHtml(text)}</text>
             </g>
         `;
 
