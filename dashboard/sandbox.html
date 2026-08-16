@@ -97,7 +97,6 @@
 
     <div id="cyberToastContainer" class="cyber-toast-container"></div>
 
-
     <main class="sandbox-container">
         <h2 style="font-size: 1.3rem; margin-bottom: 0.5rem;">Select Real-World Malaysian Threat Scenario</h2>
         <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.5rem;">
@@ -355,12 +354,35 @@
                 document.getElementById('domainRisk').textContent = res.domain_indicators && res.domain_indicators.length
                     ? `⚠️ ${res.domain_indicators.join("; ")}`
                     : "✅ Authentic Domain Structure";
+                showCyberToast(isBlock ? "danger" : "success", `Verdict: ${res.verdict}`, `Multi-modal risk: ${(res.score * 100).toFixed(1)}% &bull; Brand: ${res.target_brand}`);
             } catch (err) {
-                alert("Inspection error: " + err.message);
+                showCyberToast("danger", "Inspection Failed", err.message);
             } finally {
                 btn.disabled = false;
                 btn.textContent = "⚡ Run Multi-Modal AI Inspection";
             }
+        }
+
+        function showCyberToast(type = "info", title = "Notification", message = "", durationMs = 3500) {
+            const container = document.getElementById("cyberToastContainer");
+            if (!container) return;
+            const icons = { success: "✅", danger: "🚨", warning: "⚠️", info: "ℹ️" };
+            const toast = document.createElement("div");
+            toast.className = `cyber-toast cyber-toast--${type}`;
+            toast.innerHTML = `
+                <div class="cyber-toast__icon">${icons[type] || "🛡️"}</div>
+                <div class="cyber-toast__content">
+                    <div class="cyber-toast__title">${title}</div>
+                    <div>${message}</div>
+                </div>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = "0";
+                toast.style.transform = "translateX(20px)";
+                toast.style.transition = "all 0.3s ease";
+                setTimeout(() => toast.remove(), 300);
+            }, durationMs);
         }
 
 

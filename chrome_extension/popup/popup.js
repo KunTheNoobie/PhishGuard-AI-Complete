@@ -317,6 +317,121 @@ function renderResult(result) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// CYBER TOAST NOTIFICATIONS & POPUP MODALS
+// ═══════════════════════════════════════════════════════════════════
+const popupToastContainer = document.getElementById("popupToastContainer");
+const popupModalOverlay = document.getElementById("popupModalOverlay");
+const popupModalTitle = document.getElementById("popupModalTitle");
+const popupModalIcon = document.getElementById("popupModalIcon");
+const popupModalMessage = document.getElementById("popupModalMessage");
+const popupModalInputContainer = document.getElementById("popupModalInputContainer");
+const popupModalInput = document.getElementById("popupModalInput");
+const popupModalCancelBtn = document.getElementById("popupModalCancelBtn");
+const popupModalConfirmBtn = document.getElementById("popupModalConfirmBtn");
+
+function showToast(type = "info", title = "Notice", message = "", duration = 3200) {
+  if (!popupToastContainer) return;
+  const icons = {
+    success: "✅",
+    danger: "🚨",
+    warning: "⚠️",
+    info: "ℹ️"
+  };
+  const toast = document.createElement("div");
+  toast.className = `popup-toast ${type}`;
+  toast.innerHTML = `
+    <span class="popup-toast-icon">${icons[type] || "🛡️"}</span>
+    <div class="popup-toast-content">
+      <div class="popup-toast-title">${title}</div>
+      ${message ? `<div class="popup-toast-message">${message}</div>` : ""}
+    </div>
+  `;
+  popupToastContainer.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    toast.style.transform = "translateY(12px)";
+    toast.style.transition = "all 0.25s ease";
+    setTimeout(() => toast.remove(), 250);
+  }, duration);
+}
+
+function showConfirmDialog(title, message, icon = "⚠️") {
+  return new Promise((resolve) => {
+    if (!popupModalOverlay) {
+      resolve(confirm(message));
+      return;
+    }
+    popupModalTitle.textContent = title;
+    popupModalIcon.textContent = icon;
+    popupModalMessage.textContent = message;
+    popupModalInputContainer.classList.add("hidden");
+    popupModalCancelBtn.classList.remove("hidden");
+    popupModalConfirmBtn.textContent = "Confirm";
+
+    popupModalOverlay.classList.remove("hidden");
+
+    const onConfirm = () => {
+      cleanup();
+      resolve(true);
+    };
+    const onCancel = () => {
+      cleanup();
+      resolve(false);
+    };
+    const cleanup = () => {
+      popupModalOverlay.classList.add("hidden");
+      popupModalConfirmBtn.removeEventListener("click", onConfirm);
+      popupModalCancelBtn.removeEventListener("click", onCancel);
+    };
+
+    popupModalConfirmBtn.addEventListener("click", onConfirm);
+    popupModalCancelBtn.addEventListener("click", onCancel);
+  });
+}
+
+function showPromptDialog(title, message, placeholder = "", defaultValue = "", icon = "🚨") {
+  return new Promise((resolve) => {
+    if (!popupModalOverlay) {
+      resolve(prompt(message, defaultValue));
+      return;
+    }
+    popupModalTitle.textContent = title;
+    popupModalIcon.textContent = icon;
+    popupModalMessage.textContent = message;
+    popupModalInputContainer.classList.remove("hidden");
+    popupModalInput.placeholder = placeholder;
+    popupModalInput.value = defaultValue;
+    popupModalCancelBtn.classList.remove("hidden");
+    popupModalConfirmBtn.textContent = "Submit";
+
+    popupModalOverlay.classList.remove("hidden");
+    popupModalInput.focus();
+
+    const onConfirm = () => {
+      const val = popupModalInput.value.trim();
+      cleanup();
+      resolve(val);
+    };
+    const onCancel = () => {
+      cleanup();
+      resolve(null);
+    };
+    const cleanup = () => {
+      popupModalOverlay.classList.add("hidden");
+      popupModalConfirmBtn.removeEventListener("click", onConfirm);
+      popupModalCancelBtn.removeEventListener("click", onCancel);
+    };
+
+    popupModalConfirmBtn.addEventListener("click", onConfirm);
+    popupModalCancelBtn.addEventListener("click", onCancel);
+    popupModalInput.onkeydown = (e) => {
+      if (e.key === "Enter") onConfirm();
+      if (e.key === "Escape") onCancel();
+    };
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // TRUSTED SITES MANAGEMENT
 // ═══════════════════════════════════════════════════════════════════
 
@@ -351,13 +466,16 @@ window.removeTrustedDomain = async function(domain) {
   delete trusted[domain];
   await chrome.storage.sync.set({ custom_trusted_domains: trusted });
   renderTrustedDomains();
+  showToast("info", "Domain Revoked", `${domain} removed from trusted whitelist.`);
   scanActivePage();
 };
 
 async function clearAllTrusted() {
-  if (!confirm("Revoke all custom trusted domains?")) return;
+  const ok = await showConfirmDialog("Revoke Whitelists", "Are you sure you want to remove all custom trusted domains?", "🗑️");
+  if (!ok) return;
   await chrome.storage.sync.set({ custom_trusted_domains: {} });
   renderTrustedDomains();
+  showToast("success", "Whitelists Cleared", "All custom exemptions removed.");
   scanActivePage();
 }
 
@@ -408,6 +526,7 @@ function renderHistory() {
 function clearHistory() {
   chrome.storage.local.set({ phishguard_history: [] }, () => {
     renderHistory();
+    showToast("info", "History Cleared", "Recent scan logs removed.");
   });
 }
 
@@ -430,6 +549,7 @@ async function handleTrustDomain() {
   trustSiteBtn.textContent = `✓ Trusted (${domain})`;
   trustSiteBtn.disabled = true;
 
+  showToast("success", "Domain Trusted", `${domain} whitelisted for 24 hours.`);
   scanActivePage();
 }
 
@@ -437,7 +557,7 @@ function handleReportSafe() {
   if (!activeScanResult) return;
   const domain = activeScanResult.page_host || hostFromUrl(activeScanResult.page_url);
   handleTrustDomain();
-  alert(`Domain '${domain}' has been whitelisted and recorded as safe.`);
+  showToast("success", "Reported Safe", `${domain} verified and marked authentic.`);
 }
 
 function handleCopyVerdict() {
@@ -453,18 +573,19 @@ function handleCopyVerdict() {
 • Scanned At: ${r.analyzed_at || new Date().toISOString()}`;
 
   navigator.clipboard.writeText(summary).then(() => {
-    alert("📋 Scan verdict copied to clipboard!");
+    showToast("success", "Copied to Clipboard", "Full forensic verdict ready for sharing.");
   }).catch(() => {
-    alert(summary);
+    showToast("info", "Verdict Summary", summary);
   });
 }
 
 async function handleFlagMule(mules) {
-  const acc = (mules && mules.length > 0)
-    ? mules[0].account_number
-    : prompt("Enter suspicious account / phone number to report to NSRC:");
+  let acc = (mules && mules.length > 0) ? mules[0].account_number : "";
+  if (!acc) {
+    acc = await showPromptDialog("Escalate to NSRC 997", "Enter suspicious beneficiary account / DuitNow phone number:", "e.g. 112233445566 / 0123456789", "");
+  }
   if (!acc) return;
-  const bank = (mules && mules.length > 0) ? mules[0].bank_name : "Other / Online Portal";
+  const bank = (mules && mules.length > 0) ? mules[0].bank_name : "Online Scam Account";
   
   try {
     const config = await getStoredConfig();
@@ -474,17 +595,17 @@ async function handleFlagMule(mules) {
       body: JSON.stringify({
         account_number: acc,
         bank_name: bank,
-        platform_flagged: "Chrome Extension User Report",
+        platform_flagged: "Chrome Extension User Escalation",
         report_count: 1
       })
     });
     if (res.ok) {
-      alert(`🚨 Account ${acc} (${bank}) successfully escalated and flagged to NSRC Mule Registry.`);
+      showToast("danger", "Escalated to NSRC", `Account ${acc} (${bank}) registered to fraud blacklist.`);
     } else {
-      alert(`🚨 Report recorded locally for ${acc}.`);
+      showToast("warning", "Recorded Locally", `Report saved for ${acc}.`);
     }
   } catch (_e) {
-    alert(`🚨 Report queued for ${acc}.`);
+    showToast("info", "Queued", `Report cached offline for ${acc}.`);
   }
 }
 

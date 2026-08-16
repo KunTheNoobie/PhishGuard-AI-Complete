@@ -1309,12 +1309,14 @@ function renderMuleRegistry() {
 
 
 window.handleDeleteMule = async function(muleId) {
-    if (!confirm(`Are you sure you want to remove mule account #${muleId}?`)) return;
+    const ok = await showCyberConfirmModal("Delete Mule Record", `Are you sure you want to permanently remove mule account #${muleId}?`, "🗑️");
+    if (!ok) return;
     try {
         await apiFetch(`/mule-registry/${muleId}`, { method: "DELETE" });
+        showCyberToast("success", "Account Removed", `Mule record #${muleId} successfully deleted.`);
         await refreshAll();
     } catch (err) {
-        alert("Failed to delete mule account: " + err.message);
+        showCyberToast("danger", "Deletion Failed", err.message);
     }
 };
 
@@ -1349,36 +1351,40 @@ function handleSortClick(e) {
 // ═══════════════════════════════════════════════════════════════════
 
 function exportTelemetryCsv() {
-    if (!telemetryData.length) return alert("No telemetry data to export.");
+    if (!telemetryData.length) return showCyberToast("warning", "Export Empty", "No telemetry data available to export.");
     let csv = "Log ID,Malicious URL,BERT Score,Timestamp\n";
     for (const row of telemetryData) {
         csv += `"${row.log_id}","${row.malicious_url.replace(/"/g, '""')}","${(row.bert_score * 100).toFixed(2)}%","${row.timestamp}"\n`;
     }
     downloadFile("phishguard_telemetry.csv", "text/csv;charset=utf-8;", csv);
+    showCyberToast("success", "Export Ready", "Downloaded phishguard_telemetry.csv");
 }
 
 function exportTelemetryJson() {
-    if (!telemetryData.length) return alert("No telemetry data to export.");
+    if (!telemetryData.length) return showCyberToast("warning", "Export Empty", "No telemetry data available to export.");
     const json = JSON.stringify(telemetryData, null, 2);
     downloadFile("phishguard_telemetry.json", "application/json", json);
+    showCyberToast("success", "Export Ready", "Downloaded phishguard_telemetry.json");
 }
 
 async function exportStixBundle() {
     try {
         const bundle = await apiFetch("/export/stix");
         downloadFile("phishguard_stix21_bundle.json", "application/json", JSON.stringify(bundle, null, 2));
+        showCyberToast("success", "STIX 2.1 Ready", "OASIS STIX 2.1 JSON Threat Bundle generated.");
     } catch (err) {
-        alert("Failed to generate STIX 2.1 bundle: " + err.message);
+        showCyberToast("danger", "Export Failed", err.message);
     }
 }
 
 function exportMuleCsv() {
-    if (!muleData.length) return alert("No mule records to export.");
+    if (!muleData.length) return showCyberToast("warning", "Export Empty", "No mule records available to export.");
     let csv = "ID,Account Number,Bank Name,Platform Flagged,Reports,Date Added\n";
     for (const row of muleData) {
         csv += `"${row.id}","${row.account_number}","${row.bank_name}","${row.platform_flagged}","${row.report_count}","${row.date_added}"\n`;
     }
     downloadFile("phishguard_mule_registry.csv", "text/csv;charset=utf-8;", csv);
+    showCyberToast("success", "Export Ready", "Downloaded phishguard_mule_registry.csv");
 }
 
 
@@ -1913,7 +1919,7 @@ async function handleTestPing(channel, urlInputId, chatInputId = null) {
     const url = document.getElementById(urlInputId)?.value.trim();
     const chat = chatInputId ? document.getElementById(chatInputId)?.value.trim() : null;
     if (!url) {
-        alert("Please enter a webhook URL or token first.");
+        showCyberToast("warning", "Input Missing", "Please enter a webhook URL or token first.");
         return;
     }
 
@@ -1972,10 +1978,10 @@ if ($webhookForm) {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
             });
-            alert("✅ Webhook configuration saved successfully!");
+            showCyberToast("success", "Webhooks Configured", "Alert endpoints updated and verified.");
             closeWebhookModal();
         } catch (err) {
-            alert("Failed to save webhook settings: " + err.message);
+            showCyberToast("danger", "Save Failed", err.message);
         }
     });
 }

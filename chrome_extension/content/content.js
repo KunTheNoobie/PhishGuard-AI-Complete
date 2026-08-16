@@ -141,28 +141,28 @@ function showFullScreenBlockScreen(result) {
   const accounts = (muleScan && muleScan.flagged_accounts) ? muleScan.flagged_accounts.map(a => a.account_number).join(", ") : "";
 
   overlay.innerHTML = `
-    <div style="max-width: 580px; width: 90%; background: #0f172a; color: #f8fafc; border: 2px solid #ef4444; border-radius: 12px; padding: 32px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7); text-align: left; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-      <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 20px;">
-        <div style="background: #ef4444; color: white; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold;">!</div>
+    <div style="max-width: 580px; width: 90%; background: rgba(15, 23, 42, 0.96); color: #f8fafc; border: 1.5px solid #ef4444; border-radius: 14px; padding: 32px; box-shadow: 0 25px 60px -12px rgba(0,0,0,0.85), 0 0 30px rgba(239, 68, 68, 0.35); text-align: left; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; backdrop-filter: blur(16px);">
+      <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
+        <div style="background: linear-gradient(135deg, #ef4444, #b91c1c); color: white; width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; box-shadow: 0 0 16px rgba(239, 68, 68, 0.6);">🚨</div>
         <div>
-          <h2 style="margin: 0; font-size: 20px; color: #f87171; font-weight: 800;">Dangerous Phishing Page Blocked</h2>
-          <span style="font-size: 13px; color: #94a3b8;">Protected by PhishGuard-AI Multi-Modal Engine</span>
+          <h2 style="margin: 0; font-size: 20px; color: #f87171; font-weight: 800; letter-spacing: -0.01em;">Dangerous Phishing Page Blocked</h2>
+          <span style="font-size: 12px; color: #94a3b8; font-weight: 600;">Autonomous Defense Enforcement &bull; PhishGuard-AI Multi-Modal Shield</span>
         </div>
       </div>
       <p style="font-size: 14px; line-height: 1.6; color: #cbd5e1; margin-bottom: 18px;">
         PhishGuard-AI has intercepted and blocked access to this page (<strong>${location.hostname}</strong>). It exhibits high-confidence financial phishing patterns designed to steal credentials or funds.
       </p>
-      <div style="background: rgba(239, 68, 68, 0.1); border-left: 4px solid #ef4444; padding: 12px 16px; border-radius: 4px; margin-bottom: 24px; font-size: 13px;">
+      <div style="background: rgba(239, 68, 68, 0.12); border-left: 4px solid #ef4444; padding: 12px 16px; border-radius: 6px; margin-bottom: 24px; font-size: 13px; line-height: 1.6;">
         ${semantic ? `<div>• <strong>BERT Semantic Confidence:</strong> ${(semantic.confidence * 100).toFixed(1)}% (${semantic.label})</div>` : ''}
-        ${accounts ? `<div>• <strong>Flagged Mule Bank Account(s):</strong> ${accounts}</div>` : ''}
-        <div>• <strong>Verdict:</strong> BLOCK_RENDER (Automated Safety Enforcement)</div>
+        ${accounts ? `<div>• <strong>Flagged Mule Bank Account(s):</strong> <code style="color: #f87171; font-weight: 700;">${accounts}</code></div>` : ''}
+        <div>• <strong>Verdict:</strong> <span style="color: #f87171; font-weight: 700;">BLOCK_RENDER (Automated Safety Enforcement)</span></div>
       </div>
       <div style="display: flex; gap: 12px; align-items: center; justify-content: flex-end; flex-wrap: wrap;">
-        <button id="phishguard-proceed-btn" style="background: transparent; border: 1px solid #475569; color: #94a3b8; padding: 9px 16px; border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: 600;">
+        <button id="phishguard-proceed-btn" style="background: rgba(30, 41, 59, 0.8); border: 1px solid #475569; color: #94a3b8; padding: 9px 16px; border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: 600; transition: all 0.2s ease;">
           Proceed Anyway (Unsafe)
         </button>
-        <button id="phishguard-safety-btn" style="background: #ef4444; border: none; color: white; padding: 10px 20px; border-radius: 6px; font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);">
-          Back to Safety
+        <button id="phishguard-safety-btn" style="background: linear-gradient(135deg, #ef4444, #dc2626); border: none; color: white; padding: 10px 22px; border-radius: 6px; font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 14px rgba(239, 68, 68, 0.5); transition: all 0.2s ease;">
+          ← Back to Safety
         </button>
       </div>
     </div>

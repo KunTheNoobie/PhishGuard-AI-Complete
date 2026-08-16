@@ -139,6 +139,27 @@
         </div>
       </div>
 
+      <!-- ─── CYBERPOPUP TOAST CONTAINER ─── -->
+      <div id="popupToastContainer" class="popup-toast-container"></div>
+
+      <!-- ─── CYBERPOPUP MODAL DIALOG ─── -->
+      <div id="popupModalOverlay" class="popup-modal-overlay hidden">
+        <div class="popup-modal-card">
+          <div class="popup-modal-header">
+            <span id="popupModalIcon">🛡️</span>
+            <h3 id="popupModalTitle">PhishGuard Notice</h3>
+          </div>
+          <p id="popupModalMessage">Message goes here...</p>
+          <div id="popupModalInputContainer" class="hidden" style="margin-bottom: 12px;">
+            <input type="text" id="popupModalInput" class="popup-modal-input" />
+          </div>
+          <div class="popup-modal-actions">
+            <button type="button" id="popupModalCancelBtn" class="action-pill-btn">Cancel</button>
+            <button type="button" id="popupModalConfirmBtn" class="primary-button" style="padding: 6px 14px; font-size: 11px;">Confirm</button>
+          </div>
+        </div>
+      </div>
+
     </main>
 
     <script src="popup.js"></script>
