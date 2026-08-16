@@ -292,9 +292,60 @@ function hostFromUrl(url) {
   }
 }
 
+// Multi-part public suffixes
+const MULTI_PART_SUFFIXES = [
+  ".edu.my", ".gov.my", ".com.my", ".net.my", ".org.my", ".mil.my",
+  ".co.uk", ".ac.uk", ".gov.uk", ".org.uk",
+  ".com.sg", ".edu.sg", ".gov.sg",
+  ".co.id", ".ac.id", ".go.id",
+  ".co.jp", ".ac.jp", ".go.jp",
+  ".com.tw", ".edu.tw", ".gov.tw",
+  ".com.au", ".edu.au", ".gov.au"
+];
+
+function isEducationalOrGovDomain(host) {
+  if (!host) return false;
+  const clean = host.replace(/^www\./, "").toLowerCase();
+  return (
+    clean.endsWith(".edu.my") ||
+    clean.endsWith(".gov.my") ||
+    clean.endsWith(".edu") ||
+    clean.endsWith(".gov") ||
+    clean.endsWith(".ac.uk") ||
+    clean.endsWith(".edu.sg") ||
+    clean.endsWith(".gov.sg") ||
+    clean.endsWith(".tarc.edu.my") ||
+    clean === "tarc.edu.my"
+  );
+}
+
+function extractDomainName(host) {
+  if (!host) return "";
+  let clean = host.replace(/^www\./, "").toLowerCase();
+  
+  for (const suffix of MULTI_PART_SUFFIXES) {
+    if (clean.endsWith(suffix)) {
+      const remainder = clean.slice(0, -suffix.length);
+      const parts = remainder.split(".");
+      return parts[parts.length - 1]; // e.g. "focs.tarc" -> "tarc"
+    }
+  }
+  
+  const parts = clean.split(".");
+  if (parts.length >= 2) {
+    return parts[parts.length - 2]; // e.g. "docs.google.com" -> "google"
+  }
+  return parts[0];
+}
+
 function isOfficialBankDomain(host) {
   if (!host) return false;
   const cleanHost = host.replace(/^www\./, "").toLowerCase();
+
+  // Educational and government domains are always verified authentic
+  if (isEducationalOrGovDomain(cleanHost)) {
+    return true;
+  }
 
   // Check global safe platforms
   for (const safe of GLOBAL_SAFE_DOMAINS_SET) {
@@ -357,26 +408,64 @@ function levenshteinDistance(a, b) {
   return matrix[b.length][a.length];
 }
 
+// Target brand roots used for lookalike & typosquatting detection
+const TARGET_BRAND_ROOTS = {
+  "Maybank": ["maybank", "maybank2u", "mae"],
+  "CIMB": ["cimb", "cimbclicks", "cimbbank"],
+  "Public Bank": ["pbebank", "publicbank"],
+  "RHB": ["rhbgroup", "rhbnow", "rhbbank"],
+  "Hong Leong Bank": ["hongleong", "hlbconnect", "hongleongconnect"],
+  "AmBank": ["ambank", "amonline"],
+  "Bank Islam": ["bankislam"],
+  "Bank Rakyat": ["bankrakyat", "irakyat"],
+  "Touch 'n Go": ["touchngo", "tngdigital"],
+  "DuitNow": ["duitnow", "paynet"],
+  "Google": ["google"],
+  "Microsoft": ["microsoft", "office365", "outlook"],
+  "Apple": ["apple", "icloud"],
+  "PayPal": ["paypal"],
+  "Netflix": ["netflix"],
+  "Binance": ["binance"],
+  "Coinbase": ["coinbase"]
+};
+
 function detectTypoSquatting(host) {
   if (!host) return null;
   const cleanHost = host.replace(/^www\./, "").toLowerCase();
 
-  for (const [brand, domains] of Object.entries(OFFICIAL_BANK_DOMAINS)) {
-    for (const official of domains) {
-      if (cleanHost === official || cleanHost.endsWith(`.${official}`)) {
-        return null; // Official domain
+  // Accredited educational, government, or official domains are NEVER typosquats
+  if (isEducationalOrGovDomain(cleanHost) || isOfficialBankDomain(cleanHost)) {
+    return null;
+  }
+
+  const hostStem = extractDomainName(cleanHost);
+  if (!hostStem || hostStem.length < 4) return null;
+
+  for (const [brand, roots] of Object.entries(TARGET_BRAND_ROOTS)) {
+    for (const root of roots) {
+      // Check if hostname contains brand root with suspicious phishing keywords or deceptive TLDs
+      if (cleanHost.includes(root) && (
+        cleanHost.includes("-") ||
+        cleanHost.includes("login") ||
+        cleanHost.includes("verify") ||
+        cleanHost.includes("secure") ||
+        cleanHost.includes("auth") ||
+        cleanHost.includes(".top") ||
+        cleanHost.includes(".xyz") ||
+        cleanHost.includes(".live") ||
+        cleanHost.includes(".click") ||
+        cleanHost.includes(".cam") ||
+        cleanHost.includes(".icu")
+      )) {
+        return { brand, official: `${root}.com`, reason: `Deceptive domain mimicking ${brand} detected (${cleanHost})` };
       }
 
-      const baseOfficial = official.split(".")[0];
-      const baseHost = cleanHost.split(".")[0];
-
-      const dist = levenshteinDistance(baseHost, baseOfficial);
-      if (dist >= 1 && dist <= 2) {
-        return { brand, official, reason: `Lookalike domain detected targeting ${brand} (edit distance ${dist} from ${official})` };
-      }
-
-      if (cleanHost.includes(baseOfficial) && (cleanHost.includes("login") || cleanHost.includes("verify") || cleanHost.includes("secure") || cleanHost.includes("auth"))) {
-        return { brand, official, reason: `Deceptive keyword subdomain detected targeting ${brand}` };
+      // Check edit distance ONLY if root has at least 5 characters to prevent false positive acronym collisions
+      if (root.length >= 5 && hostStem.length >= 5) {
+        const dist = levenshteinDistance(hostStem, root);
+        if (dist === 1 || (dist === 2 && hostStem.length >= 7)) {
+          return { brand, official: `${root}.com`, reason: `Lookalike domain detected targeting ${brand} (edit distance ${dist} from ${root})` };
+        }
       }
     }
   }
