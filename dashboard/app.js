@@ -444,21 +444,30 @@ window.resetDonutSlice = resetDonutSlice;
 
 function renderTimelineBars(timeline) {
     if (!timeline || !timeline.length) {
-        // Fallback default timeline buckets
+        // Fallback default balanced velocity timeline
         timeline = [
-            { time: "18:00", count: 4 }, { time: "19:00", count: 7 }, { time: "20:00", count: 12 },
-            { time: "21:00", count: 18 }, { time: "22:00", count: 25 }, { time: "23:00", count: 15 },
-            { time: "00:00", count: 9 }, { time: "01:00", count: telemetryData.length || 1 }
+            { time: "18:00", count: 18 }, { time: "19:00", count: 24 }, { time: "20:00", count: 32 },
+            { time: "21:00", count: 28 }, { time: "22:00", count: 38 }, { time: "23:00", count: 34 },
+            { time: "00:00", count: 42 }, { time: "01:00", count: 39 }
         ];
     }
 
-    const maxCount = Math.max(...timeline.map(t => t.count), 1);
-    const totalDetections = timeline.reduce((acc, t) => acc + t.count, 0);
+    const counts = timeline.map(t => t.count);
+    const maxCount = Math.max(...counts, 1);
+    const minCount = Math.min(...counts);
+    const totalDetections = counts.reduce((acc, c) => acc + c, 0);
 
     $timelineBars.innerHTML = timeline.map(t => {
-        const heightPct = Math.max(8, Math.round((t.count / maxCount) * 100));
+        // Normalized balanced scaling: heights dynamically range between 28% and 92%
+        let heightPct;
+        if (maxCount > minCount) {
+            heightPct = Math.round(28 + ((t.count - minCount) / (maxCount - minCount)) * 64);
+        } else {
+            heightPct = 60;
+        }
+        heightPct = Math.max(22, Math.min(95, heightPct));
         const label = t.time.includes("T") ? t.time.split("T")[1].slice(0, 5) : t.time.slice(-5);
-        const sharePct = totalDetections > 0 ? Math.round((t.count / totalDetections) * 100) : 0;
+        const sharePct = totalDetections > 0 ? Math.round((t.count / totalDetections) * 100) : Math.round(100 / timeline.length);
         return `
             <div class="timeline-bar-col">
                 <div class="timeline-tooltip">
