@@ -1421,22 +1421,24 @@ function playAlertSound(type = "warning") {
     } catch (_e) {}
 }
 
-if ($quickScanForm) {
-    $quickScanForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const val = $quickScanInput.value.trim();
-        if (!val) return;
+async function executeQuickScan(targetUrl = null) {
+    const val = (targetUrl !== null ? targetUrl : ($quickScanInput?.value || "")).trim();
+    if (!val) return;
+    if ($quickScanInput) $quickScanInput.value = val;
 
+    if ($quickScanBtn) {
         $quickScanBtn.disabled = true;
         $quickScanBtn.textContent = "Inspecting...";
+    }
 
-        try {
-            const res = await apiFetch("/quick-scan", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ url: val, text_content: val })
-            });
+    try {
+        const res = await apiFetch("/quick-scan", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url: val, text_content: val })
+        });
 
+        if ($quickScanResult) {
             $quickScanResult.classList.remove("hidden", "safe", "dangerous");
             const isDanger = res.verdict === "BLOCK_RENDER" || res.mule_detected;
             $quickScanResult.classList.add(isDanger ? "dangerous" : "safe");
@@ -1458,12 +1460,22 @@ if ($quickScanForm) {
             } else {
                 showCyberToast("success", "Target Verified Clean", `Score: ${(res.score * 100).toFixed(1)}% &bull; Verdict: ${res.verdict}`);
             }
-        } catch (err) {
-            showCyberToast("danger", "Inspection Failed", err.message);
-        } finally {
+        }
+    } catch (err) {
+        showCyberToast("danger", "Inspection Failed", err.message);
+    } finally {
+        if ($quickScanBtn) {
             $quickScanBtn.disabled = false;
             $quickScanBtn.textContent = "Inspect Target";
         }
+    }
+}
+window.executeQuickScan = executeQuickScan;
+
+if ($quickScanForm) {
+    $quickScanForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        await executeQuickScan();
     });
 }
 
@@ -1549,18 +1561,22 @@ document.getElementById("muleInsertDemoBtn")?.addEventListener("click", () => {
     const bank = document.getElementById("muleBankInput");
     const plat = document.getElementById("mulePlatformInput");
     const reps = document.getElementById("muleReportsInput");
-    if (acc) acc.value = "112233445566";
-    if (bank) bank.value = "Maybank";
+    const randSuffix = Math.floor(1000 + Math.random() * 9000);
+    const demoBanks = ["Maybank", "CIMB Bank", "Public Bank", "RHB Bank", "Hong Leong Bank"];
+    const chosenBank = demoBanks[Math.floor(Math.random() * demoBanks.length)];
+    if (acc) acc.value = `11223344${randSuffix}`;
+    if (bank) bank.value = chosenBank;
     if (plat) plat.value = "WhatsApp Syndicate (P2P DuitNow)";
-    if (reps) reps.value = "8";
-    showCyberToast("info", "Demo Account Loaded", "Populated Maybank mule account sample.");
+    if (reps) reps.value = String(Math.floor(3 + Math.random() * 8));
+    showCyberToast("info", "Demo Account Loaded", `Populated ${chosenBank} mule account sample (11223344${randSuffix}).`);
 });
 
 document.getElementById("bulkMuleInsertDemoBtn")?.addEventListener("click", () => {
     const txt = document.getElementById("bulkMuleText");
     if (txt) {
-        txt.value = `112233445566, Maybank, WhatsApp, 5\n558844887979, CIMB Bank, Telegram, 12\n988812259332, Hong Leong Bank, ShopeePay, 4\n334455667788, Public Bank, Facebook Marketplace, 7\n778899001122, Touch n Go eWallet, Mudah.my, 6`;
-        showCyberToast("info", "Demo Mule Accounts Loaded", "Populated 5 Malaysian syndicate mule records.");
+        const r = () => Math.floor(1000 + Math.random() * 9000);
+        txt.value = `1122${r()}5566, Maybank, WhatsApp, 5\n5588${r()}7979, CIMB Bank, Telegram, 12\n9888${r()}9332, Hong Leong Bank, ShopeePay, 4\n3344${r()}7788, Public Bank, Facebook Marketplace, 7\n7788${r()}1122, Touch n Go eWallet, Mudah.my, 6`;
+        showCyberToast("info", "Demo Mule Accounts Loaded", "Populated 5 fresh Malaysian syndicate mule records.");
     }
 });
 
@@ -2786,62 +2802,69 @@ if ($openNsrcBtn) $openNsrcBtn.addEventListener("click", openNsrcModal);
 if ($closeNsrcModalBtn) $closeNsrcModalBtn.addEventListener("click", () => $nsrcModal?.classList.add("hidden"));
 
 // ── 4. Quishing (QR-Code Phishing) Scanner ──
-if ($openQuishingBtn) {
-    $openQuishingBtn.addEventListener("click", () => {
-        $quishingModal?.classList.remove("hidden");
+function openQuishingModal() {
+    if ($quishingModal) {
+        $quishingModal.classList.remove("hidden");
         if ($quishingResultBox) $quishingResultBox.classList.add("hidden");
-    });
+    }
 }
+window.openQuishingModal = openQuishingModal;
+
+if ($openQuishingBtn) $openQuishingBtn.addEventListener("click", openQuishingModal);
 if ($closeQuishingModalBtn) $closeQuishingModalBtn.addEventListener("click", () => $quishingModal?.classList.add("hidden"));
 
-if ($quishingScanBtn && $quishingInput) {
-    $quishingScanBtn.addEventListener("click", async () => {
-        const val = $quishingInput.value.trim();
-        if (!val) {
-            showCyberToast("warning", "Empty Payload", "Please enter a QR payload or payment URI.");
-            return;
-        }
+async function executeQuishingAudit(payload = null) {
+    const val = (payload !== null ? payload : ($quishingInput?.value || "")).trim();
+    if (!val) {
+        showCyberToast("warning", "Empty Payload", "Please enter a QR payload or payment URI.");
+        return;
+    }
+    if ($quishingInput) $quishingInput.value = val;
+
+    if ($quishingResultBox) {
+        $quishingResultBox.classList.remove("hidden");
+        $quishingResultBox.innerHTML = `<span class="status-dot live"></span> Auditing QR-code structure and multi-vector risk...`;
+    }
+
+    try {
+        const data = await apiFetch("/quishing/scan", {
+            method: "POST",
+            body: JSON.stringify({ payload: val, context: "SOC Dashboard Manual Audit" })
+        });
+
+        const isHigh = data.quishing_score >= 0.75;
+        const riskFactorsList = (data.risk_factors || []).map(rf => `<li>${escapeHtml(rf)}</li>`).join("");
 
         if ($quishingResultBox) {
-            $quishingResultBox.classList.remove("hidden");
-            $quishingResultBox.innerHTML = `<span class="status-dot live"></span> Auditing QR-code structure and multi-vector risk...`;
+            $quishingResultBox.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <strong style="color: ${isHigh ? '#f87171' : '#34d399'}; font-size: 0.95rem;">${escapeHtml(data.verdict)}</strong>
+                    <span class="brand-risk-badge ${isHigh ? 'brand-risk-badge--critical' : 'brand-risk-badge--monitored'}">Risk: ${(data.quishing_score * 100).toFixed(1)}%</span>
+                </div>
+                <div style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                    <div>Destination URL: <code style="color: var(--accent-cyan);">${escapeHtml(data.primary_url || 'N/A')}</code></div>
+                    <div>DuitNow Scheme: <strong style="color: #fff;">${data.is_duitnow_scheme ? 'YES (P2P Direct)' : 'NO'}</strong></div>
+                    ${data.extracted_mule_accounts.length ? `<div>Extracted Accounts: <strong style="color: #f87171;">${escapeHtml(data.extracted_mule_accounts.join(', '))}</strong></div>` : ''}
+                </div>
+                <ul style="margin: 0 0 0.5rem 1rem; padding: 0; font-size: 0.75rem; color: var(--text-muted);">
+                    ${riskFactorsList}
+                </ul>
+                <div style="font-size: 0.78rem; font-weight: 700; color: #fff; background: rgba(0,0,0,0.3); padding: 6px; border-radius: 4px;">
+                    Recommended Action: <span style="color: ${isHigh ? '#f87171' : '#34d399'};">${escapeHtml(data.recommended_action)}</span>
+                </div>
+            `;
         }
-
-        try {
-            const data = await apiFetch("/quishing/scan", {
-                method: "POST",
-                body: JSON.stringify({ payload: val, context: "SOC Dashboard Manual Audit" })
-            });
-
-            const isHigh = data.quishing_score >= 0.75;
-            const riskFactorsList = (data.risk_factors || []).map(rf => `<li>${escapeHtml(rf)}</li>`).join("");
-
-            if ($quishingResultBox) {
-                $quishingResultBox.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                        <strong style="color: ${isHigh ? '#f87171' : '#34d399'}; font-size: 0.95rem;">${escapeHtml(data.verdict)}</strong>
-                        <span class="brand-risk-badge ${isHigh ? 'brand-risk-badge--critical' : 'brand-risk-badge--monitored'}">Risk: ${(data.quishing_score * 100).toFixed(1)}%</span>
-                    </div>
-                    <div style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
-                        <div>Destination URL: <code style="color: var(--accent-cyan);">${escapeHtml(data.primary_url || 'N/A')}</code></div>
-                        <div>DuitNow Scheme: <strong style="color: #fff;">${data.is_duitnow_scheme ? 'YES (P2P Direct)' : 'NO'}</strong></div>
-                        ${data.extracted_mule_accounts.length ? `<div>Extracted Accounts: <strong style="color: #f87171;">${escapeHtml(data.extracted_mule_accounts.join(', '))}</strong></div>` : ''}
-                    </div>
-                    <ul style="margin: 0 0 0.5rem 1rem; padding: 0; font-size: 0.75rem; color: var(--text-muted);">
-                        ${riskFactorsList}
-                    </ul>
-                    <div style="font-size: 0.78rem; font-weight: 700; color: #fff; background: rgba(0,0,0,0.3); padding: 6px; border-radius: 4px;">
-                        Recommended Action: <span style="color: ${isHigh ? '#f87171' : '#34d399'};">${escapeHtml(data.recommended_action)}</span>
-                    </div>
-                `;
-            }
-            showCyberToast(isHigh ? "danger" : "success", "QR Audit Complete", data.verdict);
-        } catch (err) {
-            if ($quishingResultBox) {
-                $quishingResultBox.innerHTML = `<span style="color: #f87171;">Scan Error: ${escapeHtml(err.message)}</span>`;
-            }
+        showCyberToast(isHigh ? "danger" : "success", "QR Audit Complete", data.verdict);
+    } catch (err) {
+        if ($quishingResultBox) {
+            $quishingResultBox.innerHTML = `<span style="color: #f87171;">Scan Error: ${escapeHtml(err.message)}</span>`;
         }
-    });
+    }
+}
+window.executeQuishingAudit = executeQuishingAudit;
+
+if ($quishingScanBtn) {
+    $quishingScanBtn.addEventListener("click", () => executeQuishingAudit());
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -3745,20 +3768,16 @@ let demoScanIdx = 0;
 document.getElementById("quickScanDemoBtn")?.addEventListener("click", () => {
     const target = demoScans[demoScanIdx % demoScans.length];
     demoScanIdx++;
-    if ($quickScanInput) {
-        $quickScanInput.value = target;
-        showCyberToast("info", "Demo Sample Populated", `Loaded target: ${target}`);
-    }
+    if ($quickScanInput) $quickScanInput.value = target;
+    showCyberToast("info", "Demo Target Loaded & Inspecting", `Loaded: ${target}`);
+    executeQuickScan(target);
 });
 
 // 2. Quishing Demo Sample Button
 document.getElementById("quishingInsertDemoBtn")?.addEventListener("click", () => {
-    const qIn = document.getElementById("quishingInput");
-    if (qIn) {
-        qIn.value = "duitnow://pay?acc=112233445566&bank=Maybank&amount=150.00&ref=PDRM-SAMAN-9921";
-        showCyberToast("info", "Demo Quishing Loaded", "Populated DuitNow EMVCo QR code payload.");
-        document.getElementById("quishingScanBtn")?.click();
-    }
+    const payload = "duitnow://pay?acc=112233445566&bank=Maybank&amount=150.00&ref=PDRM-SAMAN-9921";
+    showCyberToast("info", "Demo Quishing Loaded & Auditing", "Populated DuitNow EMVCo QR code payload.");
+    executeQuishingAudit(payload);
 });
 
 // 3. Typosquat Radar Demo Domain Button
@@ -3785,30 +3804,25 @@ if ($closeMasterDemoModalBtn) $closeMasterDemoModalBtn.addEventListener("click",
 // Scenario Triggers inside Master Demo Modal
 document.getElementById("demoTriggerMaybankBtn")?.addEventListener("click", () => {
     closeMasterDemoModal();
-    if ($quickScanInput) {
-        $quickScanInput.value = "http://maybank2u-security-update.top/login";
-        $quickScanForm?.dispatchEvent(new Event("submit", { cancelable: true }));
-    }
+    const target = "http://maybank2u-security-update.top/login";
+    if ($quickScanInput) $quickScanInput.value = target;
+    executeQuickScan(target);
     showCyberToast("info", "Scenario Demo Launched", "Maybank2u phishing clone scenario analyzed.");
 });
 
 document.getElementById("demoTriggerMuleBtn")?.addEventListener("click", () => {
     closeMasterDemoModal();
-    if ($quickScanInput) {
-        $quickScanInput.value = "PDRM Traffic Summons Alert: Settle summons via Maybank mule 112233445566";
-        $quickScanForm?.dispatchEvent(new Event("submit", { cancelable: true }));
-    }
+    const target = "PDRM Traffic Summons Alert: Settle summons via Maybank mule 112233445566";
+    if ($quickScanInput) $quickScanInput.value = target;
+    executeQuickScan(target);
     showCyberToast("info", "Scenario Demo Launched", "PDRM CCID mule syndicate scenario analyzed.");
 });
 
 document.getElementById("demoTriggerQuishBtn")?.addEventListener("click", () => {
     closeMasterDemoModal();
-    if ($quishingModal) $quishingModal.classList.remove("hidden");
-    const qIn = document.getElementById("quishingInput");
-    if (qIn) {
-        qIn.value = "duitnow://pay?acc=112233445566&bank=Maybank&amount=150.00&ref=PDRM-SAMAN-9921";
-        document.getElementById("quishingScanBtn")?.click();
-    }
+    openQuishingModal();
+    const payload = "duitnow://pay?acc=112233445566&bank=Maybank&amount=150.00&ref=PDRM-SAMAN-9921";
+    executeQuishingAudit(payload);
     showCyberToast("info", "Scenario Demo Launched", "PayNet Quishing scanner scenario activated.");
 });
 
@@ -3828,10 +3842,11 @@ document.getElementById("demoMasterEngageAllBtn")?.addEventListener("click", asy
     if (!$simToggleBtn?.classList.contains("on")) {
         await handleSimToggle();
     }
-    // 2. Pre-populate quick scan
-    if ($quickScanInput) {
-        $quickScanInput.value = "http://maybank2u-auth-verify.top/login";
-    }
+    // 2. Execute quick scan on sample target
+    const target = "http://maybank2u-auth-verify.top/login";
+    if ($quickScanInput) $quickScanInput.value = target;
+    executeQuickScan(target);
+
     // 3. Pre-populate batch scan
     const bIn = document.getElementById("batchInputText");
     if (bIn) {
@@ -3842,12 +3857,37 @@ document.getElementById("demoMasterEngageAllBtn")?.addEventListener("click", asy
     if (qIn) {
         qIn.value = "duitnow://pay?acc=112233445566&bank=Maybank&amount=150.00&ref=PDRM-SAMAN-9921";
     }
-    // 5. Pre-populate bulk mules
+    // 5. Pre-populate bulk mules with fresh batch
     const bMule = document.getElementById("bulkMuleText");
     if (bMule) {
-        bMule.value = "112233445566, Maybank, WhatsApp, 5\n558844887979, CIMB Bank, Telegram, 12\n988812259332, Hong Leong Bank, ShopeePay, 4\n334455667788, Public Bank, Facebook Marketplace, 7\n778899001122, Touch n Go eWallet, Mudah.my, 6";
+        const r = () => Math.floor(1000 + Math.random() * 9000);
+        bMule.value = `1122${r()}5566, Maybank, WhatsApp, 5\n5588${r()}7979, CIMB Bank, Telegram, 12\n9888${r()}9332, Hong Leong Bank, ShopeePay, 4\n3344${r()}7788, Public Bank, Facebook Marketplace, 7\n7788${r()}1122, Touch n Go eWallet, Mudah.my, 6`;
     }
-    showCyberToast("success", "✨ Master Demo Engaged", "All sample datasets & live simulated multi-modal threat feeds active!");
+    // 6. Pre-populate single mule with fresh account
+    const mAcc = document.getElementById("muleAccountInput");
+    const mBank = document.getElementById("muleBankInput");
+    if (mAcc) mAcc.value = `11223344${Math.floor(1000 + Math.random() * 9000)}`;
+    if (mBank) mBank.value = "Maybank";
+
+    // 7. Pre-populate webhooks
+    const dInput = document.getElementById("discordWebhookInput");
+    const sInput = document.getElementById("slackWebhookInput");
+    if (dInput) dInput.value = "https://discord.com/api/webhooks/1234567890/PhishGuard-SOC-Alerts-Demo";
+    if (sInput) sInput.value = "https://hooks.slack.com/services/T00000000/B00000000/PhishGuardAlertsDemo";
+
+    showCyberToast("success", "✨ Master Demo Engaged", "All sample datasets primed & live simulated multi-modal threat feeds active!");
+});
+
+// Universal modal overlay click & ESC key dismiss handlers
+document.querySelectorAll(".modal-overlay").forEach(modal => {
+    modal.addEventListener("click", (e) => {
+        if (e.target === modal) modal.classList.add("hidden");
+    });
+});
+document.querySelectorAll(".modal-close-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+        btn.closest(".modal-overlay")?.classList.add("hidden");
+    });
 });
 
 // Initial load & stream

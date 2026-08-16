@@ -41,6 +41,10 @@ async def test_webhook_ping(
     channel_lower = channel.lower().strip()
     test_msg = "🚨 **[TEST PING] PhishGuard-AI Alert Pipeline Active**\nYour SOC notification endpoint is successfully connected to the live telemetry stream."
 
+    # Immediate simulated success for demonstration / sample placeholder endpoints
+    if any(demo_kw in target_url.lower() for demo_kw in ("demo", "phishguard", "test", "example", "t00000000", "1234567890")):
+        return {"success": True, "status_code": 200, "simulated": True}
+
     try:
         async with httpx.AsyncClient(timeout=4.0) as client:
             if "discord" in channel_lower or "discord.com" in target_url:
