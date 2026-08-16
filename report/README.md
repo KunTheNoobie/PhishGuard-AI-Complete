@@ -13,11 +13,10 @@
 
 | Chapter | Title | File Path | Status |
 | :--- | :--- | :--- | :---: |
-| **Header & Front Matter** | Title Page, Declaration, Abstract, Acknowledgement, Table of Contents | [`Chapter_1_Introduction.md`](file:///c:/Users/yiler/Downloads/PhishGuard-AI-Complete/report/Chapter_1_Introduction.md) | ✅ Complete |
-| **Chapter 1** | Introduction (Background, Problem Statement, Objectives, Project Plan) | [`Chapter_1_Introduction.md`](file:///c:/Users/yiler/Downloads/PhishGuard-AI-Complete/report/Chapter_1_Introduction.md) | ✅ Complete |
-| **Chapter 2** | Literature Review | *Pending Input* | ⏳ Queued |
-| **Chapter 3** | Methodology and Requirements Analysis | *Pending Input* | ⏳ Queued |
-| **Chapter 4** | System Design | *Pending Input* | ⏳ Queued |
-| **Chapter 5** | Implementation and Testing | *Pending Input* | ⏳ Queued |
-| **Chapter 6** | Discussion and Conclusion | *Pending Input* | ⏳ Queued |
-| **References & Appendices** | References, JSON Schemas, Test Output, Bert Inference Logs, Dashboard | *Pending Input* | ⏳ Queued |
+| **Front Matter & Chapter 1** | Cover Page, Declaration, Abstract, Acknowledgement, Table of Contents, Introduction | [`Chapter_1_Introduction.md`](file:///c:/Users/yiler/Downloads/PhishGuard-AI-Complete/report/Chapter_1_Introduction.md) | ✅ Complete & Verified |
+| **Chapter 2** | Literature Review | `Chapter_2_Literature_Review.md` | ⏳ Ready for Input |
+| **Chapter 3** | Methodology and Requirements Analysis | `Chapter_3_Methodology.md` | ⏳ Ready for Input |
+| **Chapter 4** | System Design | `Chapter_4_System_Design.md` | ⏳ Ready for Input |
+| **Chapter 5** | Implementation and Testing | `Chapter_5_Implementation_Testing.md` | ⏳ Ready for Input |
+| **Chapter 6** | Discussions and Conclusion | `Chapter_6_Discussion_Conclusion.md` | ⏳ Ready for Input |
+| **References & Appendices** | References, FastAPI JSON Schemas, Automated Test Outputs, BERT Inference Logs | `Appendices.md` | ⏳ Ready for Input |
