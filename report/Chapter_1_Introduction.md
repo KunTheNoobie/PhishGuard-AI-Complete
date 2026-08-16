@@ -124,19 +124,37 @@ This dissertation focuses strictly on the research, algorithmic design, and engi
 
 Despite continuous enhancements in modern web browser sandboxing and transport-layer encryption, end-users remain persistently vulnerable to financial fraud due to four systemic vulnerabilities in traditional defensive architectures:
 
+```plantuml
+@startuml Figure_1_1_Problem_Statement
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Arial"
+skinparam defaultFontSize 11
+skinparam roundCorner 8
+skinparam shadowing true
+
+skinparam rectangle {
+    BackgroundColor #F8FAFC
+    BorderColor #475569
+    FontColor #0F172A
+}
+
+title Figure 1.1: Systemic Cybersecurity Vulnerabilities in Traditional Web Defense
+
+rectangle "Core Cybersecurity Problem Statement\n**Vulnerabilities in Contemporary Web Security**" as Root #E2E8F0
+
+rectangle "1.2.1 Static Blacklist Latency\n--\n• Ephemeral domain lifespan (< 2h)\n• Automated cloud provisioning\n• Multi-hour DNS propagation lag\n• Zero-Day credential exposure" as P1 #FEE2E2
+rectangle "1.2.2 Semantic & Homoglyph Evasion\n--\n• Typosquatting (e.g., rnaybank.com)\n• Unicode IDN homoglyphs\n• Psychological coercion triggers\n• Lack of NLP context in TF-IDF" as P2 #FEF3C7
+rectangle "1.2.3 Mule Account Verification Friction\n--\n• Rented 'Keldai Akaun' syndicates\n• Manual PDRM Semakmule lookup\n• High friction during P2P transfers\n• Undetected e-commerce fraud" as P3 #FFEDD5
+rectangle "1.2.4 Catastrophic CIA Triad Degradation\n--\n• Confidentiality: NRIC, TAC/OTP theft\n• Integrity: Altered transfer beneficiaries\n• Availability: Hostile account lockouts" as P4 #F3E8FF
+
+Root -down-> P1
+Root -down-> P2
+Root -down-> P3
+Root -down-> P4
+@enduml
 ```
-                  ┌─────────────────────────────────────────────────────────┐
-                  │          CORE CYBERSECURITY VULNERABILITIES             │
-                  └─────────────────────────────────────────────────────────┘
-                                               │
-         ┌─────────────────────┬───────────────┴───────────────┬─────────────────────┐
-         ▼                     ▼                               ▼                     ▼
-┌─────────────────┐   ┌─────────────────┐             ┌─────────────────┐   ┌─────────────────┐
-│ 1.2.1 Blacklist │   │ 1.2.2 Semantic  │             │ 1.2.3 Mule      │   │ 1.2.4 CIA Triad │
-│ Zero-Day Lag    │   │ Evasion & IDN   │             │ Verification    │   │ Catastrophic    │
-│ (>2h lifespan)  │   │ Homoglyphs      │             │ Friction        │   │ Degradation     │
-└─────────────────┘   └─────────────────┘             └─────────────────┘   └─────────────────┘
-```
+*Figure 1.1: Systemic Cybersecurity Vulnerabilities in Traditional Web Defense.*
 
 ### 1.2.1 The Latency of Static Blacklists Against Zero-Day Ephemeral Threats
 Conventional web security predominantly relies on deterministic, signature-based blacklists (e.g., Google Safe Browsing, DNSBL, SURBL). However, contemporary phishing operations leverage automated cloud provisioning to instantiate thousands of disposable domains daily. Security research reveals that over **60% of modern phishing domains remain active for under two hours** (NIST, 2023). The manual reporting, verification, and DNS propagation cycle requires several hours to days, creating a catastrophic "Time-to-Protect" lag during which victim credentials are harvested before the malicious host is ever flagged.
@@ -174,30 +192,73 @@ The overarching aim of this individual module is to engineer an asynchronous, re
 
 To address the aforementioned vulnerabilities, the PhishGuard-AI backend implements a multi-layered, defense-in-depth architecture:
 
+```plantuml
+@startuml Figure_1_2_Backend_Architecture
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Arial"
+skinparam defaultFontSize 11
+skinparam shadowing true
+skinparam roundCorner 8
+
+skinparam component {
+    BackgroundColor #F8FAFC
+    BorderColor #334155
+    FontColor #0F172A
+}
+
+package "Client Endpoint Layer" {
+    [Browser Extension Client\n(Chrome Manifest V3)] as Client
+}
+
+package "FastAPI Asynchronous Gateway (Uvicorn ASGI)" #EFF6FF {
+    [API Gateway\nPOST /api/v1/analyze/semantics] as Gateway
+    [Security & Rate Limiter\n(Bearer API Key Auth)] as Auth
+    [Pre-Inference Whitelist\n(28-Bank Trusted frozenset)] as Whitelist
+}
+
+package "Parallel AI & Verification Engine (asyncio.gather)" #F0FDF4 {
+    package "Pillar 1: Semantic NLP Brain" #FEFCE8 {
+        [WordPiece Tokenizer] as Tokenizer
+        [Fine-Tuned BERT Engine\n(bert-base-uncased / PyTorch)] as BERT
+        [asyncio.to_thread\nWorker Pool] as WorkerPool
+    }
+    
+    package "Pillar 2: Mule Account Engine" #FFF7ED {
+        [Regex Extraction Engine\n(8 Malaysian Bank Formats)] as Regex
+        database "SQLite 3NF Database\n(WAL Mode / aiosqlite)" as DB {
+            [Simulated PDRM CCID\nSemakmule Registry] as MuleDB
+        }
+    }
+}
+
+package "Decision & Telemetry Layer" #FAF5FF {
+    [Unified Decision Engine\n(Decision Latency < 400ms)] as Decision
+    [Server-Sent Events (SSE)\nTelemetry Broadcast] as SSE
+    [Threat Intelligence Dashboard\n(/dashboard/)] as Dashboard
+}
+
+Client -down-> Gateway : 1. Intercepted DOM & URL
+Gateway -down-> Auth : 2. Authenticate
+Auth -down-> Whitelist : 3. Domain Check
+
+Whitelist -down-> Decision : Match (Instant SAFE Bypass)
+Whitelist -down-> Tokenizer : Non-Whitelisted (Proceed Analysis)
+
+Tokenizer -right-> BERT : 4a. Token IDs
+BERT -down-> WorkerPool : Offload Tensors
+WorkerPool -down-> Decision : Semantic Threat Score
+
+Whitelist -down-> Regex : 4b. Scan DOM Text
+Regex -right-> MuleDB : 5. Async SQL Query
+MuleDB -down-> Decision : Mule Match Status
+
+Decision -down-> Client : 6. JSON Verdict (BLOCK_RENDER / SAFE)
+Decision -down-> SSE : 7. Threat Telemetry Log
+SSE -right-> Dashboard : 8. Real-Time CTI Stream
+@enduml
 ```
-+----------------------------------------------------------------------------------------------------+
-|                                PHISHGUARD-AI BACKEND ENGINE ARCHITECTURE                           |
-+----------------------------------------------------------------------------------------------------+
-|  [ Client Extension / DOM Payload ]                                                                |
-|                 │                                                                                  |
-|                 ▼                                                                                  |
-|  [ FastAPI Async API Gateway - Bearer Auth / Rate Limiting ]                                       |
-|                 │                                                                                  |
-|        ┌────────┴─────────────────────────────────┐                                                |
-|        ▼                                          ▼                                                |
-|  [ Pillar 1: Semantic NLP Brain ]        [ Pillar 2: Mule Verification Engine ]                    |
-|  • 28-Bank Whitelist Fast-Bypass         • Regex Parser (8 Bank Formats)                           |
-|  • WordPiece Tokenization                • aiosqlite (WAL Mode, 3NF Index)                         |
-|  • Fine-Tuned BERT Inference (PyTorch)   • Simulated PDRM CCID Semakmule Registry                  |
-|        └────────┬─────────────────────────────────┘                                                |
-|                 │                                                                                  |
-|                 ▼ (asyncio.gather() Parallel Execution)                                            |
-|  [ Unified JSON Security Verdict: BLOCK_RENDER / SAFE (< 400ms) ]                                  |
-|                 │                                                                                  |
-|                 ▼                                                                                  |
-|  [ Real-Time SSE Telemetry Stream -> Live SOC Intelligence Dashboard ]                            |
-+----------------------------------------------------------------------------------------------------+
-```
+*Figure 1.2: PhishGuard-AI Backend Engine Architecture and Parallel Verification Pipeline.*
 
 ### 1.4.1 Dynamic Semantic Analysis via Fine-Tuned BERT
 To mitigate zero-day blacklist latency, the backend utilizes a fine-tuned BERT Deep Learning model. By processing raw DOM tokens bidirectionally through multi-head self-attention mechanisms, the engine discerns deceptive social engineering intent regardless of whether the domain was registered minutes prior. Furthermore, a pre-inference **28-Bank Trusted Domain Whitelist (`frozenset`)** immediately validates authentic Malaysian banking portals (`maybank2u.com.my`, `pbebank.com.my`), ensuring zero false alarms.
@@ -212,18 +273,32 @@ To prevent deep learning tensors from blocking the I/O event loop, all PyTorch i
 
 ## 1.5 Target Market
 
+```plantuml
+@startuml Figure_1_3_Target_Market
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Arial"
+skinparam defaultFontSize 11
+skinparam roundCorner 8
+skinparam shadowing true
+
+actor "Primary Stakeholders\n(End-Users)" as Primary #EFF6FF
+actor "Secondary Stakeholders\n(Enterprises & Regulators)" as Secondary #FDF2F8
+
+rectangle "General Public & Elderly Citizens\n--\n• Zero-click automated protection\n• Intercepts deceptive banking clones\n• Shields P2P / e-Wallet transactions" as User1 #DBEAFE
+rectangle "SME Personnel & Procurement\n--\n• Immunity against invoice fraud\n• Protection against targeted BEC\n• Preserves corporate financial records" as User2 #DBEAFE
+
+rectangle "Commercial Banks & e-Wallets\n--\n• Reduces fraudulent unauthorized claims\n• Mitigates brand impersonation\n• Shields customer deposit accounts" as Org1 #FCE7F3
+rectangle "Corporate IT & SOC Teams\n--\n• Real-time CTI telemetry monitoring\n• Standardized STIX 2.1 / CEF export\n• Automated law enforcement dispatch" as Org2 #FCE7F3
+
+Primary -down-> User1
+Primary -down-> User2
+
+Secondary -down-> Org1
+Secondary -down-> Org2
+@enduml
 ```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                                TARGET AUDIENCE                                  │
-├───────────────────────────────────────┬─────────────────────────────────────────┤
-│ Primary Stakeholders (End-Users)      │ Secondary Stakeholders (Enterprises)    │
-├───────────────────────────────────────┼─────────────────────────────────────────┤
-│ • General Public & Elderly Citizens   │ • Commercial Banks & e-Wallet Providers │
-│   Zero-click, automated protection     Proactive fraud interception at endpoint │
-│ • SME Personnel & Procurement Staff   │ • Corporate IT & SOC Security Teams     │
-│   Immunity against BEC & fake invoices  CTI telemetry, STIX 2.1 / CEF / Syslog   │
-└───────────────────────────────────────┴─────────────────────────────────────────┘
-```
+*Figure 1.3: Target Market and Stakeholder Ecosystem Hierarchy.*
 
 ---
 
@@ -275,21 +350,46 @@ The PhishGuard-AI project is structured into two distinct engineering domains to
 
 The project adopts a hybrid **Agile-MLOps** development lifecycle. Agile principles provide iteration flexibility across 2-week development sprints, while MLOps protocols manage dataset balance, hyperparameter tuning, model versioning, and inference latency benchmarks.
 
+```plantuml
+@startuml Figure_1_4_Agile_MLOps_Workflow
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Arial"
+skinparam defaultFontSize 11
+skinparam shadowing true
+skinparam roundCorner 8
+
+start
+
+partition "Agile Sprint Cycle (2-Week Iterations)" {
+    :Sprint Planning & Requirement Validation;
+    :FastAPI Microservice Architecture Setup;
+    :Regex Extraction Algorithm Development;
+    :SQLite 3NF Schema Design & WAL Mode;
+}
+
+partition "MLOps Deep Learning Pipeline" {
+    :Cybersecurity Dataset Cleaning & Balancing;
+    :WordPiece Tokenization & Vocabulary Mapping;
+    :BERT Model Fine-Tuning (PyTorch & HuggingFace);
+    :Hyperparameter Optimization & Validation;
+    :Model Evaluation (F1-Score, Confusion Matrix, Latency);
+    :Model Serialization & Tensor Cache Setup;
+}
+
+partition "Integration & Quality Verification" {
+    :Parallel asyncio.gather Orchestration;
+    :Automated Pytest Test Suite (120/120 Test Cases);
+    :Sub-400ms End-to-End Latency Benchmarking;
+    :SSE Telemetry & CTI Dashboard Integration;
+}
+
+:Final System Deployment & Moderation Review;
+
+stop
+@enduml
 ```
-       ┌─────────────────────────────────────────────────────────────────┐
-       │              HYBRID AGILE-MLOPS DEVELOPMENT TRACK               │
-       └─────────────────────────────────────────────────────────────────┘
-                                        │
-           ┌────────────────────────────┴────────────────────────────┐
-           ▼                                                         ▼
-┌─────────────────────────────────────┐   ┌─────────────────────────────────────┐
-│       Agile Engineering Sprints     │   │         MLOps AI Lifecycle          │
-│ • Sprint Planning & Code Reviews    │   │ • Dataset Cleaning & Tokenization   │
-│ • FastAPI Endpoint Construction     │   │ • BERT Model Fine-Tuning (PyTorch)  │
-│ • SQLite Schema & Regex Refinement  │   │ • F1-Score & Latency Benchmarking   │
-│ • Pytest Automated Test Suites      │   │ • Model Serialization & Caching     │
-└─────────────────────────────────────┘   └─────────────────────────────────────┘
-```
+*Figure 1.4: Hybrid Agile-MLOps Development Lifecycle Workflow.*
 
 ---
 
