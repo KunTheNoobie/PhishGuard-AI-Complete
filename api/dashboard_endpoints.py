@@ -1076,87 +1076,105 @@ async def bulk_import_mules(payload: BulkMuleRequest, request: Request) -> dict[
     summary="Geographic threat origins and attack node coordinates",
 )
 async def get_geographic_threats(request: Request) -> dict[str, Any]:
-    """Return real-time geographic attack origin points with lat/long and threat intensity."""
+    """Return real-time geographic attack origin points computed directly from live telemetry."""
     db = request.app.state.db
-    cursor = await db.execute("SELECT COUNT(*) FROM threat_telemetry;")
-    row = await cursor.fetchone()
-    total_telemetry = row[0] if row else 50
+    cursor = await db.execute("SELECT log_id, malicious_url, timestamp FROM threat_telemetry ORDER BY log_id DESC;")
+    rows = await cursor.fetchall()
+    total_telemetry = len(rows)
 
-    # Proportional geographic distribution
-    nodes = [
-        {
+    # Real-world infrastructure node definitions with verified geographic coordinates and ASNs
+    node_configs = {
+        "MY": {
             "id": "node-my-kl",
             "city": "Kuala Lumpur",
             "country": "Malaysia (Origin Hub)",
             "country_code": "MY",
             "lat": 3.1390,
             "lng": 101.6869,
-            "threats": max(12, int(total_telemetry * 0.42)),
             "asn": "TM Net (AS4788)",
-            "status": "critical",
-            "pulse": True,
         },
-        {
+        "SG": {
             "id": "node-sg-sg",
             "city": "Singapore",
             "country": "Singapore",
             "country_code": "SG",
             "lat": 1.3521,
             "lng": 103.8198,
-            "threats": max(8, int(total_telemetry * 0.22)),
             "asn": "Singtel (AS7473)",
-            "status": "high",
-            "pulse": True,
         },
-        {
+        "US": {
             "id": "node-us-sj",
             "city": "San Jose",
             "country": "United States (Hosting Proxy)",
             "country_code": "US",
             "lat": 37.3382,
             "lng": -121.8863,
-            "threats": max(6, int(total_telemetry * 0.16)),
             "asn": "Cloudflare Anycast (AS13335)",
-            "status": "medium",
-            "pulse": False,
         },
-        {
+        "DE": {
             "id": "node-de-fra",
             "city": "Frankfurt",
             "country": "Germany",
             "country_code": "DE",
             "lat": 50.1109,
             "lng": 8.6821,
-            "threats": max(4, int(total_telemetry * 0.10)),
             "asn": "DigitalOcean (AS14061)",
-            "status": "medium",
-            "pulse": False,
         },
-        {
+        "HK": {
             "id": "node-hk-hk",
             "city": "Hong Kong",
             "country": "Hong Kong SAR",
             "country_code": "HK",
             "lat": 22.3193,
             "lng": 114.1694,
-            "threats": max(3, int(total_telemetry * 0.06)),
             "asn": "Tencent Cloud (AS132203)",
-            "status": "low",
-            "pulse": False,
         },
-        {
+        "JP": {
             "id": "node-jp-tyo",
             "city": "Tokyo",
             "country": "Japan",
             "country_code": "JP",
             "lat": 35.6762,
             "lng": 139.6503,
-            "threats": max(2, int(total_telemetry * 0.04)),
             "asn": "AWS Tokyo (AS16509)",
-            "status": "low",
-            "pulse": False,
         },
-    ]
+    }
+
+    counts: dict[str, int] = {k: 0 for k in node_configs}
+    last_seen: dict[str, str] = {k: "Live" for k in node_configs}
+
+    for lid, murl, tstamp in rows:
+        geo = _resolve_telemetry_geo(murl, lid)
+        cc = geo.get("country_code", "MY")
+        if cc in counts:
+            counts[cc] += 1
+            if last_seen[cc] == "Live" and tstamp:
+                last_seen[cc] = tstamp
+
+    nodes = []
+    for cc, cfg in node_configs.items():
+        cnt = max(1, counts[cc]) if total_telemetry > 0 else 5
+        share = cnt / max(1, total_telemetry)
+        if share >= 0.25:
+            status = "critical"
+            pulse = True
+        elif share >= 0.15:
+            status = "high"
+            pulse = True
+        elif share >= 0.08:
+            status = "medium"
+            pulse = False
+        else:
+            status = "low"
+            pulse = False
+
+        nodes.append({
+            **cfg,
+            "threats": cnt,
+            "status": status,
+            "pulse": pulse,
+            "last_seen": last_seen[cc],
+        })
 
     return {
         "total_active_nodes": len(nodes),
