@@ -188,8 +188,7 @@ async def quick_scan_url(request: Request, payload: QuickScanRequest) -> dict[st
     from services.brand_profiler import profile_brand_impersonation
     from services.heuristic_engine import analyze_url_heuristics
     from core.config import BILINGUAL_SCAM_KEYWORDS, GLOBAL_SAFE_DOMAINS, TRUSTED_DOMAINS
-
-
+    from api.endpoints import _is_trusted_domain
 
     db = request.app.state.db
     mule_scanner = request.app.state.mule_scanner
@@ -246,20 +245,33 @@ async def quick_scan_url(request: Request, payload: QuickScanRequest) -> dict[st
         except Exception:
             pass
 
-    # 6. Synthesize Multi-Modal Verdict
-    is_official = brand_result["is_official_domain"]
+    # 6. Synthesize Multi-Modal Correlated Verdict
+    is_official = brand_result["is_official_domain"] or _is_trusted_domain(target_url)
+    lower_comb = combined_text.lower()
+    has_login_or_creds = any(
+        w in lower_comb
+        for w in (
+            "login", "log in", "sign in", "signin", "password", "kata laluan",
+            "tac", "otp", "pin", "credential", "security code", "masuk akaun"
+        )
+    )
+
     is_threat = (
-        mule_result["mule_detected"]
-        or brand_result["is_impersonation"]
-        or (has_scam_keywords and heur_result["is_suspicious"])
-        or (has_scam_keywords and not is_official)
-        or is_phishing_semantic
+        not is_official
+        and (
+            mule_result["mule_detected"]
+            or bool(mule_result.get("flagged_accounts"))
+            or brand_result["is_impersonation"]
+            or (has_scam_keywords and heur_result["is_suspicious"])
+            or (has_scam_keywords and is_phishing_semantic)
+            or (is_phishing_semantic and (has_login_or_creds or heur_result["is_suspicious"]))
+        )
     )
 
     if is_official:
         score = 0.02
         verdict = "SAFE"
-    elif mule_result["mule_detected"]:
+    elif mule_result["mule_detected"] or bool(mule_result.get("flagged_accounts")):
         score = max(0.99, bert_score)
         verdict = "BLOCK_RENDER"
     elif is_threat:

@@ -50,6 +50,9 @@ from schemas.response import (
     SemanticResult,
 )
 from services.sanitizer import sanitize_dom
+from services.brand_profiler import profile_brand_impersonation
+from services.heuristic_engine import analyze_url_heuristics
+from core.config import BILINGUAL_SCAM_KEYWORDS
 from database.repository import log_threat_telemetry
 
 logger: Final[logging.Logger] = logging.getLogger("phishguard.endpoints")
@@ -281,8 +284,35 @@ async def analyse_semantics(
         is_trusted,
     )
 
-    # ── 5. Orchestration Verdict ──
-    is_threat: bool = bert_result["is_malicious"] or mule_result["mule_detected"] or bool(mule_result.get("flagged_accounts"))
+    # ── 5. Smart Multi-Modal Correlated Orchestration Verdict ──
+    brand_result = profile_brand_impersonation(url_str, sanitized_text)
+    heur_result = analyze_url_heuristics(url_str)
+    lower_dom = sanitized_text.lower()
+    has_scam_keywords = any(kw.lower() in lower_dom for kw in BILINGUAL_SCAM_KEYWORDS)
+    has_login_or_creds = any(
+        w in lower_dom
+        for w in (
+            "login", "log in", "sign in", "signin", "password", "kata laluan",
+            "tac", "otp", "pin", "credential", "security code", "masuk akaun"
+        )
+    )
+
+    # A genuine threat exhibits concrete corroborating fraud indicators:
+    # 1. Registered or newly detected money-mule account / DuitNow proxy
+    # 2. Brand impersonation targeting financial/tech brands on an unverified domain
+    # 3. Severe deceptive domain heuristics (IP hostname, punycode, deceptive subdomains) + phishing/login cues
+    # 4. Explicit social engineering / financial coercion phrasing
+    # 5. Phishing semantic label WITH login/credential input on an unverified domain
+    is_corroborated_threat = (
+        mule_result["mule_detected"]
+        or bool(mule_result.get("flagged_accounts"))
+        or brand_result["is_impersonation"]
+        or (heur_result["is_suspicious"] and (bert_result["is_malicious"] or has_scam_keywords))
+        or (has_scam_keywords and bert_result["is_malicious"])
+        or (bert_result["is_malicious"] and (has_login_or_creds or heur_result["is_suspicious"]))
+    )
+
+    is_threat: bool = not is_trusted and is_corroborated_threat
     verdict: str = VERDICT_BLOCK if is_threat else VERDICT_SAFE
 
     # ── 6. Live Telemetry & Mule Registry Ingestion ──

@@ -202,8 +202,15 @@ function showFullScreenBlockScreen(result) {
   const proceedBtn = document.getElementById("phishguard-proceed-btn");
   if (proceedBtn) {
     proceedBtn.addEventListener("click", () => {
+      try {
+        chrome.runtime.sendMessage({
+          type: "PHISHGUARD_TRUST_DOMAIN",
+          domain: location.hostname,
+          hours: 168
+        });
+      } catch (_e) {}
       overlay.remove();
-      showTopBanner(result);
+      clearWarningBanner();
     });
   }
 }

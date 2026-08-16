@@ -263,6 +263,27 @@ function normalizeSettledResult(settled) {
   };
 }
 
+async function getCustomTrustedDomains() {
+  const data = await storageGet(["custom_trusted_domains"]);
+  return data.custom_trusted_domains || {};
+}
+
+async function isCustomTrustedDomain(host) {
+  if (!host) return false;
+  const cleanHost = host.replace(/^www\./, "").toLowerCase();
+  const trusted = await getCustomTrustedDomains();
+  const expiry = trusted[cleanHost] || trusted[host];
+  if (expiry && expiry > Date.now()) {
+    return true;
+  }
+  for (const [dom, exp] of Object.entries(trusted)) {
+    if ((cleanHost === dom || cleanHost.endsWith(`.${dom}`)) && exp > Date.now()) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function hostFromUrl(url) {
   try {
     return new URL(url).hostname.toLowerCase();
@@ -391,23 +412,19 @@ function combineResults(visualResult, semanticResult, errors, pageUrl, pageText)
   const visualRisk = visualResult ? visualResult.risk_level : "unavailable";
   const visualThreat = visualRisk === "suspicious" || visualRisk === "dangerous";
   const officialVisualMatch = hasOfficialVisualMatch(visualResult, pageUrl);
-  const muleThreat = Boolean(muleScan && muleScan.mule_detected);
-  const semanticThreat = Boolean(
-    semanticResult && (
-      semanticResult.orchestration === "BLOCK_RENDER" ||
-      (semanticAnalysis && semanticAnalysis.is_malicious) ||
-      muleThreat
-    )
-  );
+  const muleThreat = Boolean(muleScan && (muleScan.mule_detected || (muleScan.flagged_accounts && muleScan.flagged_accounts.length > 0)));
+  const semanticBlock = Boolean(semanticResult && semanticResult.orchestration === "BLOCK_RENDER");
 
   let riskLevel = "safe";
   if (typosquat) {
     riskLevel = "dangerous";
   } else if (muleThreat) {
     riskLevel = "dangerous";
-  } else if (isOfficial) {
+  } else if (isOfficial || officialVisualMatch) {
     riskLevel = "safe";
-  } else if (visualRisk === "dangerous" || (semanticThreat && !officialVisualMatch)) {
+  } else if (semanticBlock) {
+    riskLevel = "dangerous";
+  } else if (visualRisk === "dangerous" && !officialVisualMatch) {
     riskLevel = "dangerous";
   } else if (visualRisk === "suspicious") {
     riskLevel = "suspicious";
@@ -554,20 +571,20 @@ async function analyzePage(tab, pagePayload) {
   }
 
   const host = hostFromUrl(pagePayload.url);
-  const customTrusted = await getCustomTrustedDomains();
+  const isCustomTrusted = await isCustomTrustedDomain(host);
 
-  if (host && customTrusted[host]) {
+  if (isCustomTrusted || isOfficialBankDomain(host)) {
     const result = {
       risk_level: "safe",
       final_verdict: "SAFE",
-      reason: `Domain '${host}' is currently in your 24h Custom Trusted Whitelist.`,
+      reason: `Domain '${host}' is verified authentic or trusted by user.`,
       detected_logos: [],
       visual: { risk_level: "safe", detected_logos: [] },
       semantic: null,
-      semantic_analysis: null,
-      mule_scan: null,
+      semantic_analysis: { label: "LEGITIMATE", confidence: 0.99, is_malicious: false },
+      mule_scan: { mule_detected: false, flagged_accounts: [] },
       official_visual_match: true,
-      custom_trusted: true,
+      custom_trusted: isCustomTrusted,
       errors: []
     };
     result.page_url = pagePayload.url;
