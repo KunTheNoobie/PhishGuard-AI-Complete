@@ -108,7 +108,7 @@ Unlike traditional static URL blacklist lookups, PhishGuard-AI integrates **mult
 
 ---
 
-### 4. 🏦 10-Bank Malaysian Impersonation & Global Whitelist Matrix
+### 5. 🏦 10-Bank Malaysian Impersonation & Global Whitelist Matrix
 
 Continuous live tracking and zero false-positive protection across leading financial entities and global platforms:
 1. **Maybank (Malayan Banking Berhad)**
