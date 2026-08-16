@@ -88,25 +88,38 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 1rem 2rem;
-            background: rgba(10, 13, 20, 0.88);
-            backdrop-filter: blur(16px);
+            padding: 0.75rem 1.75rem;
+            background: rgba(10, 13, 20, 0.92);
+            backdrop-filter: blur(18px);
             border-bottom: 1px solid var(--border-subtle);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+            gap: 1rem;
+            flex-wrap: nowrap;
         }
 
-        .header__brand { display: flex; align-items: center; gap: 1rem; }
-        .header__logo-img { width: 38px; height: 38px; border-radius: 8px; box-shadow: 0 0 16px rgba(99, 102, 241, 0.4); }
+        .header__brand { display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0; }
+        .header__logo-img { width: 36px; height: 36px; border-radius: 8px; box-shadow: 0 0 16px rgba(99, 102, 241, 0.4); }
         .header__title {
-            font-size: 1.35rem;
+            font-size: 1.25rem;
             font-weight: 800;
             letter-spacing: -0.02em;
             background: linear-gradient(135deg, #ffffff 40%, var(--accent-cyan));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        .header__subtitle { font-size: 0.78rem; color: var(--text-muted); font-weight: 500; }
-        .header__status { display: flex; align-items: center; gap: 1rem; }
+        .header__subtitle { font-size: 0.74rem; color: var(--text-muted); font-weight: 500; }
+        .header__status { display: flex; align-items: center; gap: 0.6rem; flex-wrap: nowrap; flex-shrink: 0; }
+        .header__status-group {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            padding: 0.25rem 0.6rem;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
 
         /* Action Buttons */
         .action-btn {
@@ -255,6 +268,13 @@
         .chart-card {
             background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
             padding: 1.5rem; box-shadow: var(--shadow-card); backdrop-filter: blur(16px); display: flex; flex-direction: column;
+            transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.28s ease, box-shadow 0.28s ease;
+            position: relative;
+        }
+        .chart-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(99, 102, 241, 0.45);
+            box-shadow: 0 12px 30px -4px rgba(0, 0, 0, 0.6), 0 0 25px rgba(6, 182, 212, 0.12);
         }
         .chart-card__header {
             display: flex; justify-content: space-between; align-items: center;
@@ -269,20 +289,81 @@
         .chart-container { flex: 1; min-height: 160px; display: flex; align-items: center; justify-content: center; }
         .chart-donut-wrapper { position: relative; width: 120px; height: 120px; flex-shrink: 0; }
         .donut-chart { width: 100%; height: 100%; transform: rotate(-90deg); }
-        .donut-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 0.95rem; font-weight: 800; color: #fff; }
+        .donut-segment { transition: stroke-width 0.25s ease, filter 0.25s ease, opacity 0.25s ease; cursor: pointer; }
+        .donut-segment:hover { stroke-width: 15; filter: drop-shadow(0 0 8px currentColor) brightness(1.25); }
+        .donut-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 0.95rem; font-weight: 800; color: #fff; pointer-events: none; transition: all 0.2s ease; }
         .donut-center small { display: block; font-size: 0.6rem; color: var(--text-muted); }
         .chart-legend { margin-left: 1rem; display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.78rem; flex: 1; }
-        .legend-item { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; color: var(--text-secondary); }
+        .legend-item { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; color: var(--text-secondary); padding: 3px 6px; border-radius: 4px; transition: all 0.2s ease; cursor: pointer; }
+        .legend-item:hover { background: rgba(255, 255, 255, 0.08); transform: translateX(4px); color: #fff; }
         .legend-color { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
-        .bar-chart-bars { display: flex; align-items: flex-end; gap: 8px; width: 100%; height: 140px; padding-top: 15px; }
-        .timeline-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; }
-        .timeline-bar { width: 100%; background: linear-gradient(180deg, var(--accent-cyan), var(--accent-indigo)); border-radius: 3px 3px 0 0; min-height: 4px; transition: height 0.4s ease; }
-        .timeline-label { font-size: 0.65rem; color: var(--text-muted); margin-top: 4px; white-space: nowrap; }
-        .platform-bars { display: flex; flex-direction: column; gap: 0.65rem; width: 100%; }
-        .platform-row { display: flex; flex-direction: column; gap: 0.2rem; }
-        .platform-row-header { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-secondary); }
-        .platform-bar-track { width: 100%; height: 6px; background: rgba(255, 255, 255, 0.06); border-radius: 3px; overflow: hidden; }
-        .platform-bar-fill { height: 100%; background: linear-gradient(90deg, #ec4899, #8b5cf6); border-radius: 3px; transition: width 0.4s ease; }
+        
+        /* Threat Velocity Bars with Interactive Glow & Hover Tooltip */
+        .bar-chart-bars { display: flex; align-items: flex-end; gap: 8px; width: 100%; height: 140px; padding-top: 25px; }
+        .timeline-bar-col {
+            flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end;
+            position: relative; cursor: pointer; transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .timeline-bar-col:hover { transform: translateY(-4px); }
+        .timeline-bar {
+            width: 100%; background: linear-gradient(180deg, var(--accent-cyan), var(--accent-indigo));
+            border-radius: 3px 3px 0 0; min-height: 4px; transition: height 0.4s ease, background 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
+        }
+        .timeline-bar-col:hover .timeline-bar {
+            background: linear-gradient(180deg, #38bdf8, #818cf8, #c084fc);
+            box-shadow: 0 0 16px rgba(56, 189, 248, 0.9), 0 0 28px rgba(129, 140, 248, 0.6);
+            filter: brightness(1.25);
+        }
+        .timeline-label { font-size: 0.65rem; color: var(--text-muted); margin-top: 4px; white-space: nowrap; transition: color 0.2s ease; }
+        .timeline-bar-col:hover .timeline-label { color: #38bdf8; font-weight: 700; text-shadow: 0 0 8px rgba(56, 189, 248, 0.6); }
+        
+        .timeline-tooltip {
+            position: absolute;
+            top: -24px;
+            left: 50%;
+            transform: translateX(-50%) scale(0.85);
+            background: rgba(10, 15, 30, 0.95);
+            border: 1px solid var(--accent-cyan);
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 0.65rem;
+            color: #fff;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), 0 0 10px rgba(6, 182, 212, 0.4);
+            z-index: 10;
+        }
+        .timeline-bar-col:hover .timeline-tooltip {
+            opacity: 1;
+            transform: translateX(-50%) scale(1);
+            top: -28px;
+        }
+        .timeline-tooltip-count { font-weight: 700; color: var(--accent-cyan); }
+        .timeline-tooltip-time { opacity: 0.8; margin-left: 3px; font-size: 0.6rem; }
+
+        /* Platform & Infra Progress Bars with Neon Lighting */
+        .platform-bars { display: flex; flex-direction: column; gap: 0.55rem; width: 100%; }
+        .platform-row {
+            display: flex; flex-direction: column; gap: 0.2rem; padding: 4px 6px; border-radius: 6px;
+            transition: all 0.22s ease; cursor: pointer; border: 1px solid transparent;
+        }
+        .platform-row:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.08);
+            transform: translateX(4px);
+        }
+        .platform-row-header { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-secondary); transition: color 0.2s ease; }
+        .platform-row:hover .platform-row-header span { color: #38bdf8; font-weight: 600; text-shadow: 0 0 8px rgba(56, 189, 248, 0.4); }
+        .platform-row:hover .platform-row-header strong { color: #fff; transform: scale(1.1); transition: transform 0.2s ease; }
+        .platform-bar-track { width: 100%; height: 6px; background: rgba(255, 255, 255, 0.06); border-radius: 3px; overflow: hidden; transition: all 0.2s ease; }
+        .platform-row:hover .platform-bar-track { height: 7px; background: rgba(255, 255, 255, 0.12); }
+        .platform-bar-fill { height: 100%; background: linear-gradient(90deg, #ec4899, #8b5cf6); border-radius: 3px; transition: width 0.4s ease, box-shadow 0.25s ease, filter 0.25s ease; }
+        .platform-row:hover .platform-bar-fill {
+            box-shadow: 0 0 12px currentColor, 0 0 20px rgba(236, 72, 153, 0.6);
+            filter: brightness(1.25);
+        }
 
         /* Panels & Tables */
         .panel {
@@ -393,43 +474,41 @@
 
         <div class="header__status">
             <!-- Quick Launch Primary Actions -->
-            <button id="masterDemoBtn" class="action-btn" style="background: linear-gradient(135deg, rgba(234,88,12,0.3), rgba(245,158,11,0.3)); border-color: #f59e0b; color: #fbbf24; font-weight: 700;" type="button" title="Master Demonstration Suite & 1-Click System Walkthrough">
+            <button id="masterDemoBtn" class="action-btn" style="background: linear-gradient(135deg, rgba(234,88,12,0.3), rgba(245,158,11,0.3)); border-color: #f59e0b; color: #fbbf24; font-weight: 700; white-space: nowrap;" type="button" title="Master Demonstration Suite & 1-Click System Walkthrough">
                 🎮 Master Demo
             </button>
-            <button id="openWarRoomBtn" class="action-btn" style="background: linear-gradient(135deg, rgba(6,182,212,0.25), rgba(99,102,241,0.25)); border-color: var(--accent-cyan); color: #fff; font-weight: 700;" type="button" title="Launch Fullscreen Defense War Room">
+            <button id="openWarRoomBtn" class="action-btn" style="background: linear-gradient(135deg, rgba(6,182,212,0.25), rgba(99,102,241,0.25)); border-color: var(--accent-cyan); color: #fff; font-weight: 700; white-space: nowrap;" type="button" title="Launch Fullscreen Defense War Room">
                 ⚡ War Room
             </button>
-            <button id="openCommandPaletteBtn" class="action-btn" type="button" title="Open Global Command Palette (Ctrl+K)">
+            <button id="openCommandPaletteBtn" class="action-btn" style="white-space: nowrap;" type="button" title="Open Global Command Palette (Ctrl+K)">
                 ⚡ Command <kbd style="font-size: 0.65rem; background: rgba(0,0,0,0.4); padding: 1px 4px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.1);">Ctrl+K</kbd>
             </button>
 
             <!-- Theme Settings -->
             <div class="header__status-group" title="Theme Customization">
-                <select id="themeSelector" class="page-size-select" title="Switch Theme">
+                <select id="themeSelector" class="page-size-select" style="height: 32px;" title="Switch Theme">
                     <option value="cyberpunk">Cyber Neon</option>
                     <option value="matrix">Matrix Emerald</option>
                     <option value="abyss">OLED Abyss</option>
                 </select>
             </div>
 
-            <!-- Threat Simulator Controls -->
-            <div class="header__status-group" title="Threat Simulation Controls">
-                <select id="simSpeedSelect" class="page-size-select" title="Simulation Speed">
+            <!-- Threat Simulator Controls & Live Status inline together -->
+            <div class="header__status-group" title="Threat Simulation Controls & Live Feed Status" style="display: inline-flex; align-items: center; gap: 0.5rem; white-space: nowrap;">
+                <select id="simSpeedSelect" class="page-size-select" style="height: 32px; font-size: 0.78rem;" title="Simulation Speed">
                     <option value="0.5">0.5x (Slow)</option>
                     <option value="1.0" selected>1.0x (Live)</option>
                     <option value="2.0">2.0x (Fast)</option>
                     <option value="5.0">5.0x (Barrage)</option>
                 </select>
-                <button id="simToggleBtn" class="sim-toggle-btn off" type="button" title="Toggle Background Threat Simulator">
+                <button id="simToggleBtn" class="sim-toggle-btn off" style="height: 32px; font-size: 0.78rem; padding: 0 0.85rem;" type="button" title="Toggle Background Threat Simulator">
                     ⚡ Simulation: OFF
                 </button>
-            </div>
-
-            <!-- Real-time Status -->
-            <div class="header__status-group" style="padding: 0.3rem 0.6rem;">
-                <span class="status-dot live" id="statusDot"></span>
-                <span class="status-text" id="statusText">Live</span>
-                <span class="header__refresh" id="lastRefresh"></span>
+                <div style="display: inline-flex; align-items: center; gap: 6px; padding-left: 8px; border-left: 1px solid rgba(255,255,255,0.15);">
+                    <span class="status-dot live" id="statusDot"></span>
+                    <span class="status-text" id="statusText" style="font-weight: 700; color: #34d399; font-size: 0.78rem;">Live</span>
+                    <span class="header__refresh" id="lastRefresh" style="font-size: 0.72rem; color: var(--text-muted);"></span>
+                </div>
             </div>
         </div>
     </header>

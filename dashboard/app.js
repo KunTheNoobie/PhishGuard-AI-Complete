@@ -394,15 +394,23 @@ function renderBankDonutChart(banks, totalMulesOverride) {
         accumulatedAngle += percent * 360;
 
         svgSegments += `
-            <circle cx="50" cy="50" r="${radius}" fill="none" stroke="${color}" stroke-width="12"
+            <circle class="donut-segment" cx="50" cy="50" r="${radius}" fill="none" stroke="${color}" stroke-width="12"
                 stroke-dasharray="${dashLength} ${spaceLength}" stroke-dashoffset="${dashOffset}"
-                stroke-linecap="butt" style="transition: stroke-dasharray 0.5s ease;"></circle>
+                stroke-linecap="butt"
+                data-bank="${escapeHtml(b.bank)}" data-count="${b.count}" data-percent="${Math.round(percent * 100)}%"
+                onmouseenter="highlightDonutSlice('${escapeJs(b.bank)}', ${b.count}, '${Math.round(percent * 100)}%', '${color}')"
+                onmouseleave="resetDonutSlice(${total})"
+                onclick="toggleBrandFilter('${escapeJs(b.bank)}')"
+                style="transition: all 0.3s cubic-bezier(0.16,1,0.3,1); cursor: pointer;"></circle>
         `;
 
         legendHtml += `
-            <div class="legend-item">
+            <div class="legend-item" 
+                 onmouseenter="highlightDonutSlice('${escapeJs(b.bank)}', ${b.count}, '${Math.round(percent * 100)}%', '${color}')"
+                 onmouseleave="resetDonutSlice(${total})"
+                 onclick="toggleBrandFilter('${escapeJs(b.bank)}')">
                 <span style="display: flex; align-items: center; gap: 6px;">
-                    <span class="legend-color" style="background: ${color};"></span>
+                    <span class="legend-color" style="background: ${color}; box-shadow: 0 0 6px ${color}88;"></span>
                     ${escapeHtml(b.bank)}
                 </span>
                 <strong>${Math.round(percent * 100)}%</strong>
@@ -415,6 +423,19 @@ function renderBankDonutChart(banks, totalMulesOverride) {
     $donutCenterText.innerHTML = `${total.toLocaleString()}<small>Mules</small>`;
 }
 
+function highlightDonutSlice(bank, count, percent, color) {
+    if ($donutCenterText) {
+        $donutCenterText.innerHTML = `<span style="color: ${color}; font-size: 0.95rem;">${percent}</span><small style="font-size: 0.58rem; color: #fff; max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(bank)}</small>`;
+    }
+}
+function resetDonutSlice(total) {
+    if ($donutCenterText) {
+        $donutCenterText.innerHTML = `${total.toLocaleString()}<small>Mules</small>`;
+    }
+}
+window.highlightDonutSlice = highlightDonutSlice;
+window.resetDonutSlice = resetDonutSlice;
+
 function renderTimelineBars(timeline) {
     if (!timeline || !timeline.length) {
         // Fallback default timeline buckets
@@ -426,11 +447,18 @@ function renderTimelineBars(timeline) {
     }
 
     const maxCount = Math.max(...timeline.map(t => t.count), 1);
+    const totalDetections = timeline.reduce((acc, t) => acc + t.count, 0);
+
     $timelineBars.innerHTML = timeline.map(t => {
         const heightPct = Math.max(8, Math.round((t.count / maxCount) * 100));
         const label = t.time.includes("T") ? t.time.split("T")[1].slice(0, 5) : t.time.slice(-5);
+        const sharePct = totalDetections > 0 ? Math.round((t.count / totalDetections) * 100) : 0;
         return `
-            <div class="timeline-bar-col" title="${label}: ${t.count} detections">
+            <div class="timeline-bar-col">
+                <div class="timeline-tooltip">
+                    <span class="timeline-tooltip-count">${t.count} attacks</span>
+                    <span class="timeline-tooltip-time">${label} (${sharePct}%)</span>
+                </div>
                 <div class="timeline-bar" style="height: ${heightPct}%;"></div>
                 <span class="timeline-label">${label}</span>
             </div>
