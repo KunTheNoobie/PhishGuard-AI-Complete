@@ -1,0 +1,205 @@
+@startuml Cognitive_Exploitation_Chapter_2
+!theme vibrant
+skinparam backgroundColor #0f172a
+skinparam ArrowColor #38bdf8
+skinparam ActivityBorderColor #38bdf8
+skinparam ActivityBackgroundColor #1e293b
+skinparam ActivityFontColor #f8fafc
+
+title Figure 2.1: Human Cognitive Bias Exploitation vs. PhishGuard-AI Automated Interception
+
+start
+:Attacker Deploys Ephemeral Phishing Site\n(Cloned Maybank / CIMB Portal);
+:Injects High-Urgency Social Engineering Triggers\n("Akaun anda digantung! Sahkan TAC dalam 5 minit");
+
+partition "Human Dual-Process Cognitive Processing (Kahneman, 2011)" {
+    if (User State) then (High Urgency / Panic)
+        #pink:Triggers "System 1" Thinking\n(Fast, Emotional, Heuristic, Automatic);
+        :Bypasses "System 2" Analytical Logic\n(Ignores subtle URL typosquatting);
+        :Enters Banking Credentials & TAC;
+        #red:Catastrophic Credential Theft & Financial Loss;
+        stop
+    else (Analytical Verification - Rare)
+        :Engages "System 2" Thinking\n(Manual URL inspection & Semakmule lookup);
+    endif
+}
+
+partition "PhishGuard-AI Zero-Trust Automated Defense" {
+    :Intercepts DOM & URL at Browser Edge (0ms);
+    :BERT NLP Engine Analyzes Semantic Intent;
+    :Regex Engine Extracts Mule Account;
+    #lightgreen:Delivers Sub-400ms BLOCK_RENDER Shield;
+    :Eliminates Dependency on Human Vigilance;
+    stop
+}
+
+@enduml
+
+@startuml NLP_Evolution_Chapter_2
+!theme vibrant
+skinparam backgroundColor #0f172a
+skinparam ArrowColor #38bdf8
+skinparam ComponentBorderColor #38bdf8
+skinparam ComponentBackgroundColor #1e293b
+skinparam ComponentFontColor #f8fafc
+skinparam PackageBorderColor #64748b
+skinparam PackageFontColor #94a3b8
+
+title Figure 2.2: Evolution of NLP Architectures in Phishing Threat Detection
+
+package "1. Lexical & Statistical Models (1990s - 2010s)" {
+    [TF-IDF + SVM / Naive Bayes] as TFIDF
+    note right of TFIDF
+      • Bag-of-Words representation
+      • Exact keyword frequency matching
+      • Zero contextual comprehension
+      • High failure rate on Typosquatting
+    end note
+}
+
+package "2. Sequential Recurrent Models (2014 - 2018)" {
+    [RNN / LSTM / BiLSTM] as LSTM
+    note right of LSTM
+      • Sequential token processing
+      • Vanishing gradient on long DOM text
+      • Sequential computation bottlenecks inference
+      • Moderate subword understanding
+    end note
+}
+
+package "3. Bidirectional Transformers (2018 - Present)" {
+    [BERT / Transformer Multi-Head Self-Attention] as BERT
+    note right of BERT
+      • Scaled Dot-Product Self-Attention: Q, K, V
+      • Full bidirectional contextual embeddings
+      • WordPiece subword tokenization (rnaybank -> rn, ##ay, ##bank)
+      • Parallel tensor computation (sub-100ms GPU/CPU)
+    end note
+}
+
+TFIDF -down-> LSTM : Contextual Sequential Processing
+LSTM -down-> BERT : Massive Parallel Self-Attention
+
+@enduml
+
+@startuml WSGI_vs_ASGI_Concurrency_Chapter_2
+!theme vibrant
+skinparam backgroundColor #0f172a
+skinparam ArrowColor #38bdf8
+skinparam SequenceLifeLineBorderColor #38bdf8
+skinparam SequenceLifeLineBackgroundColor #1e293b
+skinparam ParticipantBorderColor #38bdf8
+skinparam ParticipantBackgroundColor #1e293b
+skinparam ParticipantFontColor #f8fafc
+
+title Figure 2.3: Synchronous WSGI Bottleneck vs. Asynchronous ASGI Microservice Architecture
+
+box "Synchronous WSGI Architecture (Flask / Django)" #2d1e2f
+actor "Client 1" as C1
+actor "Client 2" as C2
+participant "WSGI Worker Thread" as W1
+participant "PyTorch AI Model" as M1
+end box
+
+C1 -> W1 : Request 1: POST DOM Text
+activate W1
+W1 -> M1 : Synchronous Inference (Blocks Thread)
+activate M1
+C2 -> W1 : Request 2: POST DOM Text (BLOCKED & QUEUED)
+M1 --> W1 : Returns Prediction
+deactivate M1
+W1 --> C1 : Response 1
+deactivate W1
+activate W1
+W1 -> M1 : Processes Request 2 (Excessive Latency > 1.5s)
+deactivate W1
+
+box "Asynchronous ASGI Architecture (FastAPI + asyncio.gather)" #1e2d3b
+actor "Client A" as CA
+actor "Client B" as CB
+participant "FastAPI Event Loop" as ASGI
+participant "Worker Thread Pool" as TP
+participant "aiosqlite Pool" as SQL
+end box
+
+CA -> ASGI : Request A (DOM Payload)
+activate ASGI
+CB -> ASGI : Request B (DOM Payload)
+ASGI -> TP : asyncio.to_thread(bert_infer, payload_A)
+activate TP
+ASGI -> SQL : aiosqlite.execute(mule_lookup_A)
+activate SQL
+ASGI -> TP : asyncio.to_thread(bert_infer, payload_B)
+ASGI -> SQL : aiosqlite.execute(mule_lookup_B)
+TP --> ASGI : Tensor Output A
+deactivate TP
+SQL --> ASGI : Mule Match A
+deactivate SQL
+ASGI --> CA : Sub-400ms Response A
+ASGI --> CB : Sub-400ms Response B
+deactivate ASGI
+
+@enduml
+
+@startuml Conceptual_Framework_Chapter_2
+!theme vibrant
+skinparam backgroundColor #0f172a
+skinparam ArrowColor #38bdf8
+skinparam ComponentBorderColor #38bdf8
+skinparam ComponentBackgroundColor #1e293b
+skinparam ComponentFontColor #f8fafc
+skinparam PackageBorderColor #64748b
+skinparam PackageFontColor #94a3b8
+
+title Figure 2.4: PhishGuard-AI Zero-Trust Theoretical Conceptual Framework
+
+package "Zero-Day Attack Ingestion" {
+    [Untrusted DOM Text] as DOM
+    [Intercepted URL String] as URL
+    [Optical QR Payloads] as QR
+}
+
+package "Multi-Modal Intelligence Backend (Liew Yi Ler)" {
+    package "Deterministic Whitelist Layer" {
+        [28-Bank Trusted Whitelist (frozenset)] as Whitelist
+    }
+    
+    package "Probabilistic NLP Layer" {
+        [Bidirectional Encoder (BERT)] as BERT
+        [WordPiece Tokenizer (Typosquatting Resilience)] as WordPiece
+        [Multi-Lingual Intent Classifier (English/BM/Manglish)] as Intent
+    }
+    
+    package "Deterministic Fraud Verification Layer" {
+        [Pre-Compiled Regex Bytecode (8 Banks)] as Regex
+        [Simulated PDRM CCID Semakmule (SQLite 3NF)] as Semakmule
+    }
+    
+    package "Asynchronous Decision Core" {
+        [FastAPI ASGI Gateway] as Gateway
+        [Multi-Vector Risk Aggregator] as Aggregator
+    }
+}
+
+package "Endpoint Action & SOC Telemetry" {
+    [BLOCK_RENDER Defense Shield] as Shield
+    [Live SOC Intelligence Dashboard] as SOC
+    [NSRC 997 & STIX 2.1 Exporters] as CTI
+}
+
+DOM --> Whitelist
+URL --> Whitelist
+QR --> Whitelist
+Whitelist --> Gateway : Non-Whitelisted Target
+Gateway --> WordPiece : Parallel Task 1
+WordPiece --> BERT
+BERT --> Intent
+Gateway --> Regex : Parallel Task 2
+Regex --> Semakmule
+Intent --> Aggregator
+Semakmule --> Aggregator
+Aggregator --> Shield : Automated Interception
+Aggregator --> SOC : Real-Time SSE Feed
+SOC --> CTI : Law Enforcement Escalation
+
+@enduml
