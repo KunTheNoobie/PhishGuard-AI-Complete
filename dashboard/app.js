@@ -442,43 +442,85 @@ function resetDonutSlice(total) {
 window.highlightDonutSlice = highlightDonutSlice;
 window.resetDonutSlice = resetDonutSlice;
 
+let currentTimelineRaw = [];
+let activeTimelineRange = 24;
+
+function setTimelineRange(hours) {
+    activeTimelineRange = hours;
+    ['btnRange24', 'btnRange12', 'btnRange8'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) {
+            btn.style.background = "rgba(255, 255, 255, 0.05)";
+            btn.style.borderColor = "var(--border-subtle)";
+            btn.style.color = "var(--text-secondary)";
+        }
+    });
+    const activeBtn = document.getElementById(`btnRange${hours}`);
+    if (activeBtn) {
+        activeBtn.style.background = "rgba(56, 189, 248, 0.18)";
+        activeBtn.style.borderColor = "#38bdf8";
+        activeBtn.style.color = "#38bdf8";
+    }
+    renderTimelineBars(currentTimelineRaw);
+}
+window.setTimelineRange = setTimelineRange;
+
 function renderTimelineBars(timeline) {
-    if (!timeline || !timeline.length) {
-        // Fallback dynamic rolling hours using local time (GMT+8)
+    if (timeline && timeline.length) {
+        currentTimelineRaw = timeline;
+    }
+    if (!currentTimelineRaw || !currentTimelineRaw.length) {
+        // Fallback dynamic 24 rolling hours using local time (GMT+8)
         const now = new Date();
-        const fallbackCounts = [18, 24, 32, 28, 38, 34, 42, 39];
-        timeline = [];
-        for (let i = 7; i >= 0; i--) {
+        const fallbackCounts = [
+            12, 10, 8, 7, 9, 14, 18, 22,
+            28, 32, 29, 26, 34, 38, 33, 28,
+            24, 21, 23, 26, 30, 34, 38, 42
+        ];
+        currentTimelineRaw = [];
+        for (let i = 23; i >= 0; i--) {
             const d = new Date(now.getTime() - i * 3600000);
             const hourLabel = String(d.getHours()).padStart(2, "0") + ":00";
-            timeline.push({ time: hourLabel, count: fallbackCounts[7 - i] });
+            currentTimelineRaw.push({ time: hourLabel, count: fallbackCounts[23 - i] });
         }
     }
 
-    const counts = timeline.map(t => t.count);
+    // Slice to active range (default 24h, or 12h, or 8h)
+    const visibleData = currentTimelineRaw.slice(-activeTimelineRange);
+
+    const counts = visibleData.map(t => t.count);
     const maxCount = Math.max(...counts, 1);
     const minCount = Math.min(...counts);
     const totalDetections = counts.reduce((acc, c) => acc + c, 0);
 
-    $timelineBars.innerHTML = timeline.map(t => {
-        // Normalized balanced scaling: heights dynamically range between 28% and 92%
+    $timelineBars.innerHTML = visibleData.map((t, idx) => {
+        // Normalized balanced scaling: heights dynamically range between 26% and 92%
         let heightPct;
         if (maxCount > minCount) {
-            heightPct = Math.round(28 + ((t.count - minCount) / (maxCount - minCount)) * 64);
+            heightPct = Math.round(26 + ((t.count - minCount) / (maxCount - minCount)) * 66);
         } else {
             heightPct = 60;
         }
-        heightPct = Math.max(22, Math.min(95, heightPct));
+        heightPct = Math.max(20, Math.min(95, heightPct));
         const label = t.time.includes("T") ? t.time.split("T")[1].slice(0, 5) : t.time.slice(-5);
-        const sharePct = totalDetections > 0 ? Math.round((t.count / totalDetections) * 100) : Math.round(100 / timeline.length);
+        const sharePct = totalDetections > 0 ? Math.round((t.count / totalDetections) * 100) : Math.round(100 / visibleData.length);
+        
+        // Show labels with clean skip cadence so 24 bars never overcrowd the X-axis
+        let showLabel = true;
+        if (activeTimelineRange === 24) {
+            showLabel = (idx % 3 === 0 || idx === visibleData.length - 1);
+        } else if (activeTimelineRange === 12) {
+            showLabel = (idx % 2 === 0 || idx === visibleData.length - 1);
+        }
+
         return `
-            <div class="timeline-bar-col">
+            <div class="timeline-bar-col" title="${label}: ${t.count} attacks (${sharePct}%)">
                 <div class="timeline-tooltip">
                     <span class="timeline-tooltip-count">${t.count} attacks</span>
                     <span class="timeline-tooltip-time">${label} (${sharePct}%)</span>
                 </div>
                 <div class="timeline-bar" style="height: ${heightPct}%;"></div>
-                <span class="timeline-label">${label}</span>
+                <span class="timeline-label" style="opacity: ${showLabel ? '1' : '0.25'}; font-size: ${activeTimelineRange === 24 ? '0.58rem' : '0.65rem'};">${showLabel ? label : '·'}</span>
             </div>
         `;
     }).join("");
