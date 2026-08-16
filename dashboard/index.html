@@ -88,50 +88,79 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0.75rem 1.75rem;
-            background: rgba(10, 13, 20, 0.92);
+            padding: 0.55rem 1.25rem;
+            background: rgba(10, 13, 20, 0.94);
             backdrop-filter: blur(18px);
             border-bottom: 1px solid var(--border-subtle);
             box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
-            gap: 1rem;
+            gap: 0.75rem;
             flex-wrap: nowrap;
+            overflow-x: auto;
         }
 
-        .header__brand { display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0; }
-        .header__logo-img { width: 36px; height: 36px; border-radius: 8px; box-shadow: 0 0 16px rgba(99, 102, 241, 0.4); }
+        .header__brand { display: flex; align-items: center; gap: 0.6rem; flex-shrink: 0; }
+        .header__logo-img { width: 32px; height: 32px; border-radius: 8px; box-shadow: 0 0 14px rgba(99, 102, 241, 0.4); }
         .header__title {
-            font-size: 1.25rem;
+            font-size: 1.15rem;
             font-weight: 800;
             letter-spacing: -0.02em;
             background: linear-gradient(135deg, #ffffff 40%, var(--accent-cyan));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            margin: 0;
+            line-height: 1.1;
         }
-        .header__subtitle { font-size: 0.74rem; color: var(--text-muted); font-weight: 500; }
-        .header__status { display: flex; align-items: center; gap: 0.6rem; flex-wrap: nowrap; flex-shrink: 0; }
+        .header__subtitle { font-size: 0.68rem; color: var(--text-muted); font-weight: 500; margin: 0; }
+        .header__status { display: flex; align-items: center; gap: 0.45rem; flex-wrap: nowrap; flex-shrink: 0; margin-left: auto; }
         .header__status-group {
             display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.35rem;
             background: rgba(255, 255, 255, 0.04);
             border: 1px solid var(--border-subtle);
             border-radius: var(--radius-sm);
-            padding: 0.25rem 0.6rem;
+            padding: 0.2rem 0.45rem;
             white-space: nowrap;
             flex-shrink: 0;
+        }
+
+        /* ─── Dedicated Glowing Live Telemetry Chip ─── */
+        .live-telemetry-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.18);
+            border-radius: 999px;
+            padding: 3px 9px;
+            font-size: 0.74rem;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .live-chip-text {
+            color: #34d399;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+        }
+        .live-chip-time {
+            color: #cbd5e1;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            opacity: 0.9;
         }
 
         /* Action Buttons */
         .action-btn {
             display: inline-flex;
             align-items: center;
-            gap: 0.45rem;
+            gap: 0.35rem;
             background: rgba(255, 255, 255, 0.06);
             color: var(--text-primary);
             border: 1px solid var(--border-subtle);
             border-radius: var(--radius-sm);
-            padding: 0.45rem 0.9rem;
-            font-size: 0.82rem;
+            padding: 0.35rem 0.65rem;
+            font-size: 0.76rem;
             font-weight: 600;
             cursor: pointer;
             transition: all var(--transition);
@@ -481,39 +510,41 @@
                 🛡️ War Room
             </button>
             <button id="openCommandPaletteBtn" class="action-btn" style="white-space: nowrap;" type="button" title="Open Global Command Palette (Ctrl+K)">
-                ⌨️ Command <kbd style="font-size: 0.65rem; background: rgba(0,0,0,0.4); padding: 1px 4px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.1);">Ctrl+K</kbd>
+                ⌨️ <kbd style="font-size: 0.65rem; background: rgba(0,0,0,0.4); padding: 1px 4px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.1);">Ctrl+K</kbd>
             </button>
 
             <!-- Master Audio Alert Toggle -->
-            <button id="masterAudioMuteBtn" class="action-btn" style="height: 32px; padding: 0 8px; font-size: 0.8rem;" type="button" title="Toggle Threat Sound Effects (Hotkey: M)">
+            <button id="masterAudioMuteBtn" class="action-btn" style="height: 30px; padding: 0 8px; font-size: 0.76rem;" type="button" title="Toggle Threat Sound Effects (Hotkey: M)">
                 🔊 Audio: ON
             </button>
 
             <!-- Theme Settings -->
             <div class="header__status-group" title="Theme Customization">
-                <select id="themeSelector" class="page-size-select" style="height: 32px;" title="Switch Theme">
+                <select id="themeSelector" class="page-size-select" style="height: 30px; font-size: 0.76rem;" title="Switch Theme">
                     <option value="cyberpunk">Cyber Neon</option>
                     <option value="matrix">Matrix Emerald</option>
                     <option value="abyss">OLED Abyss</option>
                 </select>
             </div>
 
-            <!-- Threat Simulator Controls & Live Status inline together -->
-            <div class="header__status-group" title="Threat Simulation Controls & Live Feed Status" style="display: inline-flex; align-items: center; gap: 0.5rem; white-space: nowrap;">
-                <select id="simSpeedSelect" class="page-size-select" style="height: 32px; font-size: 0.78rem;" title="Simulation Speed">
-                    <option value="0.5">0.5x (Slow)</option>
+            <!-- Threat Simulator Controls -->
+            <div class="header__status-group" title="Threat Simulation Controls" style="display: inline-flex; align-items: center; gap: 0.35rem; white-space: nowrap;">
+                <select id="simSpeedSelect" class="page-size-select" style="height: 30px; font-size: 0.74rem;" title="Simulation Speed">
+                    <option value="0.5">0.5x</option>
                     <option value="1.0" selected>1.0x (Live)</option>
-                    <option value="2.0">2.0x (Fast)</option>
-                    <option value="5.0">5.0x (Barrage)</option>
+                    <option value="2.0">2.0x</option>
+                    <option value="5.0">5.0x</option>
                 </select>
-                <button id="simToggleBtn" class="sim-toggle-btn off" style="height: 32px; font-size: 0.78rem; padding: 0 0.85rem;" type="button" title="Toggle Background Threat Simulator">
+                <button id="simToggleBtn" class="sim-toggle-btn off" style="height: 30px; font-size: 0.75rem; padding: 0 0.7rem;" type="button" title="Toggle Background Threat Simulator">
                     ⚡ Simulation: OFF
                 </button>
-                <div style="display: inline-flex; align-items: center; gap: 6px; padding-left: 8px; border-left: 1px solid rgba(255,255,255,0.15);">
-                    <span class="status-dot live" id="statusDot"></span>
-                    <span class="status-text" id="statusText" style="font-weight: 700; color: #34d399; font-size: 0.78rem;">Live</span>
-                    <span class="header__refresh" id="lastRefresh" style="font-size: 0.72rem; color: var(--text-muted);"></span>
-                </div>
+            </div>
+
+            <!-- Dedicated Glowing Live Telemetry Chip -->
+            <div class="live-telemetry-chip" title="Live SOC Ingestion & Telemetry Active">
+                <span class="status-dot live" id="statusDot"></span>
+                <span class="live-chip-text" id="statusText">LIVE</span>
+                <span class="live-chip-time" id="lastRefresh">--:--:--</span>
             </div>
         </div>
     </header>

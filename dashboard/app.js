@@ -1507,8 +1507,8 @@ async function refreshAll() {
         refreshDistributions();
 
         $statusDot.className = "status-dot live";
-        $statusText.textContent = "Live";
-        $lastRefresh.textContent = `Updated ${new Date().toLocaleTimeString("en-MY", { hour12: false })}`;
+        $statusText.textContent = "LIVE";
+        $lastRefresh.textContent = new Date().toLocaleTimeString("en-MY", { hour12: false });
     } catch (err) {
         console.error("[PhishGuard Dashboard] Refresh failed:", err);
         $statusDot.className = "status-dot error";
