@@ -1,6 +1,9 @@
 const statusPill = document.getElementById("statusPill");
-const backendPingBadge = document.getElementById("backendPingBadge");
 const pingStatusText = document.getElementById("pingStatusText");
+const socLiveBanner = document.getElementById("socLiveBanner");
+const pingPulseDot = document.getElementById("pingPulseDot");
+const socPingStatus = document.getElementById("socPingStatus");
+const socLatencyTag = document.getElementById("socLatencyTag");
 const resultPanel = document.getElementById("resultPanel");
 const currentDomain = document.getElementById("currentDomain");
 const scanTime = document.getElementById("scanTime");
@@ -461,11 +464,8 @@ async function renderTrustedDomains() {
 }
 
 window.removeTrustedDomain = async function(domain) {
-  const response = await sendRuntimeMessage({ type: "PHISHGUARD_GET_TRUSTED_DOMAINS" });
-  const trusted = (response && response.trusted) || {};
-  delete trusted[domain];
-  await chrome.storage.sync.set({ custom_trusted_domains: trusted });
-  renderTrustedDomains();
+  await sendRuntimeMessage({ type: "PHISHGUARD_REMOVE_TRUSTED_DOMAIN", domain });
+  await renderTrustedDomains();
   showToast("info", "Domain Revoked", `${domain} removed from trusted whitelist.`);
   scanActivePage();
 };
@@ -473,8 +473,8 @@ window.removeTrustedDomain = async function(domain) {
 async function clearAllTrusted() {
   const ok = await showConfirmDialog("Revoke Whitelists", "Are you sure you want to remove all custom trusted domains?", "🗑️");
   if (!ok) return;
-  await chrome.storage.sync.set({ custom_trusted_domains: {} });
-  renderTrustedDomains();
+  await sendRuntimeMessage({ type: "PHISHGUARD_CLEAR_ALL_TRUSTED" });
+  await renderTrustedDomains();
   showToast("success", "Whitelists Cleared", "All custom exemptions removed.");
   scanActivePage();
 }
@@ -616,23 +616,37 @@ async function handleFlagMule(mules) {
 async function checkBackendHealthPing() {
   try {
     const config = await getStoredConfig();
+    const baseUrl = (config.apiBaseUrl || "http://127.0.0.1:8000").replace(/\/$/, "");
     const start = performance.now();
-    const res = await fetch(`${config.apiBaseUrl}/health`, { method: "GET" });
-    const latency = Math.round(performance.now() - start);
+    const res = await fetch(`${baseUrl}/health`, { method: "GET" });
+    const latency = Math.max(1, Math.round(performance.now() - start));
 
-    if (res.ok && backendPingBadge) {
-      backendPingBadge.className = "ping-badge online";
-      backendPingBadge.textContent = `● SOC (${latency}ms)`;
+    if (res.ok) {
+      if (socLiveBanner) {
+        socLiveBanner.className = "soc-live-banner online";
+        socLiveBanner.title = `Connected to SOC Backend at ${baseUrl} (${latency}ms round-trip)`;
+      }
+      if (pingPulseDot) pingPulseDot.className = "ping-pulse-dot online";
+      if (socPingStatus) socPingStatus.textContent = "SOC Engine: Connected";
+      if (socLatencyTag) {
+        socLatencyTag.textContent = `${latency}ms`;
+        socLatencyTag.style.display = "inline-block";
+      }
       if (pingStatusText) pingStatusText.textContent = `Connected (${latency}ms)`;
     } else {
-      throw new Error();
+      throw new Error(`HTTP ${res.status}`);
     }
   } catch (_e) {
-    if (backendPingBadge) {
-      backendPingBadge.className = "ping-badge offline";
-      backendPingBadge.textContent = "● Autonomous";
-      if (pingStatusText) pingStatusText.textContent = "Offline Protection Active";
+    if (socLiveBanner) {
+      socLiveBanner.className = "soc-live-banner offline";
+      socLiveBanner.title = "Backend offline - Operating in Local Autonomous Defense Mode";
     }
+    if (pingPulseDot) pingPulseDot.className = "ping-pulse-dot offline";
+    if (socPingStatus) socPingStatus.textContent = "Local Autonomous Engine";
+    if (socLatencyTag) {
+      socLatencyTag.textContent = "Autonomous";
+    }
+    if (pingStatusText) pingStatusText.textContent = "Autonomous Shield";
   }
 }
 

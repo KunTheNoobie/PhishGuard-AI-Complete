@@ -17,11 +17,19 @@
             <p id="pingStatusText">Enterprise Browser Shield</p>
           </div>
         </div>
-        <div style="display: flex; gap: 6px; align-items: center;">
-          <span id="backendPingBadge" class="ping-badge online" title="Backend Connectivity Status">● SOC</span>
-          <span id="statusPill" class="status-pill neutral">Waiting</span>
-        </div>
+        <span id="statusPill" class="status-pill neutral">Waiting</span>
       </header>
+
+      <!-- ─── LIVE SOC PING & CONNECTION METER ─── -->
+      <div id="socLiveBanner" class="soc-live-banner online" title="Real-Time SOC API Health & Latency">
+        <div class="soc-live-left">
+          <span id="pingPulseDot" class="ping-pulse-dot online"></span>
+          <strong id="socPingStatus">SOC Engine: Checking...</strong>
+        </div>
+        <div class="soc-live-right">
+          <span id="socLatencyTag" class="soc-latency-tag">-- ms</span>
+        </div>
+      </div>
 
       <!-- ─── Navigation Tabs ─── -->
       <nav class="popup-tabs">

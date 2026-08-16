@@ -141,6 +141,8 @@ function showCyberConfirm(title, message, confirmTextOrCb = "Confirm Action", op
         cancelBtn.addEventListener("click", onCancel);
     });
 }
+window.showCyberConfirm = showCyberConfirm;
+window.showCyberConfirmModal = showCyberConfirm;
 
 // In-UI Rich Notice Modal replacing bulky alert()
 function showCyberNoticeModal(title, detailsHtml, copyContent = "") {
@@ -1309,7 +1311,7 @@ function renderMuleRegistry() {
 
 
 window.handleDeleteMule = async function(muleId) {
-    const ok = await showCyberConfirmModal("Delete Mule Record", `Are you sure you want to permanently remove mule account #${muleId}?`, "🗑️");
+    const ok = await showCyberConfirm("Delete Mule Record", `Are you sure you want to permanently remove mule account #${muleId}?`, "Delete Account");
     if (!ok) return;
     try {
         await apiFetch(`/mule-registry/${muleId}`, { method: "DELETE" });

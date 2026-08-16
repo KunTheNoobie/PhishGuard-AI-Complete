@@ -841,6 +841,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message.type === "PHISHGUARD_REMOVE_TRUSTED_DOMAIN") {
+    getCustomTrustedDomains().then(async (current) => {
+      delete current[message.domain];
+      await storageSet({ custom_trusted_domains: current });
+      sendResponse({ ok: true, trusted: current });
+    });
+    return true;
+  }
+
+  if (message.type === "PHISHGUARD_CLEAR_ALL_TRUSTED") {
+    storageSet({ custom_trusted_domains: {} }).then(() => {
+      sendResponse({ ok: true, trusted: {} });
+    });
+    return true;
+  }
+
   return false;
 });
 
