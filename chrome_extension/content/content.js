@@ -502,14 +502,14 @@ function autoScanOnPageLoad() {
         showWarningBanner(response.result);
       }
     })
-    .catch((_err) => {
-      // Heuristic engine handles offline/background cases gracefully
-    });
+    .catch((_err) => {});
 }
 
-// Automatically trigger autonomous scan when page loads
-if (document.readyState === "complete" || document.readyState === "interactive") {
-  setTimeout(autoScanOnPageLoad, 200);
+// Automatically trigger autonomous scan immediately and on load
+if (document.readyState === "complete") {
+  autoScanOnPageLoad();
 } else {
-  window.addEventListener("DOMContentLoaded", () => setTimeout(autoScanOnPageLoad, 200));
+  window.addEventListener("load", autoScanOnPageLoad);
+  document.addEventListener("DOMContentLoaded", autoScanOnPageLoad);
 }
+setTimeout(autoScanOnPageLoad, 400);

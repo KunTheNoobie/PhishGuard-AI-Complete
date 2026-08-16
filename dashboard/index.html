@@ -1228,7 +1228,7 @@
 
         <!-- ─── Quishing (QR Phishing) & Deceptive Payload Scanner Modal ─── -->
         <div id="quishingModal" class="modal-overlay hidden" aria-hidden="true" style="z-index: 9998;">
-            <div class="modal-card" style="max-width: 680px;">
+            <div class="modal-card" style="max-width: 720px; width: 95vw;">
                 <div class="modal-header">
                     <h3 class="modal-title">📷 Quishing (QR-Code Phishing) Forensic Scanner</h3>
                     <div style="display: flex; gap: 6px; align-items: center;">
@@ -1237,12 +1237,30 @@
                     </div>
                 </div>
                 <div style="font-size: 0.84rem; color: var(--text-secondary); margin-bottom: 1rem;">
-                    <p style="margin-bottom: 0.5rem;">Audit decoded QR-code content, DuitNow payment schemes, or fake PDRM parking summon QR links:</p>
-                    <div style="display: flex; gap: 8px; margin-bottom: 0.75rem;">
-                        <input type="text" id="quishingInput" class="search-input" style="flex: 1;" placeholder="Enter QR Payload (e.g. duitnow://pay?acc=112233445566 or http://pdrm-saman.xyz)..." />
-                        <button type="button" id="quishingScanBtn" class="action-btn action-btn--primary">Audit QR</button>
+                    <p style="margin-bottom: 0.75rem;">Upload/drop any physical QR Code image (PNG/JPG), paste from clipboard, or audit decoded payment URIs:</p>
+                    
+                    <!-- QR Code Upload / Drop Zone -->
+                    <div id="quishingDropzone" style="border: 2px dashed rgba(6, 182, 212, 0.4); border-radius: 8px; padding: 1.25rem; text-align: center; background: rgba(15, 23, 42, 0.6); margin-bottom: 1rem; cursor: pointer; transition: all 0.2s ease;">
+                        <input type="file" id="quishingFileInput" accept="image/*" style="display: none;" />
+                        <div id="quishingDropzonePrompt">
+                            <div style="font-size: 2rem; margin-bottom: 6px;">📷 📥</div>
+                            <strong style="color: #38bdf8; display: block; margin-bottom: 4px;">Click or Drag & Drop QR Code Image Here</strong>
+                            <span style="font-size: 0.75rem; color: var(--text-muted);">Supports PNG, JPG, WebP, GIF or paste image with <kbd>Ctrl+V</kbd></span>
+                        </div>
+                        <div id="quishingImagePreviewBox" class="hidden" style="display: flex; gap: 12px; align-items: center; justify-content: center; margin-top: 6px;">
+                            <img id="quishingImagePreview" style="max-height: 120px; max-width: 140px; border-radius: 6px; border: 1px solid var(--accent-cyan); object-fit: contain;" alt="Scanned QR Code" />
+                            <div style="text-align: left;">
+                                <div style="font-size: 0.78rem; color: #34d399; font-weight: 700;">✓ QR Code Image Ready</div>
+                                <button type="button" id="quishingClearImageBtn" class="action-btn" style="margin-top: 6px; padding: 2px 8px; font-size: 0.7rem;">Remove Image</button>
+                            </div>
+                        </div>
                     </div>
-                    <div id="quishingResultBox" class="hidden" style="margin-top: 0.75rem; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 0.85rem;"></div>
+
+                    <div style="display: flex; gap: 8px; margin-bottom: 0.75rem;">
+                        <input type="text" id="quishingInput" class="search-input" style="flex: 1;" placeholder="Or enter QR Payload directly (e.g. duitnow://pay?acc=112233445566 or http://pdrm-saman.xyz)..." />
+                        <button type="button" id="quishingScanBtn" class="action-btn action-btn--primary" style="padding: 0 16px;">Audit QR</button>
+                    </div>
+                    <div id="quishingResultBox" class="hidden" style="margin-top: 0.75rem; background: rgba(15, 23, 42, 0.85); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 0.85rem;"></div>
                 </div>
             </div>
         </div>

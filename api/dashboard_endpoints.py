@@ -21,6 +21,10 @@ from typing import Any, Final, Optional, Dict, List
 
 from fastapi import APIRouter, Request
 
+import asyncio
+import json
+from fastapi.responses import StreamingResponse
+
 logger: Final[logging.Logger] = logging.getLogger("phishguard.dashboard")
 
 # ==============================================================================
@@ -30,6 +34,54 @@ router: Final[APIRouter] = APIRouter(
     prefix="/api/v1/dashboard",
     tags=["Dashboard & Telemetry"],
 )
+
+# ── Live Real-Time SSE Stream Subscribers Channel ──
+_SSE_SUBSCRIBERS: Final[set[asyncio.Queue]] = set()
+
+async def broadcast_threat_event(event_type: str, data: dict[str, Any]) -> None:
+    """Broadcast real-time threat intelligence event to all connected dashboard SSE subscribers."""
+    payload = f"event: {event_type}\ndata: {json.dumps(data)}\n\n"
+    dead = set()
+    for queue in list(_SSE_SUBSCRIBERS):
+        try:
+            queue.put_nowait(payload)
+        except Exception:
+            dead.add(queue)
+    _SSE_SUBSCRIBERS.difference_update(dead)
+
+
+@router.get(
+    "/stream",
+    summary="Real-time Server-Sent Events (SSE) stream for live threat telemetry",
+)
+async def sse_threat_stream(request: Request) -> StreamingResponse:
+    """Server-Sent Events (SSE) stream for real-time threat telemetry updates."""
+    queue: asyncio.Queue[str] = asyncio.Queue(maxsize=100)
+    _SSE_SUBSCRIBERS.add(queue)
+
+    async def event_generator():
+        try:
+            yield f"event: connected\ndata: {json.dumps({'status': 'connected'})}\n\n"
+            while True:
+                if await request.is_disconnected():
+                    break
+                try:
+                    msg = await asyncio.wait_for(queue.get(), timeout=15.0)
+                    yield msg
+                except asyncio.TimeoutError:
+                    yield ": keepalive\n\n"
+        finally:
+            _SSE_SUBSCRIBERS.discard(queue)
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 # ==============================================================================
@@ -1617,6 +1669,11 @@ class QuishingScanRequest(BaseModel):
     context: str = "SOC Scanner"
 
 
+class QuishingImageRequest(BaseModel):
+    image_base64: str
+    context: str = "QR Image File Upload"
+
+
 @router.post(
     "/quishing/scan",
     summary="Forensically Audit and Decode Quishing / QR Payloads",
@@ -1625,6 +1682,16 @@ class QuishingScanRequest(BaseModel):
 async def scan_quishing(payload: QuishingScanRequest) -> dict[str, Any]:
     from services.quishing_scanner import scan_quishing_payload
     return scan_quishing_payload(payload.payload, target_context=payload.context)
+
+
+@router.post(
+    "/quishing/decode-image",
+    summary="Decode QR Code Image and Forensically Audit Embedded Payload",
+    tags=["SOC Defense & Tactical Modules"],
+)
+async def decode_quishing_image(payload: QuishingImageRequest) -> dict[str, Any]:
+    from services.quishing_scanner import decode_and_scan_qr_image
+    return decode_and_scan_qr_image(payload.image_base64)
 
 
 # ── 4. TAXII 2.1 Threat Intel REST Server ──

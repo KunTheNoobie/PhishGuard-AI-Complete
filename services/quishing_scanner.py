@@ -75,4 +75,70 @@ def scan_quishing_payload(
         "extracted_mule_accounts": extracted_mule_accounts,
         "risk_factors": risk_factors or ["No immediate deception triggers found."],
         "recommended_action": "BLOCK & SINKHOLE QR DESTINATION" if final_score >= 0.75 else "PROCEED WITH CAUTION",
+        "decoded_successfully": True,
     }
+
+
+def decode_and_scan_qr_image(image_data: str | bytes) -> dict[str, Any]:
+    """Decode a QR code image from raw bytes or base64 data and forensically audit its payload."""
+    import base64
+    import io
+    import cv2
+    import numpy as np
+    from PIL import Image
+
+    try:
+        raw_bytes: bytes
+        if isinstance(image_data, str):
+            if "," in image_data:
+                image_data = image_data.split(",", 1)[1]
+            raw_bytes = base64.b64decode(image_data)
+        else:
+            raw_bytes = image_data
+
+        pil_img = Image.open(io.BytesIO(raw_bytes)).convert("RGB")
+        img_np = np.array(pil_img)
+        img_cv2 = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
+
+        detector = cv2.QRCodeDetector()
+        decoded_text, points, straight_qrcode = detector.detectAndDecode(img_cv2)
+
+        if not decoded_text:
+            gray = cv2.cvtColor(img_cv2, cv2.COLOR_BGR2GRAY)
+            decoded_text, points, _ = detector.detectAndDecode(gray)
+            if not decoded_text:
+                thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+                decoded_text, points, _ = detector.detectAndDecode(thresh)
+
+        if not decoded_text:
+            return {
+                "raw_payload": "",
+                "context": "QR Image Upload",
+                "quishing_score": 0.0,
+                "verdict": "NO_QR_DETECTED",
+                "is_duitnow_scheme": False,
+                "extracted_destination_urls": [],
+                "primary_url": "",
+                "extracted_mule_accounts": [],
+                "risk_factors": ["No recognizable QR code pattern detected in the uploaded image."],
+                "recommended_action": "ENSURE QR CODE IS CLEAR OR ENTER PAYLOAD URI MANUALLY",
+                "decoded_successfully": False,
+            }
+
+        res = scan_quishing_payload(decoded_text, target_context="Decoded QR Code Image")
+        res["decoded_successfully"] = True
+        return res
+    except Exception as e:
+        return {
+            "raw_payload": "",
+            "context": "QR Image Decoding Error",
+            "quishing_score": 0.0,
+            "verdict": "DECODE_ERROR",
+            "is_duitnow_scheme": False,
+            "extracted_destination_urls": [],
+            "primary_url": "",
+            "extracted_mule_accounts": [],
+            "risk_factors": [f"Image decoding failed: {str(e)}"],
+            "recommended_action": "RE-UPLOAD QR IMAGE OR ENTER RAW PAYLOAD",
+            "decoded_successfully": False,
+        }

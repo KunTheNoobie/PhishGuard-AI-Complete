@@ -701,3 +701,27 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
   }
 });
 
+// Autonomous background scan whenever user navigates or reloads any tab
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  if (changeInfo.status === "complete" && tab && tab.url && (tab.url.startsWith("http://") || tab.url.startsWith("https://") || tab.url.startsWith("file://"))) {
+    try {
+      const injected = await chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => ({
+          url: location.href,
+          title: document.title || "",
+          visibleText: document.body ? document.body.innerText.slice(0, 30000) : "",
+          domContent: document.documentElement ? document.documentElement.outerHTML.slice(0, 3000000) : ""
+        })
+      });
+      const pageData = injected && injected[0] && injected[0].result;
+      if (pageData && pageData.url) {
+        const result = await analyzePage(tab, pageData);
+        sendWarningToTab(tabId, result);
+      }
+    } catch (_e) {
+      // Content script autoScanOnPageLoad will handle execution
+    }
+  }
+});
+
