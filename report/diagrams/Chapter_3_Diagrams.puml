@@ -1,0 +1,155 @@
+@startuml Agile_MLOps_Detailed_Chapter_3
+!theme vibrant
+skinparam backgroundColor #0f172a
+skinparam ArrowColor #38bdf8
+skinparam ActivityBorderColor #38bdf8
+skinparam ActivityBackgroundColor #1e293b
+skinparam ActivityFontColor #f8fafc
+
+title Figure 3.1: Agile-MLOps Hybrid Engineering Workflow & CI/CD Verification Pipeline
+
+start
+:Sprint 1: Data Engineering & Requirements Definition;
+note right: Curation of 549k+ records, SQLite 3NF Schema, Pydantic Schemas
+
+partition "MLOps Iterative Model Pipeline (Sprint 2)" {
+    :Raw Corpus Harvesting (English, Bahasa Melayu, Manglish);
+    :ETL Sanitization (BeautifulSoup Tag Stripping & Deduplication);
+    :WordPiece Subword Tokenization (Max Sequence Length = 128);
+    :BERT Base Uncased Model Instantiation (PyTorch);
+    :Supervised Fine-Tuning (AdamW Optimizer, lr=2e-5, Batch=32);
+    :Cross-Entropy Loss & F1-Score Evaluation;
+    if (Model F1-Score >= 0.95 and Inference Latency < 100ms?) then (yes)
+        :Serialize PyTorch Model Weights (.pt Checkpoint);
+    else (no)
+        :Adjust Class Weights & Hyperparameters;
+        stop
+    endif
+}
+
+partition "Agile Backend Architecture & Integration (Sprint 3)" {
+    :Implement FastAPI ASGI Endpoints (Bearer Token Auth);
+    :Engineer Pre-Compiled Regex Bytecode (8 Malaysian Banks);
+    :Build Asynchronous aiosqlite Database Connection Pool;
+    :Construct 28-Bank In-Memory Whitelist (frozenset);
+    :Implement asyncio.to_thread & asyncio.gather Orchestrator;
+}
+
+partition "System Testing, Hardening & CI/CD (Sprint 4)" {
+    :Execute Automated Pytest Suite (120/120 Unit & Integration Tests);
+    :Stress Testing & Concurrency Profiling on Uvicorn ASGI;
+    :Deploy Live SOC Intelligence Dashboard & CTI Exporters;
+}
+
+:Final System Verification & Production Readiness Sign-Off;
+stop
+
+@enduml
+
+@startuml Misuse_Case_Tree_Chapter_3
+!theme vibrant
+skinparam backgroundColor #0f172a
+skinparam ArrowColor #38bdf8
+skinparam ComponentBorderColor #38bdf8
+skinparam ComponentBackgroundColor #1e293b
+skinparam ComponentFontColor #f8fafc
+skinparam PackageBorderColor #64748b
+skinparam PackageFontColor #94a3b8
+
+title Figure 3.2: Adversarial Misuse Case Tree & Defensive Countermeasures Model
+
+package "Adversarial Misuse Vectors (Attacker Goals)" {
+    [Misuse 1: DoS / Resource Exhaustion\n• Botnet floods POST /api/v1/analyze/semantics\n• Forces heavy PyTorch tensor lock] as Misuse1
+    [Misuse 2: Semantic Evasion & Typosquatting\n• Obfuscates banking keywords (rnaybank.com)\n• Embeds Manglish urgency cues] as Misuse2
+    [Misuse 3: Data Payload Injection\n• Injects SQLi / XSS in DOM text & bank fields\n• Exploits raw database string formatting] as Misuse3
+    [Misuse 4: Model Inversion / IP Extraction\n• Probes endpoints with high-volume inputs\n• Attempts to extract model weights] as Misuse4
+}
+
+package "PhishGuard-AI Architectural Mitigations" {
+    [Mitigation 1: Token-Bucket Rate Limiting\n• SlowAPI: 60 req/min per client IP\n• Asynchronous Thread Pool Offloading] as Mit1
+    [Mitigation 2: WordPiece Subword Tokenization\n• Decomposes lookalikes into subwords\n• Fine-tuned on localized multi-lingual corpus] as Mit2
+    [Mitigation 3: Strict Sanitization & Parameterized Queries\n• BeautifulSoup DOM tag stripping\n• aiosqlite parameterized SQL bindings] as Mit3
+    [Mitigation 4: Bearer Token Auth & Constant Latency\n• Authorization: Bearer <secret_token>\n• Pre-inference Whitelist caching] as Mit4
+}
+
+Misuse1 -down-> Mit1 : Neutralized By
+Misuse2 -down-> Mit2 : Neutralized By
+Misuse3 -down-> Mit3 : Neutralized By
+Misuse4 -down-> Mit4 : Neutralized By
+
+@enduml
+
+@startuml Data_Science_Pipeline_Chapter_3
+!theme vibrant
+skinparam backgroundColor #0f172a
+skinparam ArrowColor #38bdf8
+skinparam ActivityBorderColor #38bdf8
+skinparam ActivityBackgroundColor #1e293b
+skinparam ActivityFontColor #f8fafc
+
+title Figure 3.3: Data Science ETL, WordPiece Tokenization & Deep Learning Training Pipeline
+
+start
+:Raw Cybersecurity Corpus Ingestion\n(Kaggle 549k Phishing URLs + Localized Malaysian Scam DOMs);
+
+partition "ETL & Preprocessing Pipeline" {
+    :Data Cleaning & Null Handling (Drop NaN rows);
+    :HTML Sanitization via BeautifulSoup (Remove <script>, <style>, <img>);
+    :Lexical Normalization (URL decoding, unescape Punycode);
+    :Label Encoding (0 = Legitimate, 1 = Phishing);
+    :Stratified 80/20 Train-Validation Split;
+}
+
+partition "WordPiece Tokenization Matrix" {
+    :Input String Ingestion ("Akaun rnaybank anda digantung!");
+    :Subword Decomposition (["[CLS]", "akaun", "rn", "##ay", "##bank", "anda", "digan", "##tung", "!", "[SEP]"]);
+    :Input IDs & Attention Mask Tensor Generation (Length = 128);
+}
+
+partition "PyTorch BERT Model Fine-Tuning" {
+    :Load Pre-trained bert-base-uncased Weights;
+    :Forward Pass through 12 Multi-Head Attention Layers;
+    :Compute Binary Cross-Entropy Loss with Logits;
+    :Backward Pass & Backpropagation (AdamW, Weight Decay = 0.01);
+    :Linear Learning Rate Scheduler with Warm-up;
+}
+
+partition "Evaluation & Model Export" {
+    :Validation Set Inference (Precision, Recall, F1-Score, ROC-AUC);
+    :Evaluate Confusion Matrix (TP, FP, TN, FN);
+    :Serialize Production Model Singleton (phishguard_bert.pt);
+}
+
+stop
+
+@enduml
+
+@startuml Confusion_Matrix_ROC_Chapter_3
+!theme vibrant
+skinparam backgroundColor #0f172a
+skinparam ArrowColor #38bdf8
+skinparam ComponentBorderColor #38bdf8
+skinparam ComponentBackgroundColor #1e293b
+skinparam ComponentFontColor #f8fafc
+skinparam PackageBorderColor #64748b
+skinparam PackageFontColor #94a3b8
+
+title Figure 3.4: Confusion Matrix Mathematical Model & ROC-AUC Decision Boundary
+
+package "Predicted Class: PHISHING (Positive)" {
+    [True Positive (TP)\n• Actual: Phishing\n• Prediction: Phishing\n• ACTION: High-Impact Red Shield Rendered] as TP
+    [False Positive (FP)\n• Actual: Legitimate\n• Prediction: Phishing\n• MITIGATION: 28-Bank Whitelist Bypasses AI (0 FP)] as FP
+}
+
+package "Predicted Class: LEGITIMATE (Negative)" {
+    [False Negative (FN)\n• Actual: Phishing\n• Prediction: Legitimate\n• RISK: Threat Evasion\n• MITIGATION: Deep BERT WordPiece + Regex Mule Catch] as FN
+    [True Negative (TN)\n• Actual: Legitimate\n• Prediction: Legitimate\n• ACTION: Transparent Normal Browsing Allowed] as TN
+}
+
+note bottom of TP
+  Precision = TP / (TP + FP)  -> Measures Alert Fidelity
+  Recall    = TP / (TP + FN)  -> Measures Threat Catch Rate
+  F1-Score  = 2 * (P * R) / (P + R) -> Harmonic Optimization
+end note
+
+@enduml
