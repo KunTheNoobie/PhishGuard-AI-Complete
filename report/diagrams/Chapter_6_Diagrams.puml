@@ -1,0 +1,136 @@
+@startuml Cloud_vs_Edge_Chapter_6
+!theme vibrant
+skinparam backgroundColor #0f172a
+skinparam ArrowColor #38bdf8
+skinparam ComponentBorderColor #38bdf8
+skinparam ComponentBackgroundColor #1e293b
+skinparam ComponentFontColor #f8fafc
+skinparam PackageBorderColor #64748b
+skinparam PackageFontColor #94a3b8
+
+title Figure 6.1: Edge-Adjacent Self-Hosted Microservice vs. Third-Party Cloud AI Architecture
+
+package "Third-Party Cloud AI Model (REJECTED)" #2d1e2f {
+    [Browser Client] as C1
+    [Public WAN Gateway] as WAN
+    [Commercial Cloud AI API\n(OpenAI / AWS SageMaker)] as CloudAI
+    
+    C1 -down-> WAN : 1. Dispatches Raw Unencrypted DOM Text
+    WAN -down-> CloudAI : 2. WAN Routing + TLS Handshake (>800ms)
+    note right of CloudAI
+      ❌ SEVERE PRIVACY VIOLATIONS:
+      • Leaks PII, passwords, banking tokens to third parties
+      • Violates Malaysia PDPA 2010 Data Sovereignty
+      • Metered OpEx costs ($0.002 per request scales to millions)
+      • High latency (>1,500ms round-trip) fails real-time blocking
+    end note
+}
+
+package "PhishGuard-AI Edge-Adjacent Microservice (ADOPTED)" #1e2d3b {
+    [Browser Extension Client] as C2
+    [Localhost / Private ASGI Gateway\n(FastAPI / Uvicorn - Port 8000)] as LocalAPI
+    [Local Memory Model Singleton\n(PyTorch BERT Base Uncased)] as LocalBERT
+    [Local Relational Persistence\n(SQLite 3NF WAL Database)] as LocalDB
+    
+    C2 -down-> LocalAPI : 1. Local HTTP Dispatch (Sub-1ms)
+    LocalAPI -down-> LocalBERT : 2. Thread-Offloaded Inference (340ms)
+    LocalAPI -down-> LocalDB : 3. aiosqlite Query (8ms)
+    note right of LocalBERT
+      ✅ ENTERPRISE SECURITY BENEFITS:
+      • 100% Data Sovereignty: Zero DOM data leaves local host
+      • Zero Cloud Metering Costs: Predictable $0 OpEx
+      • Sub-400ms SLA: Intercepts zero-day threats in real-time
+      • High Concurrency: 1,500+ requests/sec via ASGI event loops
+    end note
+}
+
+@enduml
+
+@startuml Challenges_Resolutions_Chapter_6
+!theme vibrant
+skinparam backgroundColor #0f172a
+skinparam ArrowColor #38bdf8
+skinparam ComponentBorderColor #38bdf8
+skinparam ComponentBackgroundColor #1e293b
+skinparam ComponentFontColor #f8fafc
+skinparam PackageBorderColor #64748b
+skinparam PackageFontColor #94a3b8
+
+title Figure 6.2: Technical Challenge Root-Cause and Architectural Resolution Dependency Model
+
+package "Identified Engineering Challenges" {
+    [Challenge 1: CPython GIL Event Loop Blocking\n• Heavy PyTorch tensor calculations locked main thread\n• Caused request starvation & latency spikes] as C1
+    [Challenge 2: Ephemeral Cloud GPU Limits\n• Google Colab 4-hour hard runtime cutoff\n• Threat of model weight loss during long epochs] as C2
+    [Challenge 3: Vocabulary Overlap False Positives\n• Real Maybank login text flagged as 98% Phishing\n• Semantic confusion between real & cloned forms] as C3
+}
+
+package "Engineered Architectural Resolutions" {
+    [Resolution 1: Async Thread-Offloading\n• Wrapped inference in asyncio.to_thread()\n• Parallelized database queries via asyncio.gather()] as R1
+    [Resolution 2: Single-Epoch MLOps Checkpointing\n• Scaled dataset to 549k for rapid Epoch 1.0 convergence\n• Direct Safetensors serialization to persistent storage] as R2
+    [Resolution 3: In-Memory Whitelist & Context Injection\n• 28-Bank frozenset constant-time bypass (<1ms)\n• Prepend 'URL: {url} | {text}' for domain awareness] as R3
+}
+
+C1 -down-> R1 : Resolved By
+C2 -down-> R2 : Resolved By
+C3 -down-> R3 : Resolved By
+
+@enduml
+
+@startuml Future_Enterprise_Architecture_Chapter_6
+!theme vibrant
+skinparam backgroundColor #0f172a
+skinparam ArrowColor #38bdf8
+skinparam NodeBorderColor #38bdf8
+skinparam NodeBackgroundColor #1e293b
+skinparam NodeFontColor #f8fafc
+
+title Figure 6.3: Proposed Enterprise Cloud-Native Kubernetes & Automated MLOps Retraining Topology
+
+node "Global Client Browser Fleet" {
+    actor "Millions of Active Users" as Users
+    [PhishGuard-AI Extensions] as Exts
+}
+
+node "Enterprise Cloud-Native Kubernetes (K8s) Cluster" as K8sCluster {
+    node "Ingress & Load Balancer" {
+        [NGINX Ingress Controller / TLS Termination] as Ingress
+        [Horizontal Pod Autoscaler (HPA)] as HPA
+    }
+    
+    node "Scalable Stateless API Pods" {
+        [FastAPI ASGI Pod 1] as Pod1
+        [FastAPI ASGI Pod 2] as Pod2
+        [FastAPI ASGI Pod N] as PodN
+    }
+    
+    node "In-Memory High-Speed Cache Tier" {
+        database "Redis Distributed Cache\n(Verified Mule Accounts & Whitelists)" as RedisCache
+    }
+    
+    node "Continuous MLOps Pipeline Tier" {
+        [Apache Airflow / MLflow Orchestrator] as Airflow
+        [GPU Retraining Worker Pods\n(PyTorch DistributedDataParallel)] as RetrainPods
+        database "Enterprise Data Lakehouse\n(Anonymized Threat Telemetry Logs)" as DataLake
+    }
+}
+
+node "National Financial & Law Enforcement Network" as GovNetwork {
+    [Bank Negara Malaysia (BNM)] as BNM
+    [National Scam Response Centre (NSRC 997)] as NSRC
+    [PDRM CCID Real-Time Mule API Bridge] as SemakmuleAPI
+}
+
+Users --> Exts
+Exts --> Ingress : HTTPS REST API Calls
+Ingress --> HPA : Metrics Monitoring
+Ingress --> Pod1
+Ingress --> Pod2
+Ingress --> PodN
+Pod1 --> RedisCache : Sub-millisecond Mule Lookup
+PodN --> DataLake : Ingests Zero-Day Forensic Logs
+DataLake --> Airflow : Triggers Scheduled Retraining
+Airflow --> RetrainPods : Continuous Concept Drift Adaptation
+Pod1 --> SemakmuleAPI : Encrypted High-Volume Telemetry Sync
+Pod2 --> NSRC : Automated 1-Click Fraud Escalation
+
+@enduml
