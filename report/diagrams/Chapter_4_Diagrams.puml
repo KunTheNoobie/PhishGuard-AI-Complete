@@ -1,0 +1,468 @@
+@startuml NTier_Architecture_Chapter_4
+!theme vibrant
+skinparam backgroundColor #0f172a
+skinparam ArrowColor #38bdf8
+skinparam ComponentBorderColor #38bdf8
+skinparam ComponentBackgroundColor #1e293b
+skinparam ComponentFontColor #f8fafc
+skinparam InterfaceFontColor #38bdf8
+skinparam PackageBorderColor #64748b
+skinparam PackageFontColor #94a3b8
+
+title Figure 4.1: PhishGuard-AI Decoupled N-Tier Microservice Architecture
+
+package "Tier 1: Client Edge & API Gateway Tier" {
+    [Manifest V3 Browser Extension\n(Content Script & Service Worker)] as ExtClient
+    interface "POST /api/v1/analyze/semantics\n(Bearer Auth / Port 8000)" as GatewayAPI
+    [FastAPI / Uvicorn ASGI Server\n(Non-Blocking Event Loop)] as ASGIServer
+    [Pydantic v2 Request Validator\n(Strict Type & Sanitization Schema)] as PydanticValidator
+    [SlowAPI Token-Bucket Limiter\n(60 req/min Anti-DoS)] as RateLimiter
+}
+
+package "Tier 2: Threat Intelligence & Inference Tier (Backend Brain)" {
+    [28-Bank Trusted Whitelist\n(frozenset In-Memory Cache)] as WhitelistFilter
+    
+    package "Asynchronous Worker Thread Pool (asyncio.to_thread)" {
+        [Semantic Threat Engine\n(BERT Base Uncased Singleton / PyTorch)] as BERTEngine
+        [Brand Impersonation Profiler\n(Levenshtein Distance & Heuristics)] as BrandProfiler
+        [Optical Quishing Decoder\n(OpenCV cv2.QRCodeDetector)] as QuishingEngine
+    }
+    
+    package "Deterministic Pattern Matching Engine" {
+        [Mule Account Verification Engine\n(Pre-Compiled Regex Bytecode for 8 Banks)] as RegexEngine
+    }
+    
+    [Multi-Vector Risk Aggregator & Calibrator\n(asyncio.gather Parallel Coroutine)] as Aggregator
+}
+
+package "Tier 3: Data Persistence & Telemetry Tier" {
+    database "SQLite 3NF Storage (aiosqlite / WAL Mode)" {
+        [mule_registry Table\n(B-Tree Indexed account_number)] as MuleTable
+        [threat_telemetry Table\n(Forensic Audit Trail & BERT Scores)] as TelemetryTable
+        [whitelisted_domains Table\n(Bank Domains & Educational Immunity)] as WhitelistTable
+    }
+    
+    package "Enterprise SOC Intelligence & CTI" {
+        [Server-Sent Events (SSE) Hub\n(GET /api/v1/dashboard/stream)] as SSEHub
+        [Live SOC Intelligence Dashboard\n(24h GMT+8 Velocity & Geo Radar)] as SOCDashboard
+        [NSRC 997 & STIX 2.1 Exporters\n(CEF / Syslog / PDRM Dossier)] as CTIExporter
+    }
+}
+
+ExtClient --> GatewayAPI : 1. Ingests Raw DOM & URL
+GatewayAPI --> RateLimiter : 2. Enforces Rate Limit
+RateLimiter --> PydanticValidator : 3. Validates Payload Schema
+PydanticValidator --> ASGIServer : 4. Dispatches Sanitized Object
+ASGIServer --> WhitelistFilter : 5. Fast-Path In-Memory Whitelist Lookup
+WhitelistFilter --> Aggregator : Whitelisted (Instant SAFE)
+WhitelistFilter --> BERTEngine : Non-Whitelisted: Parallel Task 1 (asyncio.to_thread)
+WhitelistFilter --> RegexEngine : Non-Whitelisted: Parallel Task 2 (Regex Scan)
+RegexEngine --> MuleTable : 6. Asynchronous SELECT (O(log N))
+BERTEngine --> Aggregator : 7. Semantic Threat Probability
+MuleTable --> RegexEngine : 8. Mule Match Record
+RegexEngine --> Aggregator : 9. Financial Fraud Flag
+Aggregator --> TelemetryTable : 10. Persists Audit Log (Non-blocking)
+Aggregator --> ASGIServer : 11. Final Verdict (<400ms SLA)
+ASGIServer --> ExtClient : 12. Returns JSON (BLOCK_RENDER / SAFE)
+TelemetryTable --> SSEHub : 13. Broadcasts Live Event Stream
+SSEHub --> SOCDashboard : 14. Real-Time Telemetry Feed
+SOCDashboard --> CTIExporter : 15. Standardized Law Enforcement Dispatch
+
+@enduml
+
+@startuml Use_Case_Chapter_4
+!theme vibrant
+skinparam backgroundColor #0f172a
+skinparam ArrowColor #38bdf8
+skinparam ActorBorderColor #38bdf8
+skinparam ActorBackgroundColor #1e293b
+skinparam ActorFontColor #f8fafc
+skinparam UseCaseBorderColor #38bdf8
+skinparam UseCaseBackgroundColor #1e293b
+skinparam UseCaseFontColor #f8fafc
+
+title Figure 4.2: UML Use Case Diagram for PhishGuard-AI Backend Intelligence
+
+left to right direction
+
+actor "Browser Extension Client\n(End User)" as ClientActor
+actor "SOC Security Administrator" as AdminActor
+actor "Law Enforcement Agency\n(PDRM CCID / NSRC 997)" as PoliceActor
+
+rectangle "PhishGuard-AI Backend Microservice Boundary" {
+    usecase "UC-01: Analyze Webpage Semantics" as UC1
+    usecase "UC-02: Bypass AI on Trusted Whitelist" as UC2
+    usecase "UC-03: Scan for Mule Accounts" as UC3
+    usecase "UC-04: Decode Quishing QR Matrix" as UC4
+    usecase "UC-05: Stream Live Threat Telemetry" as UC5
+    usecase "UC-06: Monitor 24h Velocity & Geo Radar" as UC6
+    usecase "UC-07: Manage Mule Registry Records" as UC7
+    usecase "UC-08: Export STIX 2.1 & NSRC Dossier" as UC8
+    usecase "UC-09: Trigger Account Freeze Escalation" as UC9
+}
+
+ClientActor --> UC1
+ClientActor --> UC4
+UC1 ..> UC2 : <<include>>
+UC1 ..> UC3 : <<include>>
+
+AdminActor --> UC5
+AdminActor --> UC6
+AdminActor --> UC7
+AdminActor --> UC8
+
+PoliceActor --> UC8
+PoliceActor --> UC9
+UC7 <.. UC9 : <<extend>>
+
+@enduml
+
+@startuml Activity_Diagram_Chapter_4
+!theme vibrant
+skinparam backgroundColor #0f172a
+skinparam ArrowColor #38bdf8
+skinparam ActivityBorderColor #38bdf8
+skinparam ActivityBackgroundColor #1e293b
+skinparam ActivityFontColor #f8fafc
+
+title Figure 4.3: UML Activity Diagram: Asynchronous Request Lifecycle & Parallel Execution
+
+start
+:Client Extension dispatches POST /api/v1/analyze/semantics;
+:FastAPI Gateway enforces Bearer Token Auth & Rate Limiting;
+
+if (Bearer Token Valid & Rate Limit OK?) then (yes)
+    :Validate Payload Structure via Pydantic Schema;
+else (no)
+    :Return HTTP 401 Unauthorized or HTTP 429 Too Many Requests;
+    stop
+endif
+
+:Extract Domain and Query In-Memory 28-Bank Whitelist (frozenset);
+
+if (Domain in Trusted Whitelist?) then (yes)
+    #lightgreen:Generate Immediate SAFE Verdict (0ms AI Overhead);
+    :Return HTTP 200 { verdict: "SAFE", risk: 0.00 };
+    stop
+else (no: Suspicious / Unverified Domain)
+    :Sanitize DOM Text via BeautifulSoup (Strip HTML/Script Tags);
+    
+    fork
+        partition "Parallel Thread 1: Semantic Intent Analysis" {
+            :Dispatch to Worker Thread (asyncio.to_thread);
+            :Execute WordPiece Subword Tokenization;
+            :PyTorch BERT Model Forward Pass;
+            :Compute Softmax Probability Score (P_bert);
+        }
+    fork again
+        partition "Parallel Thread 2: Mule Account Verification" {
+            :Execute Pre-Compiled Regex Patterns (8 Malaysian Banks);
+            if (Bank Account Pattern Matched?) then (yes)
+                :Query SQLite mule_registry asynchronously (aiosqlite);
+                if (Account exists in Registry?) then (yes)
+                    :Flag Mule Account (Mule_Match = True);
+                else (no)
+                    :Mule_Match = False;
+                endif
+            else (no)
+                :No Account Pattern Found;
+            endif
+        }
+    fork again
+        partition "Parallel Thread 3: Brand Impersonation Profiling" {
+            :Compute Levenshtein Distance against 10 Bank Domains;
+            :Calculate Brand Impersonation Index (BII);
+        }
+    end fork
+    
+    :Multi-Vector Risk Aggregation & Threshold Calibration;
+    
+    if (P_bert >= 0.70 OR Mule_Match == True OR BII >= 0.85) then (yes: Threat Detected)
+        #red:Assign Verdict = "BLOCK_RENDER";
+        :Compile Threat Breakdown & Forensic Indicators;
+    else (no: Benign Webpage)
+        #lightgreen:Assign Verdict = "SAFE";
+    endif
+    
+    :Asynchronously Log Forensic Record to threat_telemetry DB;
+    :Broadcast Telemetry Event to Active SSE Dashboard Clients;
+    :Return Unified JSON Response Payload to Browser Extension;
+    stop
+endif
+
+@enduml
+
+@startuml Sequence_Diagram_Chapter_4
+!theme vibrant
+skinparam backgroundColor #0f172a
+skinparam ArrowColor #38bdf8
+skinparam SequenceLifeLineBorderColor #38bdf8
+skinparam SequenceLifeLineBackgroundColor #1e293b
+skinparam ParticipantBorderColor #38bdf8
+skinparam ParticipantBackgroundColor #1e293b
+skinparam ParticipantFontColor #f8fafc
+
+title Figure 4.4: UML Sequence Diagram: End-to-End Multi-Modal Threat Verification
+
+autonumber
+actor "End User" as User
+participant "Chrome Content Script" as CS
+participant "Background Service Worker" as SW
+participant "FastAPI Gateway (ASGI)" as API
+participant "In-Memory Whitelist" as White
+participant "BERT Semantic Engine (Singleton)" as BERT
+participant "Mule Scanner (Regex Engine)" as Mule
+database "SQLite Database (aiosqlite)" as DB
+participant "Live SOC Dashboard" as SOC
+
+User -> CS : Visits Target Webpage (e.g. cloned portal)
+activate CS
+CS -> CS : Extracts sanitized DOM text and target URL
+CS -> SW : Dispatches payload via runtime message
+deactivate CS
+
+activate SW
+SW -> API : HTTP POST /api/v1/analyze/semantics (Bearer Auth)
+activate API
+
+API -> White : Check domain against frozenset
+activate White
+White --> API : Result = False (Unverified Domain)
+deactivate White
+
+par Asynchronous Parallel Execution (asyncio.gather)
+    API -> BERT : asyncio.to_thread(bert_forward_pass, text)
+    activate BERT
+    BERT -> BERT : WordPiece Tokenization & Tensor Computation
+    BERT --> API : Returns bert_score = 0.972 (Phishing)
+    deactivate BERT
+else
+    API -> Mule : scan_dom_for_mule_accounts(text)
+    activate Mule
+    Mule -> Mule : Executes compiled Regex (Maybank 12-digit match)
+    Mule -> DB : SELECT * FROM mule_registry WHERE account = ?
+    activate DB
+    DB --> Mule : Returns record {bank: "Maybank", reports: 8}
+    deactivate DB
+    Mule --> API : Returns mule_match data
+    deactivate Mule
+end
+
+API -> API : Aggregate risk scores -> Verdict: "BLOCK_RENDER"
+API -> DB : Non-blocking INSERT into threat_telemetry
+API -> SOC : Push SSE event (EventSource broadcast)
+API --> SW : Return HTTP 200 JSON { verdict: "BLOCK_RENDER", risk: 0.985 }
+deactivate API
+
+SW -> CS : Command: Render Red Defense Shield
+activate CS
+CS -> CS : Remove malicious DOM & display warning overlay
+CS --> User : Displays Block Shield & Forensic Reason
+deactivate CS
+deactivate SW
+
+@enduml
+
+@startuml Class_Diagram_Chapter_4
+!theme vibrant
+skinparam backgroundColor #0f172a
+skinparam ArrowColor #38bdf8
+skinparam ClassBorderColor #38bdf8
+skinparam ClassBackgroundColor #1e293b
+skinparam ClassFontColor #f8fafc
+skinparam PackageBorderColor #64748b
+skinparam PackageFontColor #94a3b8
+
+title Figure 4.5: UML Class Diagram: Object-Oriented Architecture & Singleton Engine Pattern
+
+package "Data Transfer Objects (Pydantic v2)" {
+    class SemanticAnalysisRequest {
+        + url: HttpUrl
+        + text_content: str
+        + origin: Optional[str]
+        + extract_mules: bool = True
+        + validate_schema(): bool
+    }
+    
+    class SemanticAnalysisResponse {
+        + verdict: str
+        + risk_score: float
+        + bert_score: float
+        + is_whitelisted: bool
+        + brand_impersonation: Dict[str, Any]
+        + mule_accounts_flagged: List[Dict[str, Any]]
+        + execution_time_ms: float
+        + to_json(): str
+    }
+}
+
+package "Core Intelligence Services" {
+    class SemanticEngine <<Singleton>> {
+        - _instance: SemanticEngine
+        - _tokenizer: BertTokenizerFast
+        - _model: BertForSequenceClassification
+        - _device: torch.device
+        - _trusted_whitelist: frozenset
+        + get_instance(): SemanticEngine
+        + is_whitelisted(url: str): bool
+        + analyze_semantics(text: str, url: str): float
+        - _sanitize_dom(raw_html: str): str
+    }
+    
+    class MuleScanner {
+        - _compiled_patterns: Dict[str, Pattern]
+        - _db_pool: aiosqlite.Connection
+        + compile_regex_patterns(): void
+        + extract_account_candidates(text: str): List[str]
+        + query_mule_registry(accounts: List[str]): List[MuleRecord]
+    }
+    
+    class BrandProfiler {
+        - _target_brands: Dict[str, str]
+        + calculate_levenshtein_distance(domain: str): float
+        + evaluate_brand_impersonation(url: str): BrandResult
+    }
+    
+    class QuishingScanner {
+        - _qr_detector: cv2.QRCodeDetector
+        + decode_base64_qr(image_b64: str): str
+        + parse_emvco_payload(payload: str): Dict[str, str]
+    }
+}
+
+package "Data Persistence Layer" {
+    class DatabaseManager {
+        - _db_path: str
+        - _pool: aiosqlite.Connection
+        + initialize_database(): void
+        + log_telemetry(url: str, score: float): void
+        + get_mule_by_account(account: str): Optional[MuleRecord]
+        + delete_mule_record(id: int): bool
+    }
+    
+    class MuleRecord {
+        + id: int
+        + account_number: str
+        + bank_name: str
+        + platform_flagged: str
+        + report_count: int
+        + date_added: datetime
+    }
+}
+
+SemanticAnalysisRequest --> SemanticEngine : Ingested By
+SemanticEngine o-- BrandProfiler : Uses
+SemanticEngine o-- MuleScanner : Aggregates With
+MuleScanner --> DatabaseManager : Queries
+MuleScanner --> MuleRecord : Instantiates
+SemanticEngine --> SemanticAnalysisResponse : Outputs
+DatabaseManager --> MuleTable : Persists
+
+@enduml
+
+@startuml ERD_Chapter_4
+!theme vibrant
+skinparam backgroundColor #0f172a
+skinparam ArrowColor #38bdf8
+skinparam ClassBorderColor #38bdf8
+skinparam ClassBackgroundColor #1e293b
+skinparam ClassFontColor #f8fafc
+skinparam PackageBorderColor #64748b
+skinparam PackageFontColor #94a3b8
+
+title Figure 4.6: Database Entity-Relationship Diagram (3NF Schema & B-Tree Indexes)
+
+entity "mule_registry" as MuleEntity {
+    * id : INTEGER <<PK, AUTOINCREMENT>>
+    --
+    * account_number : VARCHAR(20) <<UNIQUE, INDEX: idx_mule_account>>
+    * bank_name : VARCHAR(50)
+    * platform_flagged : VARCHAR(50)
+    * report_count : INTEGER <<DEFAULT 1>>
+    * date_added : TIMESTAMP <<DEFAULT CURRENT_TIMESTAMP>>
+}
+
+entity "threat_telemetry" as TelemetryEntity {
+    * log_id : INTEGER <<PK, AUTOINCREMENT>>
+    --
+    * malicious_url : VARCHAR(255)
+    * bert_score : FLOAT
+    * timestamp : TIMESTAMP <<DEFAULT CURRENT_TIMESTAMP, INDEX: idx_telemetry_time>>
+    * country_code : VARCHAR(5)
+    * asn_routed : VARCHAR(100)
+    * action_taken : VARCHAR(20)
+}
+
+entity "whitelisted_domains" as WhitelistEntity {
+    * domain_id : INTEGER <<PK, AUTOINCREMENT>>
+    --
+    * domain_name : VARCHAR(255) <<UNIQUE, INDEX: idx_whitelist_domain>>
+    * institution_name : VARCHAR(100)
+    * category : VARCHAR(50) <<'bank', 'edu', 'gov'>>
+    * date_verified : TIMESTAMP
+}
+
+entity "security_audit_logs" as AuditEntity {
+    * audit_id : INTEGER <<PK, AUTOINCREMENT>>
+    --
+    * client_ip : VARCHAR(45)
+    * endpoint_accessed : VARCHAR(100)
+    * response_status : INTEGER
+    * latency_ms : FLOAT
+    * timestamp : TIMESTAMP
+}
+
+TelemetryEntity ||--o{ AuditEntity : Correlated By IP
+MuleEntity ||--o{ TelemetryEntity : Matched In Threat Log
+
+@enduml
+
+@startuml Deployment_Topology_Chapter_4
+!theme vibrant
+skinparam backgroundColor #0f172a
+skinparam ArrowColor #38bdf8
+skinparam NodeBorderColor #38bdf8
+skinparam NodeBackgroundColor #1e293b
+skinparam NodeFontColor #f8fafc
+
+title Figure 4.7: Physical Deployment Topology & Network Infrastructure
+
+node "Client Endpoint Device\n(User Physical PC / Laptop)" as ClientNode {
+    node "Google Chrome Browser (Version 120+)" {
+        artifact "PhishGuard-AI Browser Extension\n(Manifest V3 Chrome Web Store)" as ExtArtifact
+        artifact "DOM Extractor & Red Shield Overlay\n(Vanilla JS / CSS)" as DOMArtifact
+    }
+}
+
+node "Local / Dedicated Production Host\n(Windows / Linux Server Environment)" as ServerNode {
+    node "Asynchronous Application Gateway (Port 8000)" {
+        component "FastAPI Web Application\n(Uvicorn ASGI Multi-Worker Server)" as ASGIComponent
+        component "SlowAPI Rate Limiter & Bearer Auth" as SecurityComponent
+    }
+    
+    node "Deep Learning Compute Engine (Local Memory)" {
+        component "PyTorch 2.5 + CUDA Runtime" as PyTorchComponent
+        artifact "Fine-Tuned BERT Base Uncased Model\n(phishguard_bert.pt / 440 MB Singleton)" as ModelArtifact
+        component "OpenCV Quishing Engine" as OpenCVComponent
+    }
+    
+    node "Local NVMe SSD Persistent Storage" {
+        database "SQLite 3NF Database\n(phishguard.db in WAL Mode)" as SQLiteFile
+        file "Forensic Audit & Telemetry Logs" as LogFiles
+    }
+}
+
+node "Law Enforcement & National Security Networks" as ExtNetwork {
+    component "National Scam Response Centre (NSRC 997)" as NSRCComponent
+    component "National Fraud Portal (NFP Bridge)" as NFPComponent
+}
+
+ExtArtifact --> ASGIComponent : Encrypted HTTPS REST API Calls (Sub-400ms)
+ASGIComponent --> SecurityComponent : Validates Token & Rate Limits
+ASGIComponent --> PyTorchComponent : Dispatches Async Worker Thread
+PyTorchComponent --> ModelArtifact : In-Memory Forward Pass
+ASGIComponent --> SQLiteFile : aiosqlite Async Connection Pool
+ASGIComponent --> NSRCComponent : Automated 1-Click Dispatch Dossier
+ASGIComponent --> NFPComponent : API Account Freezing Directives
+
+@enduml
