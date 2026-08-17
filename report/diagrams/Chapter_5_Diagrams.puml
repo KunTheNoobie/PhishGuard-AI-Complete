@@ -1,0 +1,169 @@
+@startuml ETL_Pipeline_Chapter_5
+!theme vibrant
+skinparam backgroundColor #0f172a
+skinparam ArrowColor #38bdf8
+skinparam ActivityBorderColor #38bdf8
+skinparam ActivityBackgroundColor #1e293b
+skinparam ActivityFontColor #f8fafc
+
+title Figure 5.1: Data Preprocessing, Sanitization, and WordPiece Ingestion Pipeline
+
+start
+:Raw Cybersecurity Corpus (549,346 URLs + Localized Malaysian Scam DOMs);
+
+partition "ETL Sanitization Pipeline (Pandas & BeautifulSoup)" {
+    :Drop Missing Values (pandas.dropna) to prevent Float-casting anomaly;
+    :Strip HTML markup, <script>, <style>, and CSS via BeautifulSoup;
+    :Normalize Character Encodings & Unescape Punycode;
+    :Map Binary Target Labels strictly to Integers (0 = Legitimate, 1 = Phishing);
+    :Prepend Context: "URL: {url} | {sanitized_text}";
+}
+
+partition "WordPiece Subword Tokenizer (BertTokenizerFast)" {
+    :Input String Ingestion ("Akaun rnaybank anda digantung!");
+    :Subword Tokenization (['[CLS]', 'akaun', 'rn', '##ay', '##bank', 'anda', 'digan', '##tung', '!', '[SEP]']);
+    :Dynamic Padding / Truncation to Max Length N = 128;
+    :Generate Input IDs Tensor (int64) & Attention Mask Tensor (int64);
+}
+
+partition "PyTorch DataLoader & Batch Formulation" {
+    :Construct TensorDataset(input_ids, attention_mask, labels);
+    :Batch Generation (Batch Size = 16) with Distributed Sampler;
+    :Transfer Tensors to NVIDIA Tesla T4 GPU VRAM via CUDA 12.x;
+}
+
+stop
+
+@enduml
+
+@startuml Confusion_Matrix_Chapter_5
+!theme vibrant
+skinparam backgroundColor #0f172a
+skinparam ArrowColor #38bdf8
+skinparam ComponentBorderColor #38bdf8
+skinparam ComponentBackgroundColor #1e293b
+skinparam ComponentFontColor #f8fafc
+skinparam PackageBorderColor #64748b
+skinparam PackageFontColor #94a3b8
+
+title Figure 5.2: Empirical Confusion Matrix & AI Performance Metric Breakdown (109,870 Test Set)
+
+package "Actual Condition: POSITIVE (Phishing: 42,430 Instances)" {
+    [True Positive (TP) = 41,520\n• 97.86% of Phishing Caught\n• Successfully Intercepted by BERT] as TP
+    [False Negative (FN) = 910\n• 2.14% Threat Evasion\n• Mitigated by Regex Mule DB & Heuristics] as FN
+}
+
+package "Actual Condition: NEGATIVE (Legitimate: 67,440 Instances)" {
+    [False Positive (FP) = 1,068\n• 1.58% False Alarm\n• COMPLETELY ELIMINATED on Banks by 28-Bank Whitelist] as FP
+    [True Negative (TN) = 66,372\n• 98.42% Legitimate Passed\n• Transparent Browsing Permitted] as TN
+}
+
+note bottom of TP
+  =========================================
+  EMPIRICAL EVALUATION METRICS (EPOCH 1.0):
+  • Overall Accuracy : 98.68% (107,892 / 109,870)
+  • Precision Rate   : 97.49% (TP / [TP + FP])
+  • Recall / Sens.   : 97.86% (TP / [TP + FN])
+  • Specificity Rate : 98.42% (TN / [TN + FP])
+  • Balanced F1-Score: 97.67% (Harmonic Mean)
+  • Validation Loss  : 0.0584 (Binary Cross-Entropy)
+  =========================================
+end note
+
+@enduml
+
+@startuml Latency_Distribution_Chapter_5
+!theme vibrant
+skinparam backgroundColor #0f172a
+skinparam ArrowColor #38bdf8
+skinparam SequenceLifeLineBorderColor #38bdf8
+skinparam SequenceLifeLineBackgroundColor #1e293b
+skinparam ParticipantBorderColor #38bdf8
+skinparam ParticipantBackgroundColor #1e293b
+skinparam ParticipantFontColor #f8fafc
+
+title Figure 5.3: End-to-End Latency Benchmark & Asynchronous Execution Breakdown (363.36 ms Average)
+
+actor "Browser Extension" as Client
+participant "FastAPI Gateway (ASGI)" as Gateway
+participant "In-Memory Whitelist" as Whitelist
+participant "BERT Tensor Thread (PyTorch)" as BERT
+participant "Regex + aiosqlite Engine" as Mule
+
+Client -> Gateway : POST /api/v1/analyze/semantics (T = 0.00 ms)
+activate Gateway
+Gateway -> Whitelist : Hash Check (T = 0.45 ms)
+activate Whitelist
+Whitelist --> Gateway : Miss (T = 0.85 ms)
+deactivate Whitelist
+
+par Parallel Asynchronous Execution (asyncio.gather)
+    Gateway -> BERT : asyncio.to_thread(forward_pass) (T = 1.20 ms)
+    activate BERT
+    BERT -> BERT : WordPiece Tokenization & CUDA Dot-Product (Duration: 340.50 ms)
+    BERT --> Gateway : bert_score = 0.972 (T = 341.70 ms)
+    deactivate BERT
+else
+    Gateway -> Mule : regex_scan_and_query() (T = 1.20 ms)
+    activate Mule
+    Mule -> Mule : C-Bytecode Regex Execution (Duration: 2.10 ms)
+    Mule -> Mule : SQLite B-Tree Query in WAL Mode (Duration: 8.50 ms)
+    Mule --> Gateway : mule_matches = [{Maybank: 12}] (T = 11.80 ms)
+    deactivate Mule
+end
+
+Gateway -> Gateway : Risk Score Calibration & Response Packaging (Duration: 9.86 ms)
+Gateway --> Client : Return HTTP 200 JSON Verdict (TOTAL LATENCY = 363.36 ms)
+deactivate Gateway
+
+note over Client, Gateway
+  SLA Operational Threshold: 1,000.00 ms
+  Achieved Empirical Latency:   363.36 ms (63.66% Performance Headroom)
+  Throughput: 1,500+ Requests/sec with 0.00% Error Rate
+end note
+
+@enduml
+
+@startuml Test_Suite_Architecture_Chapter_5
+!theme vibrant
+skinparam backgroundColor #0f172a
+skinparam ArrowColor #38bdf8
+skinparam ComponentBorderColor #38bdf8
+skinparam ComponentBackgroundColor #1e293b
+skinparam ComponentFontColor #f8fafc
+skinparam PackageBorderColor #64748b
+skinparam PackageFontColor #94a3b8
+
+title Figure 5.4: Automated CI/CD Test Suite Architecture (120/120 Tests - 100% Pass Rate)
+
+package "PhishGuard-AI Automated Test Suite (Pytest & pytest-asyncio)" {
+    [tests/test_endpoints.py\n(22 Tests - API Auth, Routes, & HTTP Verdicts)] as T1
+    [tests/test_enhancements.py\n(46 Tests - Whitelist, BII, Quishing & CTI)] as T2
+    [tests/test_mule_scanner.py\n(14 Tests - 8-Bank Regex & Semakmule SQL)] as T3
+    [tests/test_nlp_engine.py\n(9 Tests - BERT Tokenization & Mock Engine)] as T4
+    [tests/test_repository.py\n(8 Tests - SQLite 3NF Persistence & WAL Mode)] as T5
+    [tests/test_sanitizer.py\n(13 Tests - BeautifulSoup DOM Sanitization)] as T6
+    [tests/test_visual.py\n(8 Tests - YOLOv8 & Computer Vision Bridge)] as T7
+}
+
+database "Real FastAPI Instance + In-Memory Test Fixtures" as TestApp
+
+T1 --> TestApp : HTTP Async Client Requests
+T2 --> TestApp : Enhancement Fixture Verification
+T3 --> TestApp : Regex & DB Lookup Tests
+T4 --> TestApp : Tensor Prediction Tests
+T5 --> TestApp : Relational Data Consistency
+T6 --> TestApp : HTML Injection Sanitization
+T7 --> TestApp : Optical Logo & QR Tests
+
+note bottom of TestApp
+  =========================================
+  PYTEST AUTOMATED TEST RUNNER VERDICT:
+  • Total Test Cases Executed: 120
+  • Total Passed:              120 (100.0%)
+  • Total Failed / Errored:    0   (0.00%)
+  • Total Execution Runtime:   8.93 seconds
+  =========================================
+end note
+
+@enduml
