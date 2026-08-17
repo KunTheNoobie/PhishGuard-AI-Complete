@@ -703,6 +703,10 @@ h1 {
 /* ═══════════════════════════════════════════════════════════════════
    CYBER POPUP MODAL DIALOG
    ═══════════════════════════════════════════════════════════════════ */
+.hidden {
+  display: none !important;
+}
+
 .popup-modal-overlay {
   position: fixed;
   inset: 0;
@@ -716,7 +720,9 @@ h1 {
   animation: modalFadeIn 0.2s ease forwards;
 }
 
-.popup-modal-overlay.hidden {
+.popup-modal-overlay.hidden,
+#popupModalInputContainer.hidden,
+.popup-modal-input-container.hidden {
   display: none !important;
 }
 

@@ -374,7 +374,7 @@ function showToast(type = "info", title = "Notice", message = "", duration = 320
   }, duration);
 }
 
-function showConfirmDialog(title, message, icon = "⚠️") {
+function showConfirmDialog(title, message, icon = "⚠️", confirmBtnText = "Confirm") {
   return new Promise((resolve) => {
     if (!popupModalOverlay) {
       resolve(confirm(message));
@@ -383,11 +383,22 @@ function showConfirmDialog(title, message, icon = "⚠️") {
     popupModalTitle.textContent = title;
     popupModalIcon.textContent = icon;
     popupModalMessage.textContent = message;
-    popupModalInputContainer.classList.add("hidden");
+    
+    // Explicitly hide input container for confirm dialogs (no input required)
+    if (popupModalInputContainer) {
+      popupModalInputContainer.style.display = "none";
+      popupModalInputContainer.classList.add("hidden");
+    }
+    if (popupModalInput) {
+      popupModalInput.value = "";
+    }
+    
     popupModalCancelBtn.classList.remove("hidden");
-    popupModalConfirmBtn.textContent = "Confirm";
+    popupModalCancelBtn.style.display = "";
+    popupModalConfirmBtn.textContent = confirmBtnText;
 
     popupModalOverlay.classList.remove("hidden");
+    popupModalOverlay.style.display = "flex";
 
     const onConfirm = () => {
       cleanup();
@@ -399,6 +410,7 @@ function showConfirmDialog(title, message, icon = "⚠️") {
     };
     const cleanup = () => {
       popupModalOverlay.classList.add("hidden");
+      popupModalOverlay.style.display = "none";
       popupModalConfirmBtn.removeEventListener("click", onConfirm);
       popupModalCancelBtn.removeEventListener("click", onCancel);
     };
@@ -417,17 +429,29 @@ function showPromptDialog(title, message, placeholder = "", defaultValue = "", i
     popupModalTitle.textContent = title;
     popupModalIcon.textContent = icon;
     popupModalMessage.textContent = message;
-    popupModalInputContainer.classList.remove("hidden");
-    popupModalInput.placeholder = placeholder;
-    popupModalInput.value = defaultValue;
+    
+    // Explicitly show input container for prompt dialogs
+    if (popupModalInputContainer) {
+      popupModalInputContainer.style.display = "block";
+      popupModalInputContainer.classList.remove("hidden");
+    }
+    if (popupModalInput) {
+      popupModalInput.placeholder = placeholder;
+      popupModalInput.value = defaultValue;
+    }
+    
     popupModalCancelBtn.classList.remove("hidden");
+    popupModalCancelBtn.style.display = "";
     popupModalConfirmBtn.textContent = "Submit";
 
     popupModalOverlay.classList.remove("hidden");
-    popupModalInput.focus();
+    popupModalOverlay.style.display = "flex";
+    if (popupModalInput) {
+      popupModalInput.focus();
+    }
 
     const onConfirm = () => {
-      const val = popupModalInput.value.trim();
+      const val = popupModalInput ? popupModalInput.value.trim() : "";
       cleanup();
       resolve(val);
     };
@@ -437,16 +461,19 @@ function showPromptDialog(title, message, placeholder = "", defaultValue = "", i
     };
     const cleanup = () => {
       popupModalOverlay.classList.add("hidden");
+      popupModalOverlay.style.display = "none";
       popupModalConfirmBtn.removeEventListener("click", onConfirm);
       popupModalCancelBtn.removeEventListener("click", onCancel);
     };
 
     popupModalConfirmBtn.addEventListener("click", onConfirm);
     popupModalCancelBtn.addEventListener("click", onCancel);
-    popupModalInput.onkeydown = (e) => {
-      if (e.key === "Enter") onConfirm();
-      if (e.key === "Escape") onCancel();
-    };
+    if (popupModalInput) {
+      popupModalInput.onkeydown = (e) => {
+        if (e.key === "Enter") onConfirm();
+        if (e.key === "Escape") onCancel();
+      };
+    }
   });
 }
 
@@ -473,21 +500,38 @@ async function renderTrustedDomains() {
           <span class="history-domain">${domain}</span>
           <span class="history-time">Expires in ~${remainingHrs}h</span>
         </div>
-        <button class="clear-btn" style="color: #f87171; font-weight: 700;" onclick="removeTrustedDomain('${domain}')">✕ Remove</button>
+        <button type="button" class="clear-btn remove-trusted-item-btn" style="color: #f87171; font-weight: 700; cursor: pointer;" data-domain="${domain}">✕ Remove</button>
       </div>
     `;
   }).join("");
+
+  // Attach CSP-compliant click handlers to all remove buttons
+  trustedList.querySelectorAll(".remove-trusted-item-btn").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const domain = btn.getAttribute("data-domain");
+      if (domain) {
+        await removeTrustedDomain(domain);
+      }
+    });
+  });
 }
 
-window.removeTrustedDomain = async function(domain) {
+async function removeTrustedDomain(domain) {
   await sendRuntimeMessage({ type: "PHISHGUARD_REMOVE_TRUSTED_DOMAIN", domain });
   await renderTrustedDomains();
   showToast("info", "Domain Revoked", `${domain} removed from trusted whitelist.`);
   scanActivePage();
-};
+}
 
 async function clearAllTrusted() {
-  const ok = await showConfirmDialog("Revoke Whitelists", "Are you sure you want to remove all custom trusted domains?", "🗑️");
+  const ok = await showConfirmDialog(
+    "Revoke All Whitelists",
+    "Are you sure you want to remove all custom trusted domains? All unverified pages will be inspected by AI again.",
+    "🗑️",
+    "Revoke All"
+  );
   if (!ok) return;
   await sendRuntimeMessage({ type: "PHISHGUARD_CLEAR_ALL_TRUSTED" });
   await renderTrustedDomains();

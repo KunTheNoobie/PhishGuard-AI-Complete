@@ -52,13 +52,27 @@ const GLOBAL_SAFE_DOMAINS_SET = new Set([
 
 function storageGet(defaults) {
   return new Promise((resolve) => {
-    chrome.storage.sync.get(defaults, (items) => resolve(items));
+    chrome.storage.local.get(defaults, (localItems) => {
+      if (chrome.storage.sync) {
+        chrome.storage.sync.get(localItems || defaults, (syncItems) => {
+          resolve(syncItems || localItems || defaults);
+        });
+      } else {
+        resolve(localItems || defaults);
+      }
+    });
   });
 }
 
 function storageSet(values) {
   return new Promise((resolve) => {
-    chrome.storage.sync.set(values, () => resolve());
+    chrome.storage.local.set(values, () => {
+      if (chrome.storage.sync) {
+        chrome.storage.sync.set(values, () => resolve());
+      } else {
+        resolve();
+      }
+    });
   });
 }
 
@@ -839,7 +853,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.type === "PHISHGUARD_REMOVE_TRUSTED_DOMAIN") {
     getCustomTrustedDomains().then(async (current) => {
+      const dom = String(message.domain || "").trim().toLowerCase();
+      delete current[dom];
       delete current[message.domain];
+      const clean = dom.replace(/^www\./i, "");
+      delete current[clean];
+      delete current[`www.${clean}`];
       await storageSet({ custom_trusted_domains: current });
       sendResponse({ ok: true, trusted: current });
     });
