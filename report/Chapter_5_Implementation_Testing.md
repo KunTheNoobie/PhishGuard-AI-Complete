@@ -2,15 +2,15 @@
 
 ## 5.1 Introduction
 
-The Implementation and Testing phase represents the practical engineering realization and empirical verification of the **Semantic Threat Intelligence and Mule Account Verification Engine** developed as an individual module by Liew Yi Ler. Translating the theoretical methodologies established in Chapter 3 and the structural blueprints designed in Chapter 4 into a resilient, production-ready cybersecurity system mandates rigorous coding standards, optimized data science pipelines, and hardware-accelerated deep learning execution.
+The Implementation and Testing phase represents the practical engineering realisation and empirical verification of the **Semantic Threat Intelligence and Mule Account Verification Engine** developed as an individual module by Liew Yi Ler. Translating the theoretical methodologies established in Chapter 3 and the structural blueprints designed in Chapter 4 into a resilient, production-ready cybersecurity system mandates rigorous coding standards, optimised data science pipelines, and hardware-accelerated deep learning execution (Kreuzberger et al., 2023).
 
 This chapter documents:
 1. The dual computational environment architecture separating cloud-based GPU model training from local high-throughput ASGI microservice hosting.
-2. The Extract, Transform, Load (ETL) data sanitization and feature engineering pipelines operating on over 549,000 cybersecurity records.
-3. The fine-tuning of the Transformer-based **Bidirectional Encoder Representations from Transformers (BERT)** model utilizing PyTorch, WordPiece subword tokenization, and AdamW optimization.
-4. The asynchronous backend implementation on **FastAPI** and **Uvicorn**, integrating `asyncio.to_thread()` tensor offloading, `asyncio.gather()` parallel execution, pre-compiled C-level Regular Expression bytecode, and an asynchronous SQLite 3NF database connection pool.
+2. The Extract, Transform, Load (ETL) data sanitisation and feature engineering pipelines operating on over 549,000 cybersecurity records.
+3. The fine-tuning of the Transformer-based **Bidirectional Encoder Representations from Transformers (BERT)** model (Devlin et al., 2018) utilising PyTorch (Paszke et al., 2019), WordPiece subword tokenisation (Wu et al., 2016), and AdamW optimisation (Loshchilov & Hutter, 2019).
+4. The asynchronous backend implementation on **FastAPI** and **Uvicorn** (Bansal & Ouda, 2022), integrating `asyncio.to_thread()` tensor offloading, `asyncio.gather()` parallel execution, pre-compiled C-level Regular Expression bytecode, and an asynchronous SQLite 3NF database connection pool.
 5. The mathematical resolution of a critical domain-level false-positive anomaly via the in-memory **28-Bank Trusted Domain Whitelist (`frozenset`)** and URL Context Injection.
-6. Empirical evaluation of the neural network over a sequestered 109,870-record test set, achieving an **Accuracy of 98.68%** and an **F1-Score of 97.67%**.
+6. Empirical evaluation of the neural network over a sequestered 109,870-record test set, achieving an **Accuracy of 98.68%** and an **F1-Score of 97.67%** (Sokolova & Lapalme, 2009).
 7. High-concurrency performance benchmarking (Locust) demonstrating a stable **average decision latency of 363.36 milliseconds** (well within the sub-1,000ms SLA).
 8. Continuous Integration / Continuous Deployment (CI/CD) validation via a comprehensive **120-test automated Pytest suite** achieving a 100% pass rate.
 
@@ -27,22 +27,22 @@ skinparam ActivityBorderColor #38bdf8
 skinparam ActivityBackgroundColor #1e293b
 skinparam ActivityFontColor #f8fafc
 
-title Figure 5.1: Data Preprocessing, Sanitization, and WordPiece Ingestion Pipeline
+title Figure 5.1: Data Preprocessing, Sanitisation, and WordPiece Ingestion Pipeline
 
 start
-:Raw Cybersecurity Corpus (549,346 URLs + Localized Malaysian Scam DOMs);
+:Raw Cybersecurity Corpus (549,346 URLs + Localised Malaysian Scam DOMs);
 
-partition "ETL Sanitization Pipeline (Pandas & BeautifulSoup)" {
+partition "ETL Sanitisation Pipeline (Pandas & BeautifulSoup)" {
     :Drop Missing Values (pandas.dropna) to prevent Float-casting anomaly;
     :Strip HTML markup, <script>, <style>, and CSS via BeautifulSoup;
-    :Normalize Character Encodings & Unescape Punycode;
+    :Normalise Character Encodings & Unescape Punycode;
     :Map Binary Target Labels strictly to Integers (0 = Legitimate, 1 = Phishing);
     :Prepend Context: "URL: {url} | {sanitized_text}";
 }
 
-partition "WordPiece Subword Tokenizer (BertTokenizerFast)" {
+partition "WordPiece Subword Tokeniser (BertTokenizerFast)" {
     :Input String Ingestion ("Akaun rnaybank anda digantung!");
-    :Subword Tokenization (['[CLS]', 'akaun', 'rn', '##ay', '##bank', 'anda', 'digan', '##tung', '!', '[SEP]']);
+    :Subword Tokenisation (['[CLS]', 'akaun', 'rn', '##ay', '##bank', 'anda', 'digan', '##tung', '!', '[SEP]']);
     :Dynamic Padding / Truncation to Max Length N = 128;
     :Generate Input IDs Tensor (int64) & Attention Mask Tensor (int64);
 }
@@ -59,21 +59,21 @@ stop
 ```
 
 ### 5.2.1 Computational Environments & Hardware Bifurcation
-To optimize development efficiency and respect hardware constraints, computational tasks were bifurcated into two specialized operating environments:
+To optimise development efficiency and respect hardware constraints, computational tasks were bifurcated into two specialised operating environments:
 1. **Model Fine-Tuning Environment (Google Colab Pro)**:  
-   Training a 110-million parameter Transformer model over half a million text sequences is computationally prohibitive on standard CPUs. Training was executed on an **NVIDIA Tesla T4 GPU** (16 GB GDDR6 VRAM) utilizing the **CUDA 12.x** hardware acceleration runtime. High-RAM virtual instances (25 GB system memory) were provisioned to accommodate batch vector transformations in memory.
+   Training a 110-million parameter Transformer model over half a million text sequences is computationally prohibitive on standard CPUs. Training was executed on an **NVIDIA Tesla T4 GPU** (16 GB GDDR6 VRAM) utilising the **CUDA 12.x** hardware acceleration runtime. High-RAM virtual instances (25 GB system memory) were provisioned to accommodate batch vector transformations in memory.
 2. **Production Inference & Microservice Environment (Local Windows 11 Host)**:  
-   The FastAPI microservice, asynchronous Uvicorn ASGI server, and SQLite persistence layer were deployed locally on an Intel Core i7 / AMD Ryzen multi-core architecture running Python 3.10+, natively utilizing `asyncio` non-blocking event loops.
+   The FastAPI microservice, asynchronous Uvicorn ASGI server, and SQLite persistence layer were deployed locally on an Intel Core i7 / AMD Ryzen multi-core architecture running Python 3.10+, natively utilising `asyncio` non-blocking event loops.
 
 ### 5.2.2 Dataset Ingestion & Preprocessing Pipeline
-The training corpus was constructed by synthesizing two extensive cybersecurity data repositories:
+The training corpus was constructed by synthesising two extensive cybersecurity data repositories:
 * **Global Phishing Corpus (Kaggle)**: 549,346 curated URLs and text payloads extracted from PhishTank, OpenPhish, and benign Alexa/Cisco Umbrella Top 1M domains.
-* **Localized Malaysian Scam Corpus**: 5,000+ domain strings, fake SMS lures, and cloned online banking text blocks targeting Maybank2u, CIMB Clicks, Public Bank PBe, LHDN, and KWSP/EPF across English, Bahasa Melayu, and Manglish.
+* **Localised Malaysian Scam Corpus**: 5,000+ domain strings, fake SMS lures, and cloned online banking text blocks targeting Maybank2u, CIMB Clicks, Public Bank PBe, LHDN, and KWSP/EPF across English, Bahasa Melayu, and Manglish.
 
-The Extract, Transform, Load (ETL) data pipeline was implemented using `pandas` and `numpy`:
+The Extract, Transform, Load (ETL) data pipeline was implemented using `pandas` (McKinney, 2011) and `BeautifulSoup` (Richardson, 2022), as illustrated in Figure 5.1:
 
 ```python
-# Production ETL Data Sanitization and Transformation Pipeline
+# Production ETL Data Sanitisation and Transformation Pipeline
 import pandas as pd
 import numpy as np
 from bs4 import BeautifulSoup
@@ -97,13 +97,13 @@ def sanitize_and_prepare_dataset(raw_csv_path: str) -> pd.DataFrame:
         
     df['sanitized_text'] = df['text_payload'].apply(clean_html)
     
-    # 4. Lexical URL Normalization & Punycode Decoding
+    # 4. Lexical URL Normalisation & Punycode Decoding
     df['normalized_url'] = df['url'].apply(lambda u: unquote(str(u)).lower().strip())
     
     # 5. Domain Context Prepending
     df['model_input'] = "URL: " + df['normalized_url'] + " | " + df['sanitized_text']
     
-    # 6. Normalize binary labels strictly to int64 (0 = Legitimate, 1 = Phishing)
+    # 6. Normalise binary labels strictly to int64 (0 = Legitimate, 1 = Phishing)
     df['label'] = df['label'].astype(str).str.lower().map({'0': 0, 'legitimate': 0, 'good': 0, '1': 1, 'phishing': 1, 'bad': 1})
     df.dropna(subset=['label'], inplace=True)
     df['label'] = df['label'].astype(np.int64)
@@ -114,7 +114,7 @@ def sanitize_and_prepare_dataset(raw_csv_path: str) -> pd.DataFrame:
 ### 5.2.3 Critical Null-Handling & Float-Casting Anomaly Resolution
 During early data science iterations, an insidious bug occurred during PyTorch training: missing values (`NaN`) or casing inconsistencies (e.g., `'Good'` vs. `'good'`) caused Pandas to infer the label column as a `float64` data type. 
 
-When passed into `torch.nn.CrossEntropyLoss()`, PyTorch strictly mandates an integer class tensor (`torch.long` / `int64`). Passing floating-point labels triggered a fatal CUDA kernel dimension-mismatch exception (`RuntimeError: Expected floating point target with class probabilities, got Long`). This was resolved by enforcing rigorous string normalization and explicit integer mapping (`df['label'].astype(np.int64)`) prior to tensor formulation.
+When passed into `torch.nn.CrossEntropyLoss()`, PyTorch strictly mandates an integer class tensor (`torch.long` / `int64`). Passing floating-point labels triggered a fatal CUDA kernel dimension-mismatch exception (`RuntimeError: Expected floating point target with class probabilities, got Long`). This was resolved by enforcing rigorous string normalisation and explicit integer mapping (`df['label'].astype(np.int64)`) prior to tensor formulation.
 
 ---
 
@@ -128,7 +128,7 @@ When passed into `torch.nn.CrossEntropyLoss()`, PyTorch strictly mandates an int
 |  [Input: "URL: https://rnaybank.com/login | Sila sahkan TAC anda"]                                 |
 |         │                                                                                          |
 |         ▼                                                                                          |
-|  [BertTokenizerFast: WordPiece Subword Tokenizer (Vocab Size = 30,522, Max Length = 128)]          |
+|  [BertTokenizerFast: WordPiece Subword Tokeniser (Vocab Size = 30,522, Max Length = 128)]          |
 |         │                                                                                          |
 |         ▼                                                                                          |
 |  [Input IDs Tensor (int64)] ─── [Attention Mask Tensor (int64)] ─── [Token Type IDs Tensor]        |
@@ -148,47 +148,49 @@ When passed into `torch.nn.CrossEntropyLoss()`, PyTorch strictly mandates an int
 +----------------------------------------------------------------------------------------------------+
 ```
 
-### 5.3.1 Tokenization & Tensor Formulation
-The sanitized input strings were transformed into dense numerical vectors using `BertTokenizerFast.from_pretrained('bert-base-uncased')`. WordPiece subword tokenization dynamically splits unknown or obfuscated words into subword units (e.g., decomposing `rnaybank` into `rn`, `##ay`, `##bank`), preserving the semantic root of typosquatted banking brands.
+### 5.3.1 Tokenisation & Tensor Formulation
+The sanitised input strings were transformed into dense numerical vectors using `BertTokenizerFast.from_pretrained('bert-base-uncased')`. WordPiece subword tokenisation (Wu et al., 2016) dynamically splits unknown or obfuscated words into subword units (e.g., decomposing `rnaybank` into `rn`, `##ay`, `##bank`), preserving the semantic root of typosquatted banking brands.
 
 Sequences were padded or truncated to a uniform maximum sequence length of $N = 128$ tokens:
 
-$$\mathbf{x}_{\text{padded}} = [\text{[CLS]}, t_1, t_2, \dots, t_k, \text{[SEP]}, \text{[PAD]}, \dots, \text{[PAD]}]$$
+$$\mathbf{x}_{\text{padded}} = [\text{[CLS]}, t_1, t_2, \dots, t_k, \text{[SEP]}, \text{[PAD]}, \dots, \text{[PAD]}$$
 
-Attention masks ($\mathbf{M} \in \{0, 1\}^{B \times 128}$) were simultaneously constructed to instruct the Transformer self-attention heads to allocate zero attention weight to `[PAD]` positions ($M_i = 0$).
+Attention masks ($\mathbf{M} \in \{0, 1\}^{B \times 128}$) were simultaneously constructed to instruct the Transformer self-attention heads (Vaswani et al., 2017) to allocate zero attention weight to `[PAD]` positions ($M_i = 0$).
 
 ### 5.3.2 Model Instantiation & Hyperparameter Tuning
-The model was instantiated using `BertForSequenceClassification` from Hugging Face, replacing the top masked language modeling head with a linear Multi-Layer Perceptron (MLP) binary classification layer. The training hyperparameters were tuned to preserve the foundational pre-trained semantic weights while adapting to cybersecurity social engineering indicators, as detailed in Table 5.1.
+The model was instantiated using `BertForSequenceClassification` from Hugging Face (Wolf et al., 2020), replacing the top masked language modelling head with a linear Multi-Layer Perceptron (MLP) binary classification layer. The training hyperparameters were tuned to preserve the foundational pre-trained semantic weights while adapting to cybersecurity social engineering indicators, as detailed in Table 5.1.
 
 **Table 5.1: BERT Model Hyperparameter Configuration**
 
 | Hyperparameter | Value Assigned | Engineering Rationale & Justification |
 | :--- | :--- | :--- |
-| **Foundation Model** | `bert-base-uncased` | 110M parameters, 12 Transformer layers, 768 hidden dimensions, 12 attention heads. |
-| **Optimization Algorithm** | `AdamW` | Decoupled weight decay ($\lambda = 0.01$) prevents overfitting on dominant keywords. |
+| **Foundation Model** | `bert-base-uncased` | 110M parameters, 12 Transformer layers, 768 hidden dimensions, 12 attention heads (Devlin et al., 2018). |
+| **Optimisation Algorithm** | `AdamW` | Decoupled weight decay ($\lambda = 0.01$) prevents overfitting on dominant keywords (Loshchilov & Hutter, 2019). |
 | **Learning Rate ($\eta$)** | $2.0 \times 10^{-5}$ | Conservative learning rate preventing catastrophic forgetting of foundational syntax. |
 | **Learning Rate Schedule** | Linear Warmup with Decay | 10% warmup steps followed by linear decay to 0 over the training duration. |
-| **Batch Size ($B$)** | 16 | Maximizes memory throughput on the Tesla T4 (16 GB VRAM) without CUDA OOM crashes. |
+| **Batch Size ($B$)** | 16 | Maximises memory throughput on the Tesla T4 (16 GB VRAM) without CUDA OOM crashes. |
 | **Maximum Sequence Length** | 128 Tokens | Optimal trade-off between capturing long DOM context and high tensor throughput. |
 | **Training Epochs** | 1.0 Epoch ($29,852\text{ steps}$) | Massive 549k dataset achieved full loss convergence in 1 epoch, avoiding cloud timeouts. |
 
 ### 5.3.3 Training Convergence & Loss Profile
-The model was trained over 29,852 optimization steps with gradient checkpointing. Training convergence was monitored at regular intervals, recorded in Table 5.4.
+The model was trained over 29,852 optimisation steps with gradient checkpointing. Training convergence was monitored at regular intervals, recorded in Table 5.2.
 
-**Table 5.4: BERT Model Training Log & Convergence Metrics (Epoch 1.0)**
+**Table 5.2: BERT Model Training Log & Convergence Metrics (Epoch 1.0)**
 
-| Optimization Step / Epoch | Training Loss ($\mathcal{L}_{\text{train}}$) | Validation Loss ($\mathcal{L}_{\text{val}}$) | Validation Accuracy | F1-Score | Precision | Recall |
+| Optimisation Step / Epoch | Training Loss ($\mathcal{L}_{\text{train}}$) | Validation Loss ($\mathcal{L}_{\text{val}}$) | Validation Accuracy | F1-Score | Precision | Recall |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | Step 5,000 / 0.17 | 0.142010 | 0.118420 | 0.954210 | 0.932104 | 0.928410 | 0.935829 |
 | Step 15,000 / 0.50 | 0.089412 | 0.076210 | 0.973420 | 0.961205 | 0.958920 | 0.963502 |
 | Step 25,000 / 0.84 | 0.064120 | 0.061020 | 0.982140 | 0.971200 | 0.969840 | 0.972568 |
 | **Step 29,852 / 1.00 (Final)** | **0.059695** | **0.058427** | **0.986757** | **0.976726** | **0.974902** | **0.978558** |
 
-At the conclusion of training, the model weights were serialized in the high-speed **Safetensors** binary format (`phishguard_bert.safetensors`), reducing memory footprint and load times.
+At the conclusion of training, the model weights were serialised in the high-speed **Safetensors** binary format (`phishguard_bert.safetensors`), reducing memory footprint and load times.
 
 ---
 
 ## 5.4 Asynchronous Backend Engineering & Microservice Orchestration
+
+The FastAPI application server coordinates high-throughput incoming traffic via non-blocking asynchronous routines, leveraging `asyncio.gather()` and `asyncio.to_thread()` to bridge synchronous PyTorch tensor computations with high-concurrency event loops (Bansal & Ouda, 2022):
 
 ```python
 # Asynchronous Orchestration Implementation in FastAPI
@@ -274,9 +276,9 @@ async def lifespan(app: FastAPI):
 ```
 
 ### 5.4.2 Simulated Semakmule Database Expansion
-To support realistic integration testing, the simulated SQLite `mule_registry` table was initialized with 15 verified fraud accounts covering 8 major Malaysian banking institutions, detailed in Table 5.2.
+To support realistic integration testing, the simulated SQLite `mule_registry` table was initialised with 15 verified fraud accounts covering 8 major Malaysian banking institutions, reflecting typical fraud vector patterns tracked by the Commercial Crime Investigation Department (PDRM, 2023, 2024), detailed in Table 5.3.
 
-**Table 5.2: Expanded Seed Data for the Simulated Mule Account Registry**
+**Table 5.3: Expanded Seed Data for the Simulated Mule Account Registry**
 
 | Account Number | Bank Affiliation | Platform Flagged | Simulated Report Count | Threat Status |
 | :--- | :--- | :--- | :---: | :--- |
@@ -310,15 +312,15 @@ To support realistic integration testing, the simulated SQLite `mule_registry` t
 |   │    • Instant root/subdomain hash check in RAM (< 1ms execution).                            │  |
 |   │    • Bypasses BERT entirely for authentic banks -> Returns deterministic SAFE verdict.      │  |
 |   │ 2. URL Context Prepending for Non-Whitelisted Domains:                                      │  |
-|   │    • Injects "URL: https://rnaybank.com | {text}" before tokenization.                      │  |
-|   │    • Provides BERT with explicit domain tokens to recognize typosquatted clones (`rnaybank`).│  |
+|   │    • Injects "URL: https://rnaybank.com | {text}" before tokenisation.                      │  |
+|   │    • Provides BERT with explicit domain tokens to recognise typosquatted clones (`rnaybank`).│  |
 |   └─────────────────────────────────────────────────────────────────────────────────────────────┘  |
 +----------------------------------------------------------------------------------------------------+
 ```
 
-Table 5.3 demonstrates the empirical classification behavior before and after implementing the in-memory whitelist and URL context injection.
+Table 5.4 demonstrates the empirical classification behaviour before and after implementing the in-memory whitelist and URL context injection.
 
-**Table 5.3: Empirical Classification Matrix Before and After Whitelist Implementation**
+**Table 5.4: Empirical Classification Matrix Before and After Whitelist Implementation**
 
 | Target Test URL | Webpage DOM Content Evaluated | Before Whitelist (Label / Score) | After Whitelist (Label / Score) | Final Verdict |
 | :--- | :--- | :---: | :---: | :---: |
@@ -371,9 +373,9 @@ end note
 @enduml
 ```
 
-The fine-tuned BERT model was evaluated against a sequestered holdout test dataset comprising **109,870 records** (20% of the corpus) completely unseen during training.
+The fine-tuned BERT model was evaluated against a sequestered holdout test dataset comprising **109,870 records** (20% of the corpus) completely unseen during training, as illustrated in Figure 5.2.
 
-Mathematical evaluation yields:
+Mathematical evaluation yields (Sokolova & Lapalme, 2009):
 * **Accuracy ($98.68\%$)**:
 
 $$\text{Accuracy} = \frac{TP + TN}{TP + TN + FP + FN} = \frac{41,520 + 66,372}{109,870} = 0.986757$$
@@ -423,7 +425,7 @@ deactivate Whitelist
 par Parallel Asynchronous Execution (asyncio.gather)
     Gateway -> BERT : asyncio.to_thread(forward_pass) (T = 1.20 ms)
     activate BERT
-    BERT -> BERT : WordPiece Tokenization & CUDA Dot-Product (Duration: 340.50 ms)
+    BERT -> BERT : WordPiece Tokenisation & CUDA Dot-Product (Duration: 340.50 ms)
     BERT --> Gateway : bert_score = 0.972 (T = 341.70 ms)
     deactivate BERT
 else
@@ -448,7 +450,7 @@ end note
 @enduml
 ```
 
-To validate compliance with the non-functional requirement mandating sub-second response times, automated asynchronous load testing was conducted using **Locust**:
+To validate compliance with the non-functional requirement mandating sub-second response times, automated asynchronous load testing was conducted using **Locust**, as depicted in Figure 5.3:
 * **Average Processing Latency**: The system recorded an end-to-end average round-trip latency of **$363.36\text{ milliseconds}$**, providing a 63.66% performance safety margin under the 1,000ms operational threshold.
 * **System Throughput**: The Uvicorn ASGI server sustained **$1,500+\text{ requests/second}$** across concurrent client connections.
 * **Error Rate Stability**: Achieved a **$0.00\%$ error rate** with zero thread deadlocks or CUDA memory leaks.
@@ -474,9 +476,9 @@ package "PhishGuard-AI Automated Test Suite (Pytest & pytest-asyncio)" {
     [tests/test_endpoints.py\n(22 Tests - API Auth, Routes, & HTTP Verdicts)] as T1
     [tests/test_enhancements.py\n(46 Tests - Whitelist, BII, Quishing & CTI)] as T2
     [tests/test_mule_scanner.py\n(14 Tests - 8-Bank Regex & Semakmule SQL)] as T3
-    [tests/test_nlp_engine.py\n(9 Tests - BERT Tokenization & Mock Engine)] as T4
+    [tests/test_nlp_engine.py\n(9 Tests - BERT Tokenisation & Mock Engine)] as T4
     [tests/test_repository.py\n(8 Tests - SQLite 3NF Persistence & WAL Mode)] as T5
-    [tests/test_sanitizer.py\n(13 Tests - BeautifulSoup DOM Sanitization)] as T6
+    [tests/test_sanitizer.py\n(13 Tests - BeautifulSoup DOM Sanitisation)] as T6
     [tests/test_visual.py\n(8 Tests - YOLOv8 & Computer Vision Bridge)] as T7
 }
 
@@ -487,7 +489,7 @@ T2 --> TestApp : Enhancement Fixture Verification
 T3 --> TestApp : Regex & DB Lookup Tests
 T4 --> TestApp : Tensor Prediction Tests
 T5 --> TestApp : Relational Data Consistency
-T6 --> TestApp : HTML Injection Sanitization
+T6 --> TestApp : HTML Injection Sanitisation
 T7 --> TestApp : Optical Logo & QR Tests
 
 note bottom of TestApp
@@ -503,9 +505,9 @@ end note
 @enduml
 ```
 
-The system codebase was subjected to an automated continuous integration test harness built on `pytest` and `pytest-asyncio`. Testing utilized `httpx.AsyncClient` communicating directly with the FastAPI application instance.
+The system codebase was subjected to an automated continuous integration test harness built on `pytest` and `pytest-asyncio`, illustrated in Figure 5.4. Testing utilised `httpx.AsyncClient` communicating directly with the FastAPI application instance.
 
-The comprehensive test suite contains **120 individual test cases** covering 100% of core system logic across 7 test modules, summarized in Table 5.5.
+The comprehensive test suite contains **120 individual test cases** covering 100% of core system logic across 7 test modules, summarised in Table 5.5.
 
 **Table 5.5: Automated Test Suite Summary & Execution Results**
 
@@ -514,8 +516,8 @@ The comprehensive test suite contains **120 individual test cases** covering 100
 | `tests/test_endpoints.py` | 22 | API Bearer authentication, Pydantic schema validation, and HTTP response codes. | **100% PASS** |
 | `tests/test_enhancements.py` | 46 | 28-Bank Whitelist, BII Levenshtein scoring, Quishing QR decoding, and STIX CTI. | **100% PASS** |
 | `tests/test_mule_scanner.py` | 14 | 8-Bank Regex bytecode extraction and SQLite `mule_registry` matching. | **100% PASS** |
-| `tests/test_sanitizer.py` | 13 | BeautifulSoup DOM tag stripping, XSS injection filtering, and text normalization. | **100% PASS** |
-| `tests/test_nlp_engine.py` | 9 | BERT WordPiece tokenization, tensor formatting, and confidence calibration. | **100% PASS** |
+| `tests/test_sanitizer.py` | 13 | BeautifulSoup DOM tag stripping, XSS injection filtering, and text normalisation. | **100% PASS** |
+| `tests/test_nlp_engine.py` | 9 | BERT WordPiece tokenisation, tensor formatting, and confidence calibration. | **100% PASS** |
 | `tests/test_repository.py` | 8 | Relational 3NF SQLite schema persistence, B-Tree lookups, and WAL mode concurrency. | **100% PASS** |
 | `tests/test_visual.py` | 8 | Optical logo matching and computer vision client-server bridge validation. | **100% PASS** |
 | **Total Test Suite** | **120** | **Comprehensive System Core & Enhancement Coverage** | **120 / 120 (100%)** |
@@ -525,7 +527,7 @@ All 120 automated test cases executed in **$8.93\text{ seconds}$** with zero fai
 ---
 
 ### 5.5.5 Live SOC Threat Intelligence Dashboard & Real-World Telemetry
-The administrative Threat Intelligence Dashboard (`/dashboard/`) visualizes real-world system telemetry in real time:
+The administrative Threat Intelligence Dashboard (`/dashboard/`) visualises real-world system telemetry in real time:
 * **Server-Sent Events (SSE)**: Streams intercepted threats to connected SOC analysts with zero browser polling overhead (`GET /api/v1/dashboard/stream`).
 * **24-Hour Threat Velocity Spectrum (GMT+8)**: Renders a continuous diurnal attack wave in Malaysia Standard Time with interactive `[ 24h ] [ 12h ] [ 8h ]` range switchers.
 * **Geographic Attack Radar**: Binds live SQLite database threat records to authentic global telecommunication ASNs (TM Net `AS4788`, Singtel `AS7473`, Cloudflare `AS13335`, DigitalOcean `AS14061`, Tencent `AS132203`, AWS Tokyo `AS16509`).
@@ -543,4 +545,4 @@ Key empirical milestones achieved in this chapter include:
 3. **Sub-400ms Asynchronous Latency SLA**: Achieved an average end-to-end response latency of **$363.36\text{ ms}$** via `asyncio.to_thread()` tensor offloading and `asyncio.gather()` parallel execution.
 4. **100% Automated CI/CD Test Validation**: Successfully executed **120 / 120 automated Pytest test cases** in 8.93 seconds with zero defects.
 
-These empirical results provide mathematical and operational validation for the system. The subsequent and final chapter—**Chapter 6: Discussions and Conclusion**—synthesizes project achievements, reviews academic limitations, and outlines future research trajectories.
+These empirical results provide mathematical and operational validation for the system. The subsequent and final chapter—**Chapter 6: Discussions and Conclusion**—synthesises project achievements, reviews academic limitations, and outlines future research trajectories.
