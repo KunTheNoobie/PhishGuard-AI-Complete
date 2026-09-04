@@ -127,7 +127,7 @@ The following JSON structure represents the authentic **HTTP 200 OK** response p
 
 ## Appendix B: FastAPI Asynchronous Route Implementation Snippet
 
-The following Python codebase demonstrates the production asynchronous endpoint implementation utilizing the FastAPI framework. This code illustrates the practical application of ASGI non-blocking concurrency principles discussed in Chapters 4 and 5, highlighting Pydantic v2 validation models, `asyncio.to_thread()` tensor offloading, and `asyncio.gather()` parallelization.
+The following Python codebase demonstrates the production asynchronous endpoint implementation utilising the FastAPI framework. This code illustrates the practical application of ASGI non-blocking concurrency principles discussed in Chapters 4 and 5, highlighting Pydantic v2 validation models, `asyncio.to_thread()` tensor offloading, and `asyncio.gather()` parallelisation.
 
 ```python
 """
