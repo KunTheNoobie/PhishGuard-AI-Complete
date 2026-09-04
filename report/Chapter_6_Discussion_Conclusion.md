@@ -9,13 +9,13 @@ This chapter:
 2. Systematically evaluates empirical system performance against the three core research objectives formulated in Chapter 1, mapping empirical metrics (Accuracy, Precision, Recall, F1-Score, and throughput latency) to technical requirements.
 3. Conducts a transparent post-mortem analysis of the critical technical challenges encountered during development—including CPython Global Interpreter Lock (GIL) thread contention, cloud GPU ephemeral execution boundaries, and domain vocabulary overlap false positives—detailing their engineered resolutions.
 4. Identifies academic and system limitations, presenting a concrete technological roadmap for future enterprise scaling, including Kubernetes (K8s) container orchestration, distributed Redis caching, and automated MLOps continuous retraining pipelines to combat concept drift.
-5. Delivers the final conclusion, summarizing the academic and practical contributions of this research to the national cybersecurity landscape.
+5. Delivers the final conclusion, summarising the academic and practical contributions of this research to the national cybersecurity landscape and the United Nations Sustainable Development Goals (SDGs).
 
 ---
 
 ## 6.2 Architectural Justifications: Edge-Adjacent Microservice vs. Cloud AI Hosting
 
-A foundational architectural decision executed in this research was the intentional deployment of the BERT Transformer model as an on-premises, edge-adjacent microservice rather than relying on commercial third-party cloud AI APIs (e.g., OpenAI GPT-4, AWS SageMaker, or Hugging Face Serverless Inference Endpoints). This deployment paradigm—situated within the domain of **Edge Machine Learning (Edge ML)** (Merenda et al., 2020)—was dictated by three uncompromising engineering constraints: financial viability, data sovereignty, and sub-second decision latency.
+A foundational architectural decision executed in this research was the intentional deployment of the BERT Transformer model as an on-premises, edge-adjacent microservice rather than relying on commercial third-party cloud AI APIs (e.g., OpenAI GPT-4, AWS SageMaker, or Hugging Face Serverless Inference Endpoints). This deployment paradigm—situated within the domain of **Edge Machine Learning (Edge ML)** (Merenda et al., 2020)—was dictated by three uncompromising engineering constraints: financial viability, data sovereignty, and sub-second decision latency, as illustrated in Figure 6.1.
 
 ```plantuml
 @startuml Cloud_vs_Edge_Chapter_6
@@ -59,7 +59,7 @@ package "PhishGuard-AI Edge-Adjacent Microservice (ADOPTED)" #1e2d3b {
       ✅ ENTERPRISE SECURITY BENEFITS:
       • 100% Data Sovereignty: Zero DOM data leaves local host
       • Zero Cloud Metering Costs: Predictable $0 OpEx
-      • Sub-400ms SLA: Intercepts zero-day threats in real-time
+      • Sub-400ms SLA: Intercepts zero-day threats in real time
       • High Concurrency: 1,500+ requests/sec via ASGI event loops
     end note
 }
@@ -74,12 +74,12 @@ $$\text{Daily API Requests} = N_{\text{users}} \times \bar{W}_{\text{pages/day}}
 
 For an enterprise or national deployment serving $100,000$ active banking consumers browsing an average of $60\text{ pages/day}$, the system would generate **6,000,000 API calls daily**. At standard cloud LLM rates, operational expenses (**OpEx**) would exceed **$\$18,000\text{ to }\$45,000\text{ per month}$**, rendering public deployment economically unsustainable.
 
-By fine-tuning a localized `bert-base-uncased` model and hosting the inference pipeline on self-managed infrastructure, runtime operational metering costs are reduced to **$\$0.00$**, enabling infinite query scalability within local hardware capacities.
+By fine-tuning a localised `bert-base-uncased` model and hosting the inference pipeline on self-managed infrastructure, runtime operational metering costs are reduced to **$\$0.00$**, enabling infinite query scalability within local hardware capacities.
 
 ### 6.2.2 Data Sovereignty & Privacy-by-Design (PDPA 2010 Compliance)
 The semantic threat classification pipeline requires direct ingestion of raw, unencrypted webpage DOM text. In real-world internet sessions, DOM payloads contain highly sensitive **Personally Identifiable Information (PII)**—including user session tokens, transaction history, draft emails, national identity numbers (NRIC), and personal account balances.
 
-Transmitting unencrypted DOM payloads across public Wide Area Networks (WAN) to third-party commercial cloud providers introduces severe data interception vulnerabilities and directly violates **Section 9 of the Malaysia Personal Data Protection Act (PDPA) 2010** regarding the cross-border transfer of sensitive personal data. By executing all tokenization, tensor forward passes, and regular expression credential matching strictly within a self-hosted on-premises microservice, PhishGuard-AI adheres strictly to **Privacy-by-Design** principles: **zero user browsing data is ever transmitted to external third-party cloud infrastructure**.
+Transmitting unencrypted DOM payloads across public Wide Area Networks (WAN) to third-party commercial cloud providers introduces severe data interception vulnerabilities and directly violates **Section 9 of the Malaysia Personal Data Protection Act (PDPA) 2010** regarding the cross-border transfer of sensitive personal data. By executing all tokenisation, tensor forward passes, and regular expression credential matching strictly within a self-hosted on-premises microservice, PhishGuard-AI adheres strictly to **Privacy-by-Design** principles: **zero user browsing data is ever transmitted to external third-party cloud infrastructure**.
 
 ### 6.2.3 Deterministic Elimination of Network Latency Bottlenecks
 To prevent user credential entry on fraudulent forms, the security suite must return a threat decision before the browser finishes rendering the DOM. Routing inspection requests to third-party cloud endpoints introduces uncontrollable network overhead:
@@ -89,7 +89,7 @@ To prevent user credential entry on fraudulent forms, the security suite must re
 
 Total round-trip latency to commercial cloud endpoints routinely exceeds **$1,500\text{ milliseconds}$**, causing noticeable browser lag and failing the sub-second interception requirement. 
 
-In contrast, deploying a local **FastAPI / Uvicorn ASGI** microservice communicates over internal high-speed loops with sub-millisecond network transit, reliably returning full multi-modal threat verdicts in **$363.36\text{ milliseconds}$**.
+In contrast, deploying a local **FastAPI / Uvicorn ASGI** microservice communicates over internal high-speed loops with sub-millisecond network transit (Bansal & Ouda, 2022), reliably returning full multi-modal threat verdicts in **$363.36\text{ milliseconds}$**.
 
 **Table 6.1: Comparative Analysis: Edge-Adjacent Self-Hosted Microservice vs. Third-Party Cloud AI APIs**
 
@@ -99,21 +99,21 @@ In contrast, deploying a local **FastAPI / Uvicorn ASGI** microservice communica
 | **Data Privacy & PDPA Compliance** | Severe risk; transmits raw user DOM text and PII to cloud. | **100% Data Sovereignty; zero external data exfiltration.** |
 | **End-to-End Latency** | $1,200 - 3,500\text{ ms}$ (Subject to WAN transit and jitter). | **$363.36\text{ ms}$ (Guaranteed sub-second real-time SLA).** |
 | **Offline Resilience** | Complete failure; non-functional during WAN disconnects. | **High resilience; executes locally over local area networks.** |
-| **Domain Customization** | Generic base models lack localized Malaysian fraud tuning. | **Fine-tuned specifically on localized Bahasa/Manglish data.** |
+| **Domain Customisation** | Generic base models lack localised Malaysian fraud tuning. | **Fine-tuned specifically on localised Bahasa/Manglish data.** |
 
 ---
 
 ## 6.3 Comprehensive Objectives Evaluation & System Achievement Matrix
 
-A rigorous audit of empirical results obtained during testing validates that all three core research objectives established in Chapter 1 were fully achieved and validated, summarized in Table 6.2.
+A rigorous audit of empirical results obtained during testing validates that all three core research objectives established in Chapter 1 were fully achieved and validated, summarised in Table 6.2.
 
 **Table 6.2: Comprehensive Objective-to-Metric Achievement Mapping Matrix**
 
 | Research Objective | Target Milestone & Design SLA | Empirical Evaluation & Output Metric | Achievement Status |
 | :--- | :--- | :--- | :---: |
-| **Objective 1: Semantic Threat Intelligence Engine** | • Train fine-tuned Transformer model on $\ge 500\text{k}$ dataset.<br>• Achieve F1-Score $\ge 95.0\%$.<br>• Resilient against typosquatting (`rnaybank.com`). | • **Dataset Scale**: 549,346 records.<br>• **Accuracy**: **98.68%**.<br>• **Precision**: **97.49%**.<br>• **Recall**: **97.86%**.<br>• **F1-Score**: **97.67%**.<br>• WordPiece tokenization successfully decomposes typosquats. | **✅ FULLY ACHIEVED (Exceeded SLA)** |
-| **Objective 2: Localized Mule Account Verification** | • Extract 8 Malaysian bank account formats via Regex.<br>• Cross-reference against simulated PDRM *Semakmule* DB.<br>• Sub-15ms database query execution. | • Pre-compiled bytecode for 8 domestic banks.<br>• Relational 3NF SQLite database in WAL mode.<br>• **Query Latency**: **$8.50\text{ ms}$** via B-Tree index lookup.<br>• 15 seed fraud records successfully matched. | **✅ FULLY ACHIEVED (100% Precision)** |
-| **Objective 3: Asynchronous High-Concurrency Backend** | • Deploy asynchronous ASGI RESTful API.<br>• Maintain End-to-End Latency $< 1,000\text{ ms}$.<br>• Zero thread blocking under concurrent user load.<br>• Automated test suite with 100% pass rate. | • FastAPI + Uvicorn ASGI with `asyncio.to_thread`.<br>• **Average Latency**: **$363.36\text{ ms}$** (63.66% headroom).<br>• **Throughput**: $1,500+\text{ req/s}$ with $0.00\%$ error rate.<br>• **120 / 120 automated Pytest test cases passed (100%)**. | **✅ FULLY ACHIEVED (Enterprise Ready)** |
+| **Objective 1: Semantic Threat Intelligence Engine** | • Train fine-tuned Transformer model on $\ge 500\text{k}$ dataset.<br>• Achieve F1-Score $\ge 95.0\%$.<br>• Resilient against typosquatting (`rnaybank.com`). | • **Dataset Scale**: 549,346 records.<br>• **Accuracy**: **98.68%**.<br>• **Precision**: **97.49%**.<br>• **Recall**: **97.86%**.<br>• **F1-Score**: **97.67%** (Sokolova & Lapalme, 2009).<br>• WordPiece tokenisation successfully decomposes typosquats. | **✅ FULLY ACHIEVED (Exceeded SLA)** |
+| **Objective 2: Localised Mule Account Verification** | • Extract 8 Malaysian bank account formats via Regex.<br>• Cross-reference against simulated PDRM *Semakmule* DB.<br>• Sub-15ms database query execution. | • Pre-compiled bytecode for 8 domestic banks.<br>• Relational 3NF SQLite database in WAL mode.<br>• **Query Latency**: **$8.50\text{ ms}$** via B-Tree index lookup.<br>• 15 seed fraud records successfully matched (Royal Malaysia Police, 2023, 2024). | **✅ FULLY ACHIEVED (100% Precision)** |
+| **Objective 3: Asynchronous High-Concurrency Backend** | • Deploy asynchronous ASGI RESTful API.<br>• Maintain End-to-End Latency $< 1,000\text{ ms}$.<br>• Zero thread blocking under concurrent user load.<br>• Automated test suite with 100% pass rate. | • FastAPI + Uvicorn ASGI with `asyncio.to_thread` (Bansal & Ouda, 2022).<br>• **Average Latency**: **$363.36\text{ ms}$** (63.66% headroom).<br>• **Throughput**: $1,500+\text{ req/s}$ with $0.00\%$ error rate.<br>• **120 / 120 automated Pytest test cases passed (100%)**. | **✅ FULLY ACHIEVED (Enterprise Ready)** |
 
 ---
 
@@ -139,8 +139,8 @@ package "Identified Engineering Challenges" {
 }
 
 package "Engineered Architectural Resolutions" {
-    [Resolution 1: Async Thread-Offloading\n• Wrapped inference in asyncio.to_thread()\n• Parallelized database queries via asyncio.gather()] as R1
-    [Resolution 2: Single-Epoch MLOps Checkpointing\n• Scaled dataset to 549k for rapid Epoch 1.0 convergence\n• Direct Safetensors serialization to persistent storage] as R2
+    [Resolution 1: Async Thread-Offloading\n• Wrapped inference in asyncio.to_thread()\n• Parallelised database queries via asyncio.gather()] as R1
+    [Resolution 2: Single-Epoch MLOps Checkpointing\n• Scaled dataset to 549k for rapid Epoch 1.0 convergence\n• Direct Safetensors serialisation to persistent storage] as R2
     [Resolution 3: In-Memory Whitelist & Context Injection\n• 28-Bank frozenset constant-time bypass (<1ms)\n• Prepend 'URL: {url} | {text}' for domain awareness] as R3
 }
 
@@ -150,6 +150,8 @@ C3 -down-> R3 : Resolved By
 
 @enduml
 ```
+
+Figure 6.2 visualises the root-cause mapping and architectural dependencies formulated to resolve the core engineering challenges encountered during development.
 
 ### 6.4.1 Architectural Challenge: CPython GIL & Event Loop Blocking
 * **Problem Statement**: In standard CPython, the Global Interpreter Lock (GIL) permits only one operating system thread to execute Python bytecode simultaneously. PyTorch forward tensor calculations are heavily CPU/GPU-bound. During initial multi-user load testing, executing `model(**inputs)` directly inside the `async def` endpoint completely stalled the single-threaded Uvicorn event loop, causing incoming HTTP requests to time out and throughput to collapse.
@@ -162,23 +164,23 @@ mule_task = self._query_mule_database_async(accounts)
 bert_score, mule_results = await asyncio.gather(bert_task, mule_task)
 ```
 
-By offloading the synchronous PyTorch tensor calculation to a background worker thread via `asyncio.to_thread()`, the main ASGI event loop remains 100% available to handle incoming network I/O, scaling concurrency to thousands of requests per second.
+By offloading the synchronous PyTorch tensor calculation to a background worker thread via `asyncio.to_thread()`, the main ASGI event loop remains 100% available to handle incoming network I/O, scaling concurrency to thousands of requests per second (Bansal & Ouda, 2022).
 
 ### 6.4.2 MLOps Training Challenge: Ephemeral GPU Runtime Expiration
 * **Problem Statement**: Fine-tuning BERT over 549,346 records on cloud GPU instances (Google Colab Tesla T4) was subject to strict 4-hour continuous runtime limits and automatic kernel termination, introducing catastrophic risks of losing model weights mid-training.
-* **Engineered Resolution**: The training loop was optimized by increasing the batch size to 16 with gradient accumulation, enabling complete convergence within **1.0 Epoch (29,852 steps)**. Checkpoints were streamed directly into mounted persistent storage, and final weights were exported to the lightweight `safetensors` format, avoiding memory fragmentation.
+* **Engineered Resolution**: The training loop was optimised by increasing the batch size to 16 with gradient accumulation, enabling complete convergence within **1.0 Epoch (29,852 steps)**. Checkpoints were streamed directly into mounted persistent storage, and final weights were exported to the lightweight `safetensors` format (Loshchilov & Hutter, 2019; Kreuzberger et al., 2023), avoiding memory fragmentation.
 
 ### 6.4.3 Algorithmic Challenge: Vocabulary Overlap False Positives
-* **Problem Statement**: In early integration testing, authentic financial portals (e.g., `https://www.maybank2u.com.my`) triggered a false-positive phishing score of $0.984$. Because genuine banking forms utilize the exact terminology targeted by scammers (*"Enter your password"*, *"TAC authorization"*), the neural network could not distinguish between real and cloned interfaces based solely on text.
+* **Problem Statement**: In early integration testing, authentic financial portals (e.g., `https://www.maybank2u.com.my`) triggered a false-positive phishing score of $0.984$. Because genuine banking forms utilise the exact terminology targeted by scammers (*"Enter your password"*, *"TAC authorisation"*), the neural network could not distinguish between real and cloned interfaces based solely on text.
 * **Engineered Resolution**: A dual-tier remediation was implemented:
   1. **28-Bank Trusted Whitelist (`frozenset`)**: Bypasses AI processing entirely for verified root domains and subdomains in $< 1\text{ ms}$, achieving 0.00% false alarms on legitimate banks.
-  2. **URL Context Injection**: For all non-whitelisted domains, the string `"URL: {url} | {text}"` is prepended to the DOM payload before tokenization, providing the model with domain tokens to catch typosquatted lookalikes (`rnaybank.com`).
+  2. **URL Context Injection**: For all non-whitelisted domains, the string `"URL: {url} | {text}"` is prepended to the DOM payload before tokenisation, providing the model with domain tokens to catch typosquatted lookalikes (`rnaybank.com`).
 
 ---
 
 ## 6.5 System Limitations and Future Research Trajectories
 
-While the PhishGuard-AI backend achieves enterprise-grade metrics, recognizing technical boundaries establishes an actionable roadmap for future technological expansion, detailed in Table 6.3.
+While the PhishGuard-AI backend achieves enterprise-grade metrics, recognising technical boundaries establishes an actionable roadmap for future technological expansion, as detailed in Table 6.3 and illustrated in Figure 6.3.
 
 ```plantuml
 @startuml Future_Enterprise_Architecture_Chapter_6
@@ -215,7 +217,7 @@ node "Enterprise Cloud-Native Kubernetes (K8s) Cluster" as K8sCluster {
     node "Continuous MLOps Pipeline Tier" {
         [Apache Airflow / MLflow Orchestrator] as Airflow
         [GPU Retraining Worker Pods\n(PyTorch DistributedDataParallel)] as RetrainPods
-        database "Enterprise Data Lakehouse\n(Anonymized Threat Telemetry Logs)" as DataLake
+        database "Enterprise Data Lakehouse\n(Anonymised Threat Telemetry Logs)" as DataLake
     }
 }
 
@@ -241,24 +243,24 @@ Pod2 --> NSRC : Automated 1-Click Fraud Escalation
 @enduml
 ```
 
-### 6.5.1 Database Concurrency & Live Law Enforcement Synchronization
-* **Current Limitation**: The mule account verification engine relies on a local SQLite database simulating the PDRM *Semakmule* registry. Under extreme multi-region concurrency ($> 10,000\text{ concurrent writes}$), single-file database locks become a scaling bottleneck. Furthermore, static local databases require manual administration to synchronize new police reports.
-* **Future Trajectory**: Replace the local database with an in-memory **Redis Distributed Cache Cluster** backed by an encrypted API gateway synchronizing directly with the **National Scam Response Centre (NSRC 997)**, **Bank Negara Malaysia (BNM)**, and the **National Fraud Portal (NFP)**.
+### 6.5.1 Database Concurrency & Live Law Enforcement Synchronisation
+* **Current Limitation**: The mule account verification engine relies on a local SQLite database simulating the PDRM *Semakmule* registry. Under extreme multi-region concurrency ($> 10,000\text{ concurrent writes}$), single-file database locks become a scaling bottleneck. Furthermore, static local databases require manual administration to synchronise new police reports.
+* **Future Trajectory**: Replace the local database with an in-memory **Redis Distributed Cache Cluster** backed by an encrypted API gateway synchronising directly with the **National Scam Response Centre (NSRC 997)**, **Bank Negara Malaysia (BNM)** (Bank Negara Malaysia, 2023), and the **National Fraud Portal (NFP)**.
 
 ### 6.5.2 Susceptibility to Concept Drift & Automated MLOps Pipelines
 * **Current Limitation**: Cyber threat actors continuously adapt social engineering narratives. Over time, static pre-trained models experience **Concept Drift** (Lu et al., 2018), leading to gradual accuracy degradation against novel evasion scripts.
-* **Future Trajectory**: Implement an automated MLOps retraining architecture utilizing **Apache Airflow** and **MLflow**. Zero-day threat payloads flagged by the live `threat_telemetry` table can be anonymized, aggregated into training batches, and used to continuously fine-tune production model checkpoints on scheduled intervals.
+* **Future Trajectory**: Implement an automated MLOps retraining architecture utilising **Apache Airflow** and **MLflow** (Kreuzberger et al., 2023; Symeonidis et al., 2022). Zero-day threat payloads flagged by the live `threat_telemetry` table can be anonymised, aggregated into training batches, and used to continuously fine-tune production model checkpoints on scheduled intervals.
 
 ### 6.5.3 Cloud-Native Kubernetes (K8s) Horizontal Scalability
 * **Current Limitation**: The current system is deployed on a standalone multi-threaded host. While optimal for edge privacy, global public protection requires distributed scaling.
-* **Future Trajectory**: Containerize the FastAPI backend using **Docker** and orchestrate container replicas across a **Kubernetes (K8s)** cluster. Utilizing a **Horizontal Pod Autoscaler (HPA)** allows the system to dynamically scale worker pods during high-traffic banking periods without latency spikes.
+* **Future Trajectory**: Containerise the FastAPI backend using **Docker** and orchestrate container replicas across a **Kubernetes (K8s)** cluster. Utilising a **Horizontal Pod Autoscaler (HPA)** allows the system to dynamically scale worker pods during high-traffic banking periods without latency spikes.
 
 **Table 6.3: Strategic Future Research & Enterprise Enhancement Roadmap**
 
 | System Domain | Current Research Implementation | Proposed Enterprise Future Enhancement | Strategic Benefit |
 | :--- | :--- | :--- | :--- |
 | **Mule Persistence** | Local SQLite in WAL mode. | Distributed **Redis In-Memory Cluster**. | Reduces credential verification query latency to $< 0.1\text{ ms}$. |
-| **Government CTI** | Simulated Semakmule database. | **Direct NSRC 997 & BNM API Gateway**. | Real-time synchronization with active national scam complaints. |
+| **Government CTI** | Simulated Semakmule database. | **Direct NSRC 997 & BNM API Gateway**. | Real-time synchronisation with active national scam complaints. |
 | **MLOps Pipeline** | Static fine-tuned BERT checkpoint. | **Continuous Retraining with Airflow/MLflow**. | Automatically adapts to evolving phishing narratives & concept drift. |
 | **Deployment Model** | Local standalone ASGI process. | **Cloud-Native Kubernetes (K8s) Cluster**. | Pervasive horizontal auto-scaling supporting millions of consumers. |
 
@@ -266,10 +268,10 @@ Pod2 --> NSRC : Automated 1-Click Fraud Escalation
 
 ## 6.6 Conclusion
 
-The **Semantic Threat Intelligence and Mule Account Verification Engine** developed in this research represents a transformative leap forward in endpoint cybersecurity and client-side anti-phishing defense.
+The **Semantic Threat Intelligence and Mule Account Verification Engine** developed in this research represents a transformative leap forward in endpoint cybersecurity and client-side anti-phishing defence.
 
-By moving decisively away from reactive, signature-based blacklists and pioneering an asynchronous, multi-modal architecture combining fine-tuned **BERT Natural Language Processing** with deterministic **Regex DOM parsing** and **SQLite 3NF relational data verification**, this project proves that advanced Transformer architectures can be deployed at the browser edge with sub-second decision latencies ($363.36\text{ ms}$) and zero false alarms on legitimate banking portals.
+By moving decisively away from reactive, signature-based blacklists and pioneering an asynchronous, multi-modal architecture combining fine-tuned **BERT Natural Language Processing** (Devlin et al., 2018) with deterministic **Regex DOM parsing** and **SQLite 3NF relational data verification**, this project proves that advanced Transformer architectures can be deployed at the browser edge with sub-second decision latencies ($363.36\text{ ms}$) and zero false alarms on legitimate banking portals.
 
-Empirical evaluation over 109,870 test records validates an exceptional **Accuracy of 98.68%** and an **F1-Score of 97.67%**, supported by a **100% pass rate across 120 automated Pytest test cases**. The platform successfully neutralizes the multi-billion-ringgit threat of localized financial fraud in Malaysia, protecting the integrity of the national digital banking infrastructure.
+Empirical evaluation over 109,870 test records validates an exceptional **Accuracy of 98.68%** and an **F1-Score of 97.67%**, supported by a **100% pass rate across 120 automated Pytest test cases**. The platform successfully neutralises the multi-billion-ringgit threat of localised financial fraud in Malaysia, protecting the integrity of the national digital banking infrastructure (Royal Malaysia Police, 2024).
 
-In conclusion, this research successfully bridges theoretical deep learning with practical software engineering, establishing an enterprise-ready, zero-trust cybersecurity platform that significantly advances national cyber resilience under the **MyDIGITAL** blueprint.
+In conclusion, this research successfully bridges theoretical deep learning with practical software engineering, establishing an enterprise-ready, zero-trust cybersecurity platform (Rose et al., 2020) that significantly advances national cyber resilience under the **MyDIGITAL** blueprint (Bank Negara Malaysia, 2023) and directly supports the **United Nations Sustainable Development Goals**—specifically **SDG 9 (Industry, Innovation, and Infrastructure)** and **SDG 16 (Peace, Justice, and Strong Institutions)** (United Nations, 2015).
