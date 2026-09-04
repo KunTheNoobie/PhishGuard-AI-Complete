@@ -4,24 +4,24 @@
 
 The exponential proliferation of digital financial fraud, credential harvesting, and sophisticated social engineering campaigns represents an existential challenge to modern internet infrastructure. Developing an enterprise-grade, real-time client-server cybersecurity platform capable of intercepting elusive "Zero-Day" phishing campaigns necessitates a rigorous, systematic evaluation of existing academic literature and industrial defensive paradigms.
 
-Historically, web security architectures have operated under reactive, perimeter-focused philosophies. However, modern threat syndicates have shifted their primary attack vector from penetrating hardened network boundaries to exploiting the cognitive vulnerabilities of end-users through deceptive semantic interfaces and localized money mule syndicates. This chapter conducts a comprehensive, critical review of the state of the art in web threat detection. 
+Historically, web security architectures have operated under reactive, perimeter-focused philosophies. However, modern threat syndicates have shifted their primary attack vector from penetrating hardened network boundaries to exploiting the cognitive vulnerabilities of end-users through deceptive semantic interfaces and localised money mule syndicates. This chapter conducts a comprehensive, critical review of the state of the art in web threat detection. 
 
 Specifically, this review investigates:
 1. The structural transformation of digital banking and real-time payment ecosystems in Southeast Asia.
 2. The psychological mechanics of cognitive bias exploitation ("System 1" heuristic bypass).
-3. The contemporary industrialization of cybercrime through Phishing-as-a-Service (PhaaS) and semantic obfuscation.
+3. The contemporary industrialisation of cybercrime through Phishing-as-a-Service (PhaaS) and semantic obfuscation.
 4. Theoretical cybersecurity frameworks including the CIA Triad degradation model and Zero Trust Architecture (ZTA) at the browser edge.
 5. The mathematical and computational evolution of Natural Language Processing (NLP) from Bag-of-Words (TF-IDF) to Bidirectional Encoder Representations from Transformers (BERT).
 6. Deterministic vs. probabilistic credential extraction methodologies (Regex vs. Named Entity Recognition).
 7. High-concurrency backend microservice paradigms (Synchronous WSGI vs. Asynchronous ASGI event loops).
-8. The critical research gaps in localized, real-time client-side threat intelligence that the **Semantic Threat Intelligence and Mule Account Verification Engine** (developed by Liew Yi Ler) is specifically engineered to resolve.
+8. The critical research gaps in localised, real-time client-side threat intelligence that the **Semantic Threat Intelligence and Mule Account Verification Engine** (developed by Liew Yi Ler) is specifically engineered to resolve.
 
 ---
 
 ## 2.2 Digital Transformation in Financial Ecosystems & Threat Surface Expansion
 
 ### 2.2.1 The Role and Reliance on Digital Banking Platforms
-The global financial landscape has undergone an irreversible structural migration toward decentralized, cloud-native digital banking and real-time electronic fund transfer platforms. Within Malaysia and the broader ASEAN region, regulatory initiatives—such as the **Bank Negara Malaysia (BNM) Financial Sector Blueprint 2022–2026** and the national **MyDIGITAL** strategy—have mandated the implementation of open banking APIs and standardized instant payment switches (Bank Negara Malaysia, 2023). 
+The global financial landscape has undergone an irreversible structural migration toward decentralised, cloud-native digital banking and real-time electronic fund transfer platforms. Within Malaysia and the broader ASEAN region, regulatory initiatives—such as the **Bank Negara Malaysia (BNM) Financial Sector Blueprint 2022–2026** and the national **MyDIGITAL** strategy—have mandated the implementation of open banking APIs and standardised instant payment switches (Bank Negara Malaysia, 2023). 
 
 Platforms such as the **DuitNow** real-time payment network (operated by Payments Network Malaysia / PayNet), integrated Financial Process Exchange (FPX) gateways, and mobile e-wallets (e.g., Touch 'n Go eWallet, GrabPay, Boost) have achieved near-universal penetration across consumer and commercial sectors.
 
@@ -41,12 +41,12 @@ Platforms such as the **DuitNow** real-time payment network (operated by Payment
 +----------------------------------------------------------------------------------------------------+
 ```
 
-While these integrated architectures provide frictionless financial inclusion, they centralize immense volumes of liquid capital and personally identifiable information (PII). In open banking architectures, access control is mediated almost entirely through user credentials, session cookies, and multi-factor authentication (MFA) tokens. 
+While these integrated architectures provide frictionless financial inclusion, they centralise immense volumes of liquid capital and personally identifiable information (PII). In open banking architectures, access control is mediated almost entirely through user credentials, session cookies, and multi-factor authentication (MFA) tokens. 
 
 Consequently, digital banking platforms exhibit a critical architectural vulnerability: a **Single Point of Failure (SPOF)** located at the unauthenticated human endpoint. If an attacker deceives a user into authenticating on a visually identical proxy portal, the entire security perimeter of the underlying financial institution is compromised, exposing the victim's liquid assets to immediate exfiltration (Mishra et al., 2022).
 
 ### 2.2.2 The Vulnerability of the Human Element and Cognitive Biases
-While commercial banks deploy enterprise-grade infrastructure defenses—including Tier-4 data center firewalls, Web Application Firewalls (WAF), database encryption, and automated anomaly detection—the human operator remains the most vulnerable component in the security chain. Threat actors increasingly bypass technical perimeter firewalls entirely by weaponizing psychological social engineering.
+While commercial banks deploy enterprise-grade infrastructure defences—including Tier-4 data centre firewalls, Web Application Firewalls (WAF), database encryption, and automated anomaly detection—the human operator remains the most vulnerable component in the security chain. Threat actors increasingly bypass technical perimeter firewalls entirely by weaponising psychological social engineering.
 
 ```plantuml
 @startuml Cognitive_Exploitation_Chapter_2
@@ -75,9 +75,9 @@ partition "Human Dual-Process Cognitive Processing (Kahneman, 2011)" {
     endif
 }
 
-partition "PhishGuard-AI Zero-Trust Automated Defense" {
+partition "PhishGuard-AI Zero-Trust Automated Defence" {
     :Intercepts DOM & URL at Browser Edge (0ms);
-    :BERT NLP Engine Analyzes Semantic Intent;
+    :BERT NLP Engine Analyses Semantic Intent;
     :Regex Engine Extracts Mule Account;
     #lightgreen:Delivers Sub-400ms BLOCK_RENDER Shield;
     :Eliminates Dependency on Human Vigilance;
@@ -91,7 +91,7 @@ Behavioural cybersecurity literature grounds this vulnerability in **Dual-Proces
 * **System 1 (Intuitive & Fast)**: Operates automatically, rapidly, and emotionally with minimal conscious computational effort.
 * **System 2 (Analytical & Slow)**: Allocates attention to effortful mental operations, including rigorous logical deduction and critical verification.
 
-Phishing campaigns are engineered to trigger System 1 responses while actively suppressing System 2 engagement (Washo et al., 2021). Attackers embed coercive psychological stimuli into webpage Document Object Models (DOM)—such as fabricated legal threats, countdown timers threatening immediate account closure, or bogus security alerts. Under acute psychological duress, users rely on visual heuristics (e.g., recognizing a familiar bank logo) while overlooking critical indicators of compromise (e.g., misspelled domain names or anomalous SSL certificates). 
+Phishing campaigns are engineered to trigger System 1 responses while actively suppressing System 2 engagement (Washo et al., 2021). Attackers embed coercive psychological stimuli into webpage Document Object Models (DOM)—such as fabricated legal threats, countdown timers threatening immediate account closure, or bogus security alerts. Under acute psychological duress, users rely on visual heuristics (e.g., recognising a familiar bank logo) while overlooking critical indicators of compromise (e.g., misspelt domain names or anomalous SSL certificates). 
 
 This fundamental cognitive limitation demonstrates that relying on user vigilance or security awareness training is insufficient; automated, client-side intelligence is mandatory to intercept threats before user interaction occurs.
 
@@ -100,7 +100,7 @@ This fundamental cognitive limitation demonstrates that relying on user vigilanc
 ## 2.3 Contemporary Cybersecurity Threat Landscape in Digital Finance
 
 ### 2.3.1 Phishing-as-a-Service (PhaaS) and the Monetisation of Credentials
-The cybercrime ecosystem has evolved from fragmented, individual script kiddies into industrialized, corporate-style syndicates operating under the **Phishing-as-a-Service (PhaaS)** business model. Dark web marketplaces distribute fully packaged, subscription-based phishing toolkits (e.g., EvilProxy, Modlishka, Greatness) that incorporate automated reverse proxies capable of executing Adversary-in-the-Middle (AiTM) attacks in real time (Opara et al., 2023).
+The cybercrime ecosystem has evolved from fragmented, individual script kiddies into industrialised, corporate-style syndicates operating under the **Phishing-as-a-Service (PhaaS)** business model. Dark web marketplaces distribute fully packaged, subscription-based phishing toolkits (e.g., EvilProxy, Modlishka, Greatness) that incorporate automated reverse proxies capable of executing Adversary-in-the-Middle (AiTM) attacks in real time (Opara et al., 2023).
 
 ```
 +----------------------------------------------------------------------------------------------------+
@@ -120,7 +120,7 @@ The cybercrime ecosystem has evolved from fragmented, individual script kiddies 
 +----------------------------------------------------------------------------------------------------+
 ```
 
-These sophisticated toolkits intercept session tokens, bypassing legacy Multi-Factor Authentication (MFA) mechanisms. Stolen credentials and valid session cookies are monetized immediately across illicit channels, fueling secondary Business Email Compromise (BEC), unauthorized wire transfers, and identity impersonation rings.
+These sophisticated toolkits intercept session tokens, bypassing legacy Multi-Factor Authentication (MFA) mechanisms. Stolen credentials and valid session cookies are monetised immediately across illicit channels, fueling secondary Business Email Compromise (BEC), unauthorised wire transfers, and identity impersonation rings.
 
 ### 2.3.2 Empirical Threat Landscape in Malaysia
 In Malaysia, financial scams have escalated into a critical national threat. According to empirical data compiled by **CyberSecurity Malaysia** and the **Royal Malaysia Police (PDRM) CCID**, over **34,000 cases of online fraud** were officially investigated in 2023 alone, generating direct financial losses exceeding **RM1.3 billion** (CyberSecurity Malaysia, 2024; Royal Malaysia Police, 2024).
@@ -138,14 +138,14 @@ In Malaysia, financial scams have escalated into a critical national threat. Acc
 +----------------------------------------------------------------------------------------------------+
 ```
 
-A significant portion of these attacks involve hyper-localized clones of major domestic financial institutions—including Malayan Banking Berhad (Maybank2u), CIMB Group Holdings (CIMB Clicks), Public Bank Berhad (PBe), RHB Bank, Hong Leong Bank, and statutory agencies such as the Employees Provident Fund (KWSP/EPF) and Lembaga Hasil Dalam Negeri (LHDN). 
+A significant portion of these attacks involve hyper-localised clones of major domestic financial institutions—including Malayan Banking Berhad (Maybank2u), CIMB Group Holdings (CIMB Clicks), Public Bank Berhad (PBe), RHB Bank, Hong Leong Bank, and statutory agencies such as the Employees Provident Fund (KWSP/EPF) and Lembaga Hasil Dalam Negeri (LHDN). 
 
-In almost every domestic fraud case, illicitly extracted funds are funneled through **"Keldai Akaun" (Money Mule Accounts)**—bank accounts owned by third parties who lease their banking credentials to scam syndicates. The rapid movement of capital through multi-layered mule accounts presents an extreme challenge to law enforcement, making real-time endpoint interception vital before fund transfer initiation.
+In almost every domestic fraud case, illicitly extracted funds are funnelled through **"Keldai Akaun" (Money Mule Accounts)**—bank accounts owned by third parties who lease their banking credentials to scam syndicates. The rapid movement of capital through multi-layered mule accounts presents an extreme challenge to law enforcement, making real-time endpoint interception vital before fund transfer initiation.
 
 ### 2.3.3 Semantic Obfuscation, Punycode, and Typosquatting
 To evade detection by heuristic scanners and static security rules, threat actors employ multi-layered syntactic and semantic obfuscation:
 
-1. **Internationalized Domain Name (IDN) Homoglyph Attacks**:  
+1. **Internationalised Domain Name (IDN) Homoglyph Attacks**:  
    Attackers register domain names containing non-Latin Unicode characters (e.g., Cyrillic `а` (U+0430) vs. Latin `a` (U+0061)). Web browsers parse these strings using **Punycode** algorithms (e.g., `xn--mybnk-fra.com`), rendering visual representations indistinguishable from legitimate financial domains to the human eye.
 
 2. **Typosquatting & Combosquatting**:  
@@ -161,12 +161,12 @@ $$\mathcal{D}_L(s_1, s_2) = \begin{cases}
 \end{cases}$$
 
 3. **Multilingual Social Engineering**:  
-   In Southeast Asia, phishing narratives are crafted using localized linguistic blending (Bahasa Melayu, English, and colloquial Manglish). Phrases such as *"Tindakan Segera: Akaun Maybank anda telah dibekukan. Sila log masuk untuk kemaskini TAC anda sekarang"* utilize cultural urgency idioms that standard global English-only heuristic filters completely fail to identify.
+   In Southeast Asia, phishing narratives are crafted using localised linguistic blending (Bahasa Melayu, English, and colloquial Manglish). Phrases such as *"Tindakan Segera: Akaun Maybank anda telah dibekukan. Sila log masuk untuk kemaskini TAC anda sekarang"* utilise cultural urgency idioms that standard global English-only heuristic filters completely fail to identify.
 
 ### 2.3.4 Optical Quishing (QR Phishing) Exploitation
 A rapidly emerging vector in digital payment ecosystems is **Quishing (QR Code Phishing)**. Threat actors replace standard web hyperlinks with embedded QR code images containing encoded DuitNow payment strings conforming to the **EMVCo Merchant-Presented QR Code Specification**. 
 
-Traditional web scrapers and heuristic classifiers analyze DOM text and `<a href>` attributes; because the malicious redirection payload is rendered purely as an optical matrix barcode, standard text-based security systems are completely bypassed. This highlights the necessity for integrated optical computer vision decoders inside the threat intelligence pipeline.
+Traditional web scrapers and heuristic classifiers analyse DOM text and `<a href>` attributes; because the malicious redirection payload is rendered purely as an optical matrix barcode, standard text-based security systems are completely bypassed. This highlights the necessity for integrated optical computer vision decoders inside the threat intelligence pipeline.
 
 ---
 
@@ -181,25 +181,25 @@ The design of the PhishGuard-AI backend architecture is rooted in the formal pre
 +----------------------------------------------------------------------------------------------------+
 |                                                                                                    |
 |    CONFIDENTIALITY  ──> [Breach: Phishing Credential Harvesting & NRIC Exfiltration]               |
-|                         └─> DEFENSE: Fine-Tuned BERT NLP identifies and blocks coercive forms      |
+|                         └─> DEFENCE: Fine-Tuned BERT NLP identifies and blocks coercive forms      |
 |                                                                                                    |
-|    INTEGRITY        ──> [Breach: Unauthorized Wire Transfers to Fraudulent Money Mules]            |
-|                         └─> DEFENSE: Regex Extraction + SQLite 3NF Mule Registry blocks transfers  |
+|    INTEGRITY        ──> [Breach: Unauthorised Wire Transfers to Fraudulent Money Mules]            |
+|                         └─> DEFENCE: Regex Extraction + SQLite 3NF Mule Registry blocks transfers  |
 |                                                                                                    |
 |    AVAILABILITY     ──> [Breach: Victims locked out of online banking via credential resets]       |
-|                         └─> DEFENSE: Sub-400ms Asynchronous ASGI Microservice ensures uptime        |
+|                         └─> DEFENCE: Sub-400ms Asynchronous ASGI Microservice ensures uptime        |
 |                                                                                                    |
 +----------------------------------------------------------------------------------------------------+
 ```
 
-* **Confidentiality**: A successful phishing attack destroys data confidentiality by coercing victims into disclosing usernames, passwords, and banking authorization tokens. PhishGuard-AI enforces confidentiality by intercepting and evaluating raw DOM payloads at the edge before user credential entry can occur.
-* **Integrity**: When an unauthorized adversary acquires valid session credentials, the integrity of the user's financial state is severely compromised through unauthorized fund transfers and altered account settings. PhishGuard-AI protects integrity by validating beneficiary credentials against simulated law enforcement databases in real time.
+* **Confidentiality**: A successful phishing attack destroys data confidentiality by coercing victims into disclosing usernames, passwords, and banking authorisation tokens. PhishGuard-AI enforces confidentiality by intercepting and evaluating raw DOM payloads at the edge before user credential entry can occur.
+* **Integrity**: When an unauthorised adversary acquires valid session credentials, the integrity of the user's financial state is severely compromised through unauthorised fund transfers and altered account settings. PhishGuard-AI protects integrity by validating beneficiary credentials against simulated law enforcement databases in real time.
 * **Availability**: Adversaries routinely lock victims out of legitimate financial accounts by resetting authentication credentials. Concurrently, defensive security tools must ensure their own high availability; PhishGuard-AI achieves this through an asynchronous microservice architecture providing sub-second threat decisions without disrupting browser responsiveness.
 
 ### 2.4.2 Zero Trust Architecture (ZTA) at the Browser Edge
 Traditional perimeter security operated under the "castle-and-moat" paradigm, assuming that any traffic originating inside an internal network or secured via an SSL/TLS certificate was inherently trustworthy. The widespread availability of free, automated SSL certificates (e.g., Let's Encrypt, Cloudflare Universal SSL) has rendered the browser "padlock" icon useless as a trust indicator; over **80% of active phishing sites now operate over valid HTTPS connections** (APWG, 2023).
 
-PhishGuard-AI operationalizes the **Zero Trust Architecture (ZTA)** framework defined in **NIST Special Publication 800-207**, adhering strictly to the axiom: **"Never Trust, Always Verify"** (Rose et al., 2020). 
+PhishGuard-AI operationalises the **Zero Trust Architecture (ZTA)** framework defined in **NIST Special Publication 800-207**, adhering strictly to the axiom: **"Never Trust, Always Verify"** (Rose et al., 2020). 
 
 ```
 +----------------------------------------------------------------------------------------------------+
@@ -227,10 +227,10 @@ Under this model, every intercepted DOM payload, URL string, and embedded visual
 
 ### 2.4.3 OWASP Top 10 & The Secure Development Lifecycle (SDL)
 Phishing and credential stuffing exploit core vulnerabilities documented in the **OWASP Top 10 Web Application Security Risks**:
-* **A01:2021 – Broken Access Control**: Attackers hijack session tokens to bypass authorization boundaries.
+* **A01:2021 – Broken Access Control**: Attackers hijack session tokens to bypass authorisation boundaries.
 * **A07:2021 – Identification and Authentication Failures**: Absence of real-time endpoint verification allows cloned login interfaces to harvest primary authentication secrets.
 
-To ensure software resilience, this research implements the **Microsoft Secure Development Lifecycle (SDL)** integrated with **Machine Learning Operations (MLOps)** (Kreuzberger et al., 2023). Threat modeling, rigorous input sanitization, rate limiting, and automated regression testing are treated as continuous engineering constraints throughout development.
+To ensure software resilience, this research implements the **Microsoft Secure Development Lifecycle (SDL)** integrated with **Machine Learning Operations (MLOps)** (Kreuzberger et al., 2023). Threat modelling, rigorous input sanitisation, rate limiting, and automated regression testing are treated as continuous engineering constraints throughout development.
 
 ---
 
@@ -251,7 +251,7 @@ The foundational baseline for internet threat prevention has historically relied
 |  ─────────────────────────────────── BLACKLIST LATENCY GAP ─────────────────────────────────────  |
 |                                                                                                    |
 |  T=4.0h: First Victim Files Formal Complaint to Bank / PDRM                                        |
-|  T=12.0h: Security Crawler Scrapes & Mathematically Analyzes Malicious URL                         |
+|  T=12.0h: Security Crawler Scrapes & Mathematically Analyses Malicious URL                         |
 |  T=24.0h: Domain Propagated to Global Blacklist (DNSBL / Safe Browsing)                            |
 |                                                                                                    |
 |  RESULT: Total Failure to Protect Early Victims Against Ephemeral Threats                         |
@@ -262,7 +262,7 @@ The fatal flaw of blacklists is the **Time-to-Protect Latency Gap** ($\Delta T_{
 
 $$\Delta T_{\text{protect}} = T_{\text{propagation}} - T_{\text{instantiation}} \gg T_{\text{lifespan}}$$
 
-Where modern automated phishing campaigns exhibit an operational lifespan ($T_{\text{lifespan}}$) of **less than two hours**, global blacklists require **4 to 48 hours** to crawl, verify, and propagate signatures (NIST, 2023). Consequently, blacklists are inherently incapable of mitigating Zero-Day attacks, necessitating predictive machine learning models that evaluate threats based on intrinsic behavioral features rather than historical reputations.
+Where modern automated phishing campaigns exhibit an operational lifespan ($T_{\text{lifespan}}$) of **less than two hours**, global blacklists require **4 to 48 hours** to crawl, verify, and propagate signatures (NIST, 2023). Consequently, blacklists are inherently incapable of mitigating Zero-Day attacks, necessitating predictive machine learning models that evaluate threats based on intrinsic behavioural features rather than historical reputations.
 
 ### 2.5.2 Evolution of Natural Language Processing in Threat Detection
 
@@ -304,7 +304,7 @@ package "3. Bidirectional Transformers (2018 - Present)" {
     note right of BERT
       • Scaled Dot-Product Self-Attention: Q, K, V
       • Full bidirectional contextual embeddings
-      • WordPiece subword tokenization (rnaybank -> rn, ##ay, ##bank)
+      • WordPiece subword tokenisation (rnaybank -> rn, ##ay, ##bank)
       • Parallel tensor computation (sub-100ms GPU/CPU)
     end note
 }
@@ -318,14 +318,14 @@ LSTM -down-> BERT : Massive Parallel Self-Attention
 The application of Natural Language Processing (NLP) to web security has progressed through three major paradigms:
 
 #### 1. Lexical and Statistical Feature Extraction (TF-IDF + Traditional ML)
-Early automated solutions utilized term frequency statistics—specifically **Term Frequency-Inverse Document Frequency (TF-IDF)**—paired with Support Vector Machines (SVM), Random Forests, or Naive Bayes classifiers (Sahingoz et al., 2019):
+Early automated solutions utilised term frequency statistics—specifically **Term Frequency-Inverse Document Frequency (TF-IDF)**—paired with Support Vector Machines (SVM), Random Forests, or Naive Bayes classifiers (Sahingoz et al., 2019):
 
 $$\text{TF-IDF}(t, d, D) = \text{TF}(t, d) \times \log\left(\frac{|D|}{1 + |\{d \in D : t \in d\}|}\right)$$
 
-While computationally lightweight, TF-IDF operates on a **Bag-of-Words (BoW)** assumption that discards syntactic word order and contextual semantic meaning. These models fail when encountering synonyms, obfuscated spellings, or multi-lingual Manglish phrasing.
+While computationally lightweight, TF-IDF operates on a **Bag-of-Words (BoW)** assumption that discards syntactic word order and contextual semantic meaning. These models fail when encountering synonyms, obfuscated spellings, or multilingual Manglish phrasing.
 
 #### 2. Sequential Deep Learning Architectures (RNN & LSTM)
-To capture word ordering, researchers deployed Recurrent Neural Networks (RNN) and **Long Short-Term Memory (LSTM)** networks. LSTMs utilize gating mechanisms (Input, Forget, and Output gates) to maintain sequential state across text tokens:
+To capture word ordering, researchers deployed Recurrent Neural Networks (RNN) and **Long Short-Term Memory (LSTM)** networks. LSTMs utilise gating mechanisms (Input, Forget, and Output gates) to maintain sequential state across text tokens:
 
 $$f_t = \sigma(W_f \cdot [h_{t-1}, x_t] + b_f)$$
 
@@ -339,20 +339,20 @@ $$o_t = \sigma(W_o \cdot [h_{t-1}, x_t] + b_o)$$
 
 $$h_t = o_t * \tanh(C_t)$$
 
-Although LSTMs improved sequential text comprehension, their **strictly sequential computation** prevents hardware parallelization on modern GPUs/multi-core CPUs. Furthermore, LSTMs suffer from performance degradation on lengthy DOM structures due to the vanishing gradient problem, making them too slow for real-time endpoint interceptors (Maneriker et al., 2021).
+Although LSTMs improved sequential text comprehension, their **strictly sequential computation** prevents hardware parallelisation on modern GPUs/multi-core CPUs. Furthermore, LSTMs suffer from performance degradation on lengthy DOM structures due to the vanishing gradient problem, making them too slow for real-time endpoint interceptors (Maneriker et al., 2021).
 
 #### 3. Transformer Architectures & BERT
-The introduction of the **Transformer** by Vaswani et al. (2017) revolutionized NLP through the **Scaled Dot-Product Self-Attention** mechanism:
+The introduction of the **Transformer** by Vaswani et al. (2017) revolutionised NLP through the **Scaled Dot-Product Self-Attention** mechanism:
 
 $$\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V$$
 
-Where $Q$ (Query), $K$ (Key), and $V$ (Value) represent linear projections of the input token embeddings, and $d_k$ represents the dimensionality of the key vectors. By computing attention weights across all tokens simultaneously, Transformers achieve massive computational parallelization.
+Where $Q$ (Query), $K$ (Key), and $V$ (Value) represent linear projections of the input token embeddings, and $d_k$ represents the dimensionality of the key vectors. By computing attention weights across all tokens simultaneously, Transformers achieve massive computational parallelisation.
 
-Building upon this, Devlin et al. (2018) introduced **BERT (Bidirectional Encoder Representations from Transformers)**. Unlike previous unidirectional models, BERT utilizes a Masked Language Model (MLM) pre-training objective, allowing token embeddings to capture context from both left and right directions across all layers.
+Building upon this, Devlin et al. (2018) introduced **BERT (Bidirectional Encoder Representations from Transformers)**. Unlike previous unidirectional models, BERT utilises a Masked Language Model (MLM) pre-training objective, allowing token embeddings to capture context from both left and right directions across all layers.
 
 ```
 +----------------------------------------------------------------------------------------------------+
-|                         BERT WordPiece TOKENIZATION & EMBEDDING MATRIX                             |
+|                         BERT WordPiece TOKENISATION & EMBEDDING MATRIX                             |
 +----------------------------------------------------------------------------------------------------+
 |                                                                                                    |
 |  Input Text:       "Urgent: Sila kemaskini akaun rnaybank anda sekarang!"                         |
@@ -370,7 +370,7 @@ Building upon this, Devlin et al. (2018) introduced **BERT (Bidirectional Encode
 +----------------------------------------------------------------------------------------------------+
 ```
 
-A critical advantage of BERT in cybersecurity is its **WordPiece Subword Tokenization**. When an attacker employs typosquatting (e.g., `rnaybank`), traditional dictionary models fail because the token is Out-Of-Vocabulary (OOV). BERT breaks the string into subword units (`rn`, `##ay`, `##bank`), allowing the self-attention heads to correlate the subword fragments with authentic banking semantics, achieving superior detection accuracy on obfuscated attacks (Maneriker et al., 2021).
+A critical advantage of BERT in cybersecurity is its **WordPiece Subword Tokenisation**. When an attacker employs typosquatting (e.g., `rnaybank`), traditional dictionary models fail because the token is Out-Of-Vocabulary (OOV). BERT breaks the string into subword units (`rn`, `##ay`, `##bank`), allowing the self-attention heads to correlate the subword fragments with authentic banking semantics, achieving superior detection accuracy on obfuscated attacks (Maneriker et al., 2021).
 
 **Table 2.1: Comprehensive Comparative Matrix of NLP Architectures in Threat Detection**
 
@@ -378,9 +378,9 @@ A critical advantage of BERT in cybersecurity is its **WordPiece Subword Tokeniz
 | :--- | :--- | :--- | :--- |
 | **Contextual Representation** | Bag-of-Words (Zero context, word order lost) | Unidirectional or shallow bidirectional sequential context | Deep bidirectional multi-head self-attention |
 | **Handling of Typosquatting** | Poor; fails on Out-Of-Vocabulary (OOV) tokens | Moderate; requires complex character embeddings | **Exceptional; native WordPiece subword parsing** |
-| **Computational Parallelism** | High (static matrix multiplication) | Extremely Low (strictly sequential step computation) | **High (matrix dot-product optimized for SIMD/GPUs)** |
-| **Inference Latency** | $< 10\text{ ms}$ | $150 - 500\text{ ms}$ | **$30 - 90\text{ ms}$ (Quantized / Thread-Optimized)** |
-| **Zero-Day Generalization** | Very Low; relies on exact keyword frequencies | Moderate; susceptible to long-range memory decay | **High; captures underlying semantic coercion intent** |
+| **Computational Parallelism** | High (static matrix multiplication) | Extremely Low (strictly sequential step computation) | **High (matrix dot-product optimised for SIMD/GPUs)** |
+| **Inference Latency** | $< 10\text{ ms}$ | $150 - 500\text{ ms}$ | **$30 - 90\text{ ms}$ (Quantised / Thread-Optimised)** |
+| **Zero-Day Generalisation** | Very Low; relies on exact keyword frequencies | Moderate; susceptible to long-range memory decay | **High; captures underlying semantic coercion intent** |
 
 ---
 
@@ -414,15 +414,15 @@ To automate credential extraction from unstructured webpage DOM text, two primar
 | :--- | :--- | :--- |
 | **Extraction Precision** | Probabilistic ($85\% - 92\%$); susceptible to hallucinations | **Deterministic ($100\%$ exact string format compliance)** |
 | **Execution Latency** | $40 - 120\text{ ms}$ (Tensor token parsing) | **$< 0.5\text{ ms}$ (Compiled C-level regex automata)** |
-| **Domain Specificity** | Requires thousands of labeled training sentences | **Directly encodes official Bank Negara Malaysia formats** |
+| **Domain Specificity** | Requires thousands of labelled training sentences | **Directly encodes official Bank Negara Malaysia formats** |
 | **Edge Resource Footprint** | Heavy ($200\text{ MB} - 1\text{ GB}$ model memory) | **Negligible ($< 1\text{ MB}$ in-memory bytecode)** |
 
-Because Malaysian banking institutions enforce strict account length standards, applying **pre-compiled Regex bytecode** coupled with an asynchronous SQLite database query delivers microsecond execution speeds and zero probabilistic false-negatives, perfectly bridging localized threat intelligence with high-speed browsing.
+Because Malaysian banking institutions enforce strict account length standards, applying **pre-compiled Regex bytecode** coupled with an asynchronous SQLite database query delivers microsecond execution speeds and zero probabilistic false-negatives, perfectly bridging localised threat intelligence with high-speed browsing.
 
 ---
 
 ### 2.5.4 High-Concurrency Backend Architectures (WSGI vs. ASGI)
-Deploying computationally intensive deep learning models for real-time web defense presents severe concurrency challenges. A single browser client visiting a webpage generates multiple asynchronous HTTP inspection requests. In enterprise deployments handling thousands of concurrent users, traditional synchronous backend architectures fail catastrophically.
+Deploying computationally intensive deep learning models for real-time web defence presents severe concurrency challenges. A single browser client visiting a webpage generates multiple asynchronous HTTP inspection requests. In enterprise deployments handling thousands of concurrent users, traditional synchronous backend architectures fail catastrophically.
 
 ```plantuml
 @startuml WSGI_vs_ASGI_Concurrency_Chapter_2
@@ -489,7 +489,7 @@ deactivate ASGI
 Traditional Python frameworks (Flask, Django) implement the **WSGI** specification. WSGI operates synchronously: each incoming request binds an entire operating system worker thread until the request completes. When an incoming request triggers heavy PyTorch tensor calculations, the worker thread locks the Python **Global Interpreter Lock (GIL)**. Concurrent incoming requests are placed in an operating system backlog queue, resulting in thread starvation, dropped packets, and latency spikes exceeding $2.0$ seconds (Bansal & Ouda, 2022).
 
 #### 2. Asynchronous Server Gateway Interface (ASGI) & FastAPI
-Modern asynchronous frameworks—specifically **FastAPI** running on the **Uvicorn** ASGI server—utilize Python's native `asyncio` non-blocking event loop. To prevent heavy tensor calculations from stalling the event loop, CPU-bound machine learning tasks are dispatched to separate thread pools using `asyncio.to_thread()`:
+Modern asynchronous frameworks—specifically **FastAPI** running on the **Uvicorn** ASGI server—utilise Python's native `asyncio` non-blocking event loop. To prevent heavy tensor calculations from stalling the event loop, CPU-bound machine learning tasks are dispatched to separate thread pools using `asyncio.to_thread()`:
 
 ```python
 # Asynchronous Non-Blocking Execution Pattern in PhishGuard-AI
@@ -535,15 +535,15 @@ A critical synthesis of contemporary literature reveals three fundamental resear
 |   • HOWEVER: Models are deployed as slow batch email scanners (>2.0s latency), lacking sub-second  |
 |     client-server microservice architectures capable of real-time browser edge interception.       |
 |                                                                                                    |
-|  [GAP 2: Total Absence of Localized Regional Threat Intelligence]                                  |
+|  [GAP 2: Total Absence of Localised Regional Threat Intelligence]                                  |
 |   • Commercial tools (Google Safe Browsing, Netcraft) are trained purely on English corpora.       |
-|   • HOWEVER: They completely fail on multi-lingual Southeast Asian social engineering (Manglish)    |
-|     and ignore localized fraud vectors like Malaysian Money Mule account networks ("Keldai Akaun").|
+|   • HOWEVER: They completely fail on multilingual Southeast Asian social engineering (Manglish)    |
+|     and ignore localised fraud vectors like Malaysian Money Mule account networks ("Keldai Akaun").|
 |                                                                                                    |
 |  [GAP 3: Disconnect Between Client Interception & Enterprise SOC / Law Enforcement]              |
 |   • Browser extensions act as isolated "dumb" blockers without forensic logging.                   |
 |   • HOWEVER: They fail to export structured telemetry to law enforcement (NSRC 997 / PDRM)         |
-|     or syndicate standardized threat intelligence (OASIS STIX 2.1 JSON / CEF / Syslog).           |
+|     or syndicate standardised threat intelligence (OASIS STIX 2.1 JSON / CEF / Syslog).           |
 |                                                                                                    |
 +----------------------------------------------------------------------------------------------------+
 ```
@@ -556,10 +556,10 @@ To position PhishGuard-AI within the broader security landscape, Table 2.4 compa
 | Feature / Capability | Google Safe Browsing (2024) | Netcraft Anti-Phishing Extension | PhishPedia (Lin et al., 2021) | PhishGuard-AI (Proposed System) |
 | :--- | :---: | :---: | :---: | :---: |
 | **Primary Detection Engine** | Static URL Blacklist + Client Heuristics | Blacklist + Server-Side Certificate Audit | Deep Learning Computer Vision (CNN) | **Hybrid Multi-Modal (BERT NLP + YOLOv8 Vision + Regex)** |
-| **Zero-Day Ephemeral Defense** | ❌ Poor ($4-48\text{h}$ propagation lag) | ⚠️ Moderate (Relies on crawler verification) | ✅ High (Visual logo matching) | **✅ Exceptional (Real-Time Sub-400ms Semantic AI)** |
-| **Typosquatting / Subword Parsing** | ❌ Ineffective against novel DGAs | ⚠️ Basic domain distance matching | ❌ Irrelevant (Image-only analysis) | **✅ High (WordPiece Tokenization in BERT)** |
-| **Localized Mule Account Verification** | ❌ None | ❌ None | ❌ None | **✅ Fully Automated (8-Bank Regex + SQLite 3NF)** |
-| **Multi-Lingual / Manglish Support** | ❌ English-Centric | ❌ English-Centric | N/A (Visual) | **✅ English, Bahasa Melayu, & Manglish NLP** |
+| **Zero-Day Ephemeral Defence** | ❌ Poor ($4-48\text{h}$ propagation lag) | ⚠️ Moderate (Relies on crawler verification) | ✅ High (Visual logo matching) | **✅ Exceptional (Real-Time Sub-400ms Semantic AI)** |
+| **Typosquatting / Subword Parsing** | ❌ Ineffective against novel DGAs | ⚠️ Basic domain distance matching | ❌ Irrelevant (Image-only analysis) | **✅ High (WordPiece Tokenisation in BERT)** |
+| **Localised Mule Account Verification** | ❌ None | ❌ None | ❌ None | **✅ Fully Automated (8-Bank Regex + SQLite 3NF)** |
+| **Multilingual / Manglish Support** | ❌ English-Centric | ❌ English-Centric | N/A (Visual) | **✅ English, Bahasa Melayu, & Manglish NLP** |
 | **Enterprise SOC & Law Enforcement CTI** | ❌ Closed proprietary ecosystem | ⚠️ Basic enterprise report feed | ❌ Research prototype only | **✅ Live SSE Telemetry, NSRC 997, STIX 2.1, CEF** |
 | **Decision Latency SLA** | $< 50\text{ ms}$ (Local cache) | $200 - 600\text{ ms}$ | $1,200 - 3,500\text{ ms}$ | **$< 400\text{ ms}$ (Asynchronous FastAPI ASGI)** |
 
@@ -589,8 +589,8 @@ package "Multi-Modal Intelligence Backend (Liew Yi Ler)" {
     
     package "Probabilistic NLP Layer" {
         [Bidirectional Encoder (BERT)] as BERT
-        [WordPiece Tokenizer (Typosquatting Resilience)] as WordPiece
-        [Multi-Lingual Intent Classifier (English/BM/Manglish)] as Intent
+        [WordPiece Tokeniser (Typosquatting Resilience)] as WordPiece
+        [Multilingual Intent Classifier (English/BM/Manglish)] as Intent
     }
     
     package "Deterministic Fraud Verification Layer" {
@@ -605,7 +605,7 @@ package "Multi-Modal Intelligence Backend (Liew Yi Ler)" {
 }
 
 package "Endpoint Action & SOC Telemetry" {
-    [BLOCK_RENDER Defense Shield] as Shield
+    [BLOCK_RENDER Defence Shield] as Shield
     [Live SOC Intelligence Dashboard] as SOC
     [NSRC 997 & STIX 2.1 Exporters] as CTI
 }
@@ -632,12 +632,12 @@ SOC --> CTI : Law Enforcement Escalation
 
 ## 2.7 Chapter Summary
 
-This chapter has established the theoretical foundations, empirical threat context, and technological frameworks underpinning modern anti-phishing defense systems. The critical findings of this literature review are summarized as follows:
+This chapter has established the theoretical foundations, empirical threat context, and technological frameworks underpinning modern anti-phishing defence systems. The critical findings of this literature review are summarised as follows:
 
-1. **Failure of Reactive Defenses**: Static blacklists inherently suffer from a fatal Time-to-Protect latency gap ($4-48\text{ hours}$), rendering them ineffective against modern ephemeral phishing kits that operate for under two hours.
+1. **Failure of Reactive Defences**: Static blacklists inherently suffer from a fatal Time-to-Protect latency gap ($4-48\text{ hours}$), rendering them ineffective against modern ephemeral phishing kits that operate for under two hours.
 2. **Cognitive Vulnerability & Social Engineering**: Attackers systematically trigger human "System 1" emotional decision-making through urgency cues, bypassing logical verification and necessitating automated client-side protection.
-3. **Superiority of Transformer NLP (BERT)**: Bidirectional self-attention paired with WordPiece tokenization provides robust semantic comprehension and typosquatting resilience, outperforming legacy TF-IDF and LSTM models.
-4. **Necessity of Localized Deterministic Fraud Verification**: Automated regular expression parsing coupled with a normalized SQLite 3NF database eliminates the manual friction of PDRM *Semakmule* verifications, directly neutralizing domestic money mule syndicates.
+3. **Superiority of Transformer NLP (BERT)**: Bidirectional self-attention paired with WordPiece tokenisation provides robust semantic comprehension and typosquatting resilience, outperforming legacy TF-IDF and LSTM models.
+4. **Necessity of Localised Deterministic Fraud Verification**: Automated regular expression parsing coupled with a normalised SQLite 3NF database eliminates the manual friction of PDRM *Semakmule* verifications, directly neutralising domestic money mule syndicates.
 5. **High-Concurrency ASGI Backend Architecture**: Asynchronous microservices powered by FastAPI and Uvicorn resolve Python GIL bottlenecks by offloading PyTorch tensor calculations to dedicated worker threads (`asyncio.to_thread`) while executing database I/O concurrently (`asyncio.gather`), guaranteeing a sub-400ms decision latency.
 
-These critical insights directly inform the architectural design and experimental methodology of the PhishGuard-AI backend module. The next chapter—**Chapter 3: Methodology and Requirements Analysis**—formalizes the research framework, functional and non-functional requirements, dataset engineering pipelines, and mathematical evaluation metrics used to develop the system.
+These critical insights directly inform the architectural design and experimental methodology of the PhishGuard-AI backend module. The next chapter—**Chapter 3: Methodology and Requirements Analysis**—formalises the research framework, functional and non-functional requirements, dataset engineering pipelines, and mathematical evaluation metrics used to develop the system.
