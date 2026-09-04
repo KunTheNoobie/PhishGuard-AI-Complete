@@ -4,20 +4,20 @@
 
 The System Design phase represents the critical engineering bridge that translates the theoretical cybersecurity methodologies, non-functional constraints, and mathematical metrics formulated in Chapter 3 into concrete, executable technical blueprints. In enterprise-grade security engineering, deploying computationally intensive deep learning models alongside real-time web interceptors requires an architecture capable of guaranteeing sub-second response times, zero false alarms on legitimate banking portals, and complete data privacy.
 
-This chapter details the comprehensive structural, behavioral, and persistence architecture of the **Semantic Threat Intelligence and Mule Account Verification Engine** developed as an individual module by Liew Yi Ler.
+This chapter details the comprehensive structural, behavioural, and persistence architecture of the **Semantic Threat Intelligence and Mule Account Verification Engine** developed as an individual module by Liew Yi Ler.
 
 The architectural design of the backend is governed by five core foundational principles:
 1. **Decoupled N-Tier Microservices Topology**: Isolates computationally heavy PyTorch tensor operations and database queries from the client-side Google Chrome extension, preventing client browser thread blocking (Newman, 2015).
 2. **Zero Trust Edge Verification (ZTA)**: Enforces NIST SP 800-207 principles (*"Never Trust, Always Verify"*), evaluating raw DOM payloads independently of SSL/TLS certificates or domain age.
-3. **Singleton In-Memory Model Management**: Employs the Singleton design pattern (Gamma et al., 1994) to load the 440 MB BERT Transformer model into system RAM strictly once during server initialization, eliminating run-time disk I/O latency.
+3. **Singleton In-Memory Model Management**: Employs the Singleton design pattern (Gamma et al., 1994) to load the 440 MB BERT Transformer model into system RAM strictly once during server initialisation, eliminating run-time disk I/O latency.
 4. **Asynchronous Non-Blocking Concurrency**: Leverages the Asynchronous Server Gateway Interface (ASGI), offloading CPU-bound operations via `asyncio.to_thread()` and executing database I/O concurrently using `asyncio.gather()`.
-5. **Strict Defense-in-Depth Hardening**: Integrates Bearer token authentication, `SlowAPI` token-bucket rate limiting, Pydantic input sanitization, and parameterized SQL bindings to guarantee backend resilience.
+5. **Strict Defence-in-Depth Hardening**: Integrates Bearer token authentication, `SlowAPI` token-bucket rate limiting, Pydantic input sanitisation, and parameterised SQL bindings to guarantee backend resilience.
 
 ---
 
 ## 4.2 High-Level System Architecture & N-Tier Decomposition
 
-The PhishGuard-AI backend is architected as a decoupled, multi-tiered client-server system organized into three distinct logical tiers, visualised in Figure 4.1.
+The PhishGuard-AI backend is architected as a decoupled, multi-tiered client-server system organised into three distinct logical tiers, visualised in Figure 4.1.
 
 ```plantuml
 @startuml NTier_Architecture_Chapter_4
@@ -37,7 +37,7 @@ package "Tier 1: Client Edge & API Gateway Tier" {
     [Manifest V3 Browser Extension\n(Content Script & Service Worker)] as ExtClient
     interface "POST /api/v1/analyze/semantics\n(Bearer Auth / Port 8000)" as GatewayAPI
     [FastAPI / Uvicorn ASGI Server\n(Non-Blocking Event Loop)] as ASGIServer
-    [Pydantic v2 Request Validator\n(Strict Type & Sanitization Schema)] as PydanticValidator
+    [Pydantic v2 Request Validator\n(Strict Type & Sanitisation Schema)] as PydanticValidator
     [SlowAPI Token-Bucket Limiter\n(60 req/min Anti-DoS)] as RateLimiter
 }
 
@@ -74,7 +74,7 @@ package "Tier 3: Data Persistence & Telemetry Tier" {
 ExtClient --> GatewayAPI : 1. Ingests Raw DOM & URL
 GatewayAPI --> RateLimiter : 2. Enforces Rate Limit
 RateLimiter --> PydanticValidator : 3. Validates Payload Schema
-PydanticValidator --> ASGIServer : 4. Dispatches Sanitized Object
+PydanticValidator --> ASGIServer : 4. Dispatches Sanitised Object
 ASGIServer --> WhitelistFilter : 5. Fast-Path In-Memory Whitelist Lookup
 WhitelistFilter --> Aggregator : Whitelisted (Instant SAFE)
 WhitelistFilter --> BERTEngine : Non-Whitelisted: Parallel Task 1 (asyncio.to_thread)
@@ -88,39 +88,39 @@ Aggregator --> ASGIServer : 11. Final Verdict (<400ms SLA)
 ASGIServer --> ExtClient : 12. Returns JSON (BLOCK_RENDER / SAFE)
 TelemetryTable --> SSEHub : 13. Broadcasts Live Event Stream
 SSEHub --> SOCDashboard : 14. Real-Time Telemetry Feed
-SOCDashboard --> CTIExporter : 15. Standardized Law Enforcement Dispatch
+SOCDashboard --> CTIExporter : 15. Standardised Law Enforcement Dispatch
 
 @enduml
 ```
 
 ### 4.2.1 Tier 1: Client Edge & API Gateway Tier
 The Application Gateway Tier operates as the asynchronous, hardened perimeter of the backend service. Deployed on **FastAPI** over the **Uvicorn** Asynchronous Server Gateway Interface (ASGI), it provides:
-* **Cryptographic Request Authentication**: Enforces HTTP `Authorization: Bearer <API_KEY>` headers on all analysis routes.
+* **Cryptographic Request Authentication**: Enforces HTTP `Authorisation: Bearer <API_KEY>` headers on all analysis routes.
 * **Denial-of-Service Protection**: Implements `SlowAPI` token-bucket rate limiting (60 requests/minute per client IP) to prevent algorithmic exhaustion.
-* **Payload Validation & Sanitization**: Uses `Pydantic v2` data transfer models to strictly validate data types, strip executable tags via `BeautifulSoup`, and catch malformed JSON payloads prior to downstream routing.
+* **Payload Validation & Sanitisation**: Uses `Pydantic v2` data transfer models to strictly validate data types, strip executable tags via `BeautifulSoup`, and catch malformed JSON payloads prior to downstream routing.
 
 ### 4.2.2 Tier 2: Threat Intelligence & Inference Tier (Backend Core)
 The processing core executes multi-modal AI and deterministic fraud classification:
 * **In-Memory 28-Bank Trusted Whitelist (`frozenset`)**: Evaluates incoming target domains against verified Malaysian financial institutions (`maybank2u.com.my`, `pbebank.com`, `cimbclicks.com.my`). Bypasses AI inference with $0\text{ ms}$ overhead for authentic portals, completely preventing false-positive disruptions.
-* **Semantic NLP Engine (PyTorch BERT Singleton)**: Instantiates the fine-tuned `bert-base-uncased` Transformer model in local RAM. Offloaded to worker threads via `asyncio.to_thread()`, it executes WordPiece tokenization and multi-head attention forward passes to compute a semantic coercion score ($P_{\text{bert}} \in [0.0, 1.0]$).
+* **Semantic NLP Engine (PyTorch BERT Singleton)**: Instantiates the fine-tuned `bert-base-uncased` Transformer model in local RAM. Offloaded to worker threads via `asyncio.to_thread()`, it executes WordPiece tokenisation and multi-head attention forward passes to compute a semantic coercion score ($P_{\text{bert}} \in [0.0, 1.0]$).
 * **Mule Account Verification Engine**: Executes pre-compiled Regular Expression (Regex) bytecode tailored to 8 Malaysian bank account formats, extracting numerical strings and querying the database without thread blocking.
-* **Brand Impersonation Profiler**: Computes normalized **Levenshtein Distance** metrics against 10 domestic banking brands to identify typosquatting mutations (`rnaybank.com`).
-* **Optical Quishing Decoder**: Utilizes OpenCV `cv2.QRCodeDetector()` to decode embedded EMVCo Merchant-Presented DuitNow QR codes from base64 images.
+* **Brand Impersonation Profiler**: Computes normalised **Levenshtein Distance** metrics against 10 domestic banking brands to identify typosquatting mutations (`rnaybank.com`).
+* **Optical Quishing Decoder**: Utilises OpenCV `cv2.QRCodeDetector()` to decode embedded EMVCo Merchant-Presented DuitNow QR codes from base64 images.
 
 ### 4.2.3 Tier 3: Data Persistence & Telemetry Tier
 The persistence layer provides non-blocking relational storage and real-time security event broadcasting:
 * **SQLite Database in WAL Mode**: Structured in **Third Normal Form (3NF)**, operating under Write-Ahead Logging (WAL) with B-Tree indexes on `account_number`, enabling sub-millisecond asynchronous queries (`aiosqlite`).
-* **Server-Sent Events (SSE) Hub**: Broadcasts real-time threat telemetry events to active Security Operations Center (SOC) dashboard clients over persistent HTTP connections.
-* **CTI & Law Enforcement Exporters**: Synthesizes threat records into standardized **OASIS STIX 2.1 JSON bundles**, ArcSight CEF logs, and 1-click **National Scam Response Centre (NSRC 997)** dispatch dossiers.
+* **Server-Sent Events (SSE) Hub**: Broadcasts real-time threat telemetry events to active Security Operations Centre (SOC) dashboard clients over persistent HTTP connections.
+* **CTI & Law Enforcement Exporters**: Synthesises threat records into standardised **OASIS STIX 2.1 JSON bundles**, ArcSight CEF logs, and 1-click **National Scam Response Centre (NSRC 997)** dispatch dossiers.
 
 ---
 
 ## 4.3 System Interfaces, API Contracts & OpenAPI Specifications
 
 ### 4.3.1 RESTful API Interface & OpenAPI Documentation
-The backend strictly complies with the **Representational State Transfer (REST)** architectural model (Fielding, 2000). All communications are stateless, utilizing standard HTTP response codes and JSON serialized payloads (Crockford, 2006). 
+The backend strictly complies with the **Representational State Transfer (REST)** architectural model (Fielding, 2000). All communications are stateless, utilising standard HTTP response codes and JSON serialised payloads (Crockford, 2006). 
 
-FastAPI automatically generates interactive **OpenAPI 3.0 (Swagger UI)** documentation served at `/docs`, enabling standardized client-server integration testing.
+FastAPI automatically generates interactive **OpenAPI 3.0 (Swagger UI)** documentation served at `/docs`, enabling standardised client-server integration testing.
 
 ```
 +----------------------------------------------------------------------------------------------------+
@@ -158,7 +158,7 @@ This core endpoint orchestrates the real-time threat decision pipeline.
     },
     "text_content": {
       "type": "string",
-      "description": "Sanitized innerText extracted from the webpage DOM."
+      "description": "Sanitised innerText extracted from the webpage DOM."
     },
     "origin": {
       "type": "string",
@@ -230,16 +230,76 @@ This core endpoint orchestrates the real-time threat decision pipeline.
 }
 ```
 
+### 4.3.3 Secondary Endpoint Contract: `POST /api/v1/analyze/quishing`
+This specialised endpoint provides optical QR code extraction and forensic analysis to intercept QR-code phishing (Quishing) campaigns exploiting Malaysian payment rails (e.g. DuitNow, PayNet EMVCo).
+
+#### Request JSON Schema (`QuishingAnalysisRequest`):
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "QuishingAnalysisRequest",
+  "type": "object",
+  "required": ["image_base64"],
+  "properties": {
+    "image_base64": {
+      "type": "string",
+      "description": "Base64-encoded raw image bytes of the suspicious QR code matrix."
+    },
+    "page_url": {
+      "type": "string",
+      "format": "uri",
+      "description": "The URL of the hosting webpage where the QR code was rendered."
+    }
+  }
+}
+```
+
+#### Response JSON Schema (`QuishingAnalysisResponse`):
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "QuishingAnalysisResponse",
+  "type": "object",
+  "required": ["quishing_threat", "quishing_score", "decoded_payload", "verdict"],
+  "properties": {
+    "quishing_threat": {
+      "type": "boolean",
+      "description": "True if decoded QR payload contains malicious redirect or mule credentials."
+    },
+    "quishing_score": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Calibrated quishing forensic risk probability."
+    },
+    "decoded_payload": {
+      "type": "string",
+      "description": "Decoded textual URL or PayNet EMVCo payment string."
+    },
+    "verdict": {
+      "type": "string",
+      "enum": ["BLOCK_RENDER", "SAFE"],
+      "description": "Defensive action dispatched to browser client."
+    },
+    "risk_factors": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "List of heuristic forensic flags (e.g. fake PDRM summon, brand keyword impersonation)."
+    }
+  }
+}
+```
+
 ---
 
-## 4.4 Unified Modeling Language (UML) Behavioral & Structural Models
+## 4.4 Unified Modelling Language (UML) Behavioural & Structural Models
 
-To formally specify system interactions, execution flows, and object-oriented architectures, standard **Unified Modeling Language (UML 2.5)** diagrams are utilized (Fowler, 2003).
+To formally specify system interactions, execution flows, and object-oriented architectures, standard **Unified Modelling Language (UML 2.5)** diagrams are utilised (Fowler, 2003).
 
 ### 4.4.1 UML Use Case Diagram
 The Use Case Diagram (Figure 4.2) models the functional boundaries of the backend system and specifies interactions with external actors:
 * **Actor 1: Browser Extension Client (End User)**: Dispatches DOM payloads for real-time analysis and receives orchestration directives (`BLOCK_RENDER` vs. `SAFE`).
-* **Actor 2: SOC Security Administrator**: Monitors live threat telemetry feeds, analyzes the 24-hour velocity timeline, manages mule registry entries, and triggers model retraining.
+* **Actor 2: SOC Security Administrator**: Monitors live threat telemetry feeds, analyses the 24-hour velocity timeline, manages mule registry entries, and triggers model retraining.
 * **Actor 3: Law Enforcement (PDRM CCID / NSRC 997)**: Receives automated STIX 2.1 forensic dossiers and executes emergency account freezing directives.
 
 ```plantuml
@@ -312,7 +372,7 @@ start
 if (Bearer Token Valid & Rate Limit OK?) then (yes)
     :Validate Payload Structure via Pydantic Schema;
 else (no)
-    :Return HTTP 401 Unauthorized or HTTP 429 Too Many Requests;
+    :Return HTTP 401 Unauthorised or HTTP 429 Too Many Requests;
     stop
 endif
 
@@ -323,12 +383,12 @@ if (Domain in Trusted Whitelist?) then (yes)
     :Return HTTP 200 { verdict: "SAFE", risk: 0.00 };
     stop
 else (no: Suspicious / Unverified Domain)
-    :Sanitize DOM Text via BeautifulSoup (Strip HTML/Script Tags);
+    :Sanitise DOM Text via BeautifulSoup (Strip HTML/Script Tags);
     
     fork
         partition "Parallel Thread 1: Semantic Intent Analysis" {
             :Dispatch to Worker Thread (asyncio.to_thread);
-            :Execute WordPiece Subword Tokenization;
+            :Execute WordPiece Subword Tokenisation;
             :PyTorch BERT Model Forward Pass;
             :Compute Softmax Probability Score (P_bert);
         }
@@ -400,7 +460,7 @@ participant "Live SOC Dashboard" as SOC
 
 User -> CS : Visits Target Webpage (e.g. cloned portal)
 activate CS
-CS -> CS : Extracts sanitized DOM text and target URL
+CS -> CS : Extracts sanitised DOM text and target URL
 CS -> SW : Dispatches payload via runtime message
 deactivate CS
 
@@ -416,7 +476,7 @@ deactivate White
 par Asynchronous Parallel Execution (asyncio.gather)
     API -> BERT : asyncio.to_thread(bert_forward_pass, text)
     activate BERT
-    BERT -> BERT : WordPiece Tokenization & Tensor Computation
+    BERT -> BERT : WordPiece Tokenisation & Tensor Computation
     BERT --> API : Returns bert_score = 0.972 (Phishing)
     deactivate BERT
 else
@@ -437,7 +497,7 @@ API -> SOC : Push SSE event (EventSource broadcast)
 API --> SW : Return HTTP 200 JSON { verdict: "BLOCK_RENDER", risk: 0.985 }
 deactivate API
 
-SW -> CS : Command: Render Red Defense Shield
+SW -> CS : Command: Render Red Defence Shield
 activate CS
 CS -> CS : Remove malicious DOM & display warning overlay
 CS --> User : Displays Block Shield & Forensic Reason
@@ -551,7 +611,7 @@ DatabaseManager --> MuleTable : Persists
 
 ---
 
-## 4.5 Relational Database Design & Schema Normalization
+## 4.5 Relational Database Design & Schema Normalisation
 
 ```plantuml
 @startuml ERD_Chapter_4
@@ -612,14 +672,14 @@ MuleEntity ||--o{ TelemetryEntity : Matched In Threat Log
 @enduml
 ```
 
-### 4.5.1 Third Normal Form (3NF) & B-Tree Indexing Optimization
-To eliminate data anomalies and guarantee sub-millisecond lookup times, the relational database schema is normalized to the **Third Normal Form (3NF)** (Elmasri & Navathe, 2015):
+### 4.5.1 Third Normal Form (3NF) & B-Tree Indexing Optimisation
+To eliminate data anomalies and guarantee sub-millisecond lookup times, the relational database schema is normalised to the **Third Normal Form (3NF)** (Elmasri & Navathe, 2015):
 1. **1NF Compliance**: All attribute domains contain strictly atomic, scalar values; repeating groups and nested arrays are decomposed.
 2. **2NF Compliance**: All non-key attributes are fully functionally dependent on the primary key, eliminating partial key dependencies.
 3. **3NF Compliance**: No non-key attribute is transitively dependent on the primary key ($X \rightarrow Y$ transitive dependencies eliminated).
 
 #### B-Tree Indexing Algorithmic Acceleration
-In high-concurrency web defense, executing a full-table sequential scan ($O(N)$) across thousands of scam records introduces unacceptable latency. By applying **B-Tree Indexing** to the `account_number` column in the `mule_registry` table:
+In high-concurrency web defence, executing a full-table sequential scan ($O(N)$) across thousands of scam records introduces unacceptable latency. By applying **B-Tree Indexing** to the `account_number` column in the `mule_registry` table:
 
 $$\text{Search Time Complexity: } \mathcal{O}(\log_B N) \ll \mathcal{O}(N)$$
 
@@ -647,7 +707,7 @@ Where $B$ represents the branching factor of the B-Tree page. Lookups execute in
 | `log_id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` | Unique audit record identifier for the intercepted threat event. |
 | `malicious_url` | `VARCHAR(255)` | `NOT NULL` | The complete URL string evaluated by the multi-modal pipeline. |
 | `bert_score` | `FLOAT` | `NOT NULL` | The semantic phishing confidence probability generated by BERT. |
-| `timestamp` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP INDEX(idx_telemetry_time)` | Interception timestamp synchronized to Malaysia Standard Time (GMT+8). |
+| `timestamp` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP INDEX(idx_telemetry_time)` | Interception timestamp synchronised to Malaysia Standard Time (GMT+8). |
 | `country_code` | `VARCHAR(5)` | `NOT NULL DEFAULT 'MY'` | ISO 3166-1 alpha-2 country code of the attack infrastructure origin. |
 | `asn_routed` | `VARCHAR(100)` | `NOT NULL` | Autonomous System Number and network provider (e.g., TM Net AS4788). |
 | `action_taken` | `VARCHAR(20)` | `NOT NULL DEFAULT 'BLOCKED'` | The defensive action executed (`BLOCKED`, `FLAGGED`, `WHITELISTED`). |
@@ -657,8 +717,8 @@ Where $B$ represents the branching factor of the B-Tree page. Lookups execute in
 | Column Name | SQL Data Type | Key / Constraint | Description & Purpose |
 | :--- | :--- | :--- | :--- |
 | `domain_id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` | Unique identifier for the trusted domain record. |
-| `domain_name` | `VARCHAR(255)` | `NOT NULL UNIQUE INDEX(idx_whitelist_domain)` | Normalized root domain of the verified financial/educational portal. |
-| `institution_name`| `VARCHAR(100)` | `NOT NULL` | Official organization name (e.g., Malayan Banking Berhad). |
+| `domain_name` | `VARCHAR(255)` | `NOT NULL UNIQUE INDEX(idx_whitelist_domain)` | Normalised root domain of the verified financial/educational portal. |
+| `institution_name`| `VARCHAR(100)` | `NOT NULL` | Official organisation name (e.g., Malayan Banking Berhad). |
 | `category` | `VARCHAR(50)` | `NOT NULL` | Classification scope (`'bank'`, `'edu'`, `'gov'`). |
 | `date_verified` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Date when the domain was cryptographically and administratively vetted. |
 
@@ -673,7 +733,7 @@ To guarantee zero false positives on generic numbers (e.g., order tracking numbe
 |                         C-LEVEL PRE-COMPILED REGEX BYTECODE PIPELINE                               |
 +----------------------------------------------------------------------------------------------------+
 |                                                                                                    |
-|  [Raw Sanitized DOM Text Ingestion]                                                                |
+|  [Raw Sanitised DOM Text Ingestion]                                                                |
 |         │                                                                                          |
 |         ▼                                                                                          |
 |  [Iterate Pre-Compiled Bytecode Dictionary (8 Major Malaysian Banks)]                              |
@@ -710,25 +770,25 @@ To guarantee zero false positives on generic numbers (e.g., order tracking numbe
 
 ---
 
-## 4.7 Security Hardening, Defense-in-Depth & Error Handling
+## 4.7 Security Hardening, Defence-in-Depth & Error Handling
 
 ```
 +----------------------------------------------------------------------------------------------------+
-|                         DEFENSE-IN-DEPTH SECURITY HARDENING ARCHITECTURE                           |
+|                         DEFENCE-IN-DEPTH SECURITY HARDENING ARCHITECTURE                           |
 +----------------------------------------------------------------------------------------------------+
 |                                                                                                    |
 |  [Layer 1: Network Ingestion]   ──> Token-Bucket Rate Limiting (SlowAPI: 60 req/min per IP)        |
-|  [Layer 2: Authentication]      ──> Cryptographic HTTP Authorization: Bearer <256-bit Token>       |
-|  [Layer 3: Input Sanitization]  ──> Pydantic v2 Type Constraints + BeautifulSoup HTML Stripping    |
-|  [Layer 4: SQL Injection Block] ──> Strictly Parameterized `aiosqlite` SQL Binding Placeholders (`?`)|
+|  [Layer 2: Authentication]      ──> Cryptographic HTTP Authorisation: Bearer <256-bit Token>       |
+|  [Layer 3: Input Sanitisation]  ──> Pydantic v2 Type Constraints + BeautifulSoup HTML Stripping    |
+|  [Layer 4: SQL Injection Block] ──> Strictly Parameterised `aiosqlite` SQL Binding Placeholders (`?`)|
 |  [Layer 5: Exception Shield]    ──> Global Async Handlers: HTTP 422 (Schema), HTTP 500 (Fail-Safe)|
 |                                                                                                    |
 +----------------------------------------------------------------------------------------------------+
 ```
 
-1. **Cryptographic Authentication**: Access to threat analysis endpoints requires valid 256-bit API keys passed via `Authorization: Bearer <token>`. Unauthenticated probing is immediately dropped with HTTP 401 Unauthorized.
+1. **Cryptographic Authentication**: Access to threat analysis endpoints requires valid 256-bit API keys passed via `Authorisation: Bearer <token>`. Unauthenticated probing is immediately dropped with HTTP 401 Unauthorised.
 2. **Denial-of-Service (DoS) Mitigation**: The `SlowAPI` token-bucket limiter bounds request volume to 60 requests/minute per client IP. Excess traffic is rejected with HTTP 429 Too Many Requests, protecting worker thread pools from exhaustion.
-3. **SQL Injection Neutralization**: All database interactions use strictly parameterized SQL queries (`SELECT * FROM mule_registry WHERE account_number = ?`), completely eliminating SQL injection risks.
+3. **SQL Injection Neutralisation**: All database interactions use strictly parameterised SQL queries (`SELECT * FROM mule_registry WHERE account_number = ?`), completely eliminating SQL injection risks.
 4. **Resilient Exception Handling**:
    * **HTTP 422 Unprocessable Entity**: Automatically returned if the client submits malformed JSON schemas.
    * **HTTP 500 Internal Error Fail-Safe**: If a PyTorch CUDA memory fault occurs, global exception handlers log the error and return a safe fallback decision, ensuring client browser stability.
@@ -790,21 +850,21 @@ ASGIComponent --> NFPComponent : API Account Freezing Directives
 ```
 
 The physical infrastructure (Figure 4.7) maps the execution environments across client and server boundaries:
-* **Client Host**: Executes the Manifest V3 Google Chrome Extension, performing local DOM extraction and displaying the high-impact red defense shield upon receiving a `BLOCK_RENDER` verdict.
+* **Client Host**: Executes the Manifest V3 Google Chrome Extension, performing local DOM extraction and displaying the high-impact red defence shield upon receiving a `BLOCK_RENDER` verdict.
 * **Server Host (Dedicated Local/Edge Infrastructure)**: Hosts the FastAPI/Uvicorn ASGI service on Port 8000. It manages PyTorch CUDA runtimes in dedicated memory spaces, hosts the SQLite WAL database on high-speed NVMe storage, and provides upstream telemetry integration to the **National Scam Response Centre (NSRC 997)** and **National Fraud Portal (NFP)**.
 
 ---
 
 ## 4.9 Chapter Summary
 
-This chapter has detailed the structural blueprints, behavioral execution models, and data persistence architectures governing the **PhishGuard-AI** backend intelligence engine.
+This chapter has detailed the structural blueprints, behavioural execution models, and data persistence architectures governing the **PhishGuard-AI** backend intelligence engine.
 
 Key architectural specifications established in this chapter include:
 1. **N-Tier Microservice Topology**: Decoupled the architecture into API Gateway, Threat Inference, and Data Persistence tiers to guarantee zero browser blocking.
 2. **RESTful API Contracts**: Specified the exact request/response JSON schemas for `POST /api/v1/analyze/semantics` and `POST /api/v1/analyze/quishing`.
-3. **Formal UML Behavioral Models**: Constructed Use Case, Activity, Sequence, and Class diagrams mapping the asynchronous multi-threaded lifecycle.
+3. **Formal UML Behavioural Models**: Constructed Use Case, Activity, Sequence, and Class diagrams mapping the asynchronous multi-threaded lifecycle.
 4. **Relational Database Design**: Formulated a 3NF-compliant SQLite schema with B-Tree indexing ($O(\log N)$) and comprehensive data dictionaries.
 5. **Deterministic Regex Engine**: Compiled 8 bank-specific C-level regex automata to achieve microsecond financial credential extraction.
-6. **Defense-in-Depth & Deployment**: Hardened the API perimeter with Bearer authentication, token-bucket rate limiting, and mapped physical host topologies.
+6. **Defence-in-Depth & Deployment**: Hardened the API perimeter with Bearer authentication, token-bucket rate limiting, and mapped physical host topologies.
 
 These technical specifications form the direct implementation blueprint for **Chapter 5: Implementation and Testing**, which documents the source code implementation, test suites, and empirical verification results.
