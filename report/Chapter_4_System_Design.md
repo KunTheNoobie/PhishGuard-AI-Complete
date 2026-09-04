@@ -290,6 +290,84 @@ This specialised endpoint provides optical QR code extraction and forensic analy
 }
 ```
 
+### 4.3.4 Supporting User Interface Wireframes & System Interaction Mockups
+
+To satisfy requirements engineering and user experience (UX) specifications, the backend platform is engineered to interact with two primary front-end graphical interfaces: (1) the **Client-Side High-Impact Alert Interstitial Overlay** (executed in the user's browser upon receiving a `BLOCK_RENDER` verdict), and (2) the **Enterprise Security Operations Centre (SOC) Live Telemetry Dashboard** (served at `/dashboard/` for security analysts and incident response teams).
+
+Figure 4.2 presents the architectural wireframes and interface mockups governing these two operational environments.
+
+```text
++----------------------------------------------------------------------------------------------------+
+|  FIGURE 4.2 (PANEL A): CLIENT-SIDE HIGH-IMPACT ALERT INTERSTITIAL SCREEN MOCKUP (CHROME OVERLAY)    |
++----------------------------------------------------------------------------------------------------+
+|                                                                                                    |
+|   ┌────────────────────────────────────────────────────────────────────────────────────────────┐   |
+|   │ 🚨 CRITICAL CYBERSECURITY WARNING                                          [🛡️ PHISHGUARD] │   |
+|   │ DECEPTIVE FINANCIAL CLONE INTERCEPTED                                                      │   |
+|   ├────────────────────────────────────────────────────────────────────────────────────────────┤   |
+|   │                                                                                            │   |
+|   │   [⚠️ HIGH RISK DETECTED]                                                                   │   |
+|   │   The website you are trying to visit has been flagged as a fraudulent credential harvesting│   |
+|   │   portal designed to impersonate a verified Malaysian financial institution.               │   |
+|   │                                                                                            │   |
+|   │   • Target Entity Impersonated : Malayan Banking Berhad (Maybank2u)                        │   |
+|   │   • Deceptive URL Intercepted  : http://rnaybank2u.com.my/auth/login.php                   │   |
+|   │   • AI Semantic Phishing Score : 0.985 (98.5% Confidence - BERT Base Uncased)              │   |
+|   │   • Brand Impersonation Index  : 0.925 (Levenshtein Distance = 1 Homoglyph Mutation)       │   |
+|   │   • Money Mule Match Identified: ⚠️ PDRM Semakmule Record Flagged                          │   |
+|   │                                  Account: 112233445566 (Maybank | 14 Fraud Reports)        │   |
+|   │                                                                                            │   |
+|   │   --------------------------------------------------------------------------------------   │   |
+|   │   RECOMMENDED DEFENSIVE ACTIONS:                                                           │   |
+|   │                                                                                            │   |
+|   │   [ 🛑 LEAVE THIS DANGEROUS SITE IMMEDIATELY (RECOMMENDED) ]                               │   |
+|   │   [ 🌐 PROCEED TO GENUINE MAYBANK PORTAL (https://www.maybank2u.com.my) ]                  │   |
+|   │   [ ⚙️ View Forensic Technical Details ]      [ ⚠️ Report False Positive to SOC ]           │   |
+|   │                                                                                            │   |
+|   └────────────────────────────────────────────────────────────────────────────────────────────┘   |
+|                                                                                                    |
++----------------------------------------------------------------------------------------------------+
+|  FIGURE 4.2 (PANEL B): ENTERPRISE SOC LIVE THREAT INTELLIGENCE DASHBOARD UI WIREFRAME              |
++----------------------------------------------------------------------------------------------------+
+|                                                                                                    |
+|  [🛡️ PHISHGUARD-AI SOC WAR ROOM]    [🟢 SSE STREAM: ACTIVE]   [TIME: 01:14:43 GMT+8]   [⚡ 18ms SLA]  |
+|  ================================================================================================  |
+|                                                                                                    |
+|  [EXECUTIVE KPI METRICS CARDS]                                                                     |
+|   ┌─────────────────────┐ ┌─────────────────────┐ ┌─────────────────────┐ ┌─────────────────────┐  |
+|   │ 🚨 Threats Blocked  │ │ 🤖 BERT Confidence  │ │ 🐴 Mule Accounts    │ │ ⚡ Avg API Latency  │  |
+|   │      159 Total      │ │        88.58%       │ │     72 Active DB    │ │      363.36 ms      │  |
+|   │   +18 in last 1hr   │ │   Threshold >= 0.70 │ │  PDRM CCID Synced   │ │  Target < 1,000ms   │  |
+|   └─────────────────────┘ └─────────────────────┘ └─────────────────────┘ └─────────────────────┘  |
+|                                                                                                    |
+|  [24-HOUR THREAT VELOCITY SPECTRUM (MALAYSIA STANDARD TIME GMT+8)]     [INTERVAL: 24h | 12h | 8h]  |
+|   100% |                                      █ (Diurnal Peak: 14:00)                              |
+|    75% |               █          █   █   █   █   █   █                                            |
+|    50% |       █   █   █   █  █   █   █   █   █   █   █   █   █   █                                |
+|    25% |   █   █   █   █   █  █   █   █   █   █   █   █   █   █   █   █   █                        |
+|     0% └───┴───┴───┴───┴───┴──┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴────────────────────────  |
+|          02:00   05:00   08:00    11:00   14:00   17:00   20:00   23:00 (MYT)                      |
+|                                                                                                    |
+|  [LIVE THREAT TELEMETRY & ATTACK INFRASTRUCTURE RADAR]                                             |
+|   #   Timestamp (MYT)   Target URL & Payload        Brand Target  Mule Record  Score   Action  ASN |
+|  ───  ────────────────  ──────────────────────────  ────────────  ───────────  ──────  ──────  ─── |
+|  159  01:10:00 GMT+8    http://rnaybank-secure.top  Maybank2u     112233445566 0.985   BLOCK   TM  |
+|  158  00:45:12 GMT+8    http://cimb-clicks-auth.cc  CIMB Clicks   None         0.927   BLOCK   CF  |
+|  157  00:15:30 GMT+8    http://pbebank-login.xyz    Public Bank   None         0.796   BLOCK   SG  |
+|  156  23:40:00 GMT+8    https://www.maybank2u.com.my Maybank2u    None         0.000   WHITE   TM  |
+|                                                                                                    |
+|  [CTI THREAT SHARING & 1-CLICK LAW ENFORCEMENT DISPATCH]                                           |
+|   [ 🚨 Dispatch Dossier to NSRC 997 ]  [ 🔒 Account Freeze Directive (NFP) ]  [ 📄 Export STIX 2.1 ]|
+|                                                                                                    |
++----------------------------------------------------------------------------------------------------+
+```
+
+#### User Experience (UX) Architecture & Cognitive Safeguard Rationale
+The design of these visual supporting elements is grounded in cognitive cybersecurity principles:
+1. **Mitigating "System 1" Cognitive Biases (Kahneman, 2011)**: Standard passive browser warnings (e.g. subtle padlock colour alterations) are frequently bypassed because victims browse under automatic, fast-paced cognitive heuristics. The **Client-Side High-Impact Alert Interstitial** dismounts the deceptive DOM from the client rendering tree, replacing it with an un-ignorable high-contrast crimson overlay that disrupts automatic victim momentum and forces conscious, deliberate cognitive evaluation.
+2. **Actionable Remediation over Ambiguity**: Rather than presenting abstract technical diagnostics, the interstitial explicitly communicates the impersonated banking brand, the quantified AI risk confidence score, and provides a direct, zero-risk hyperlink to the verified official banking website (`https://www.maybank2u.com.my`).
+3. **Operational SOC Visual Ergonomics**: The **Threat Intelligence Dashboard** visualises diurnal attack rhythms synchronised to Malaysian business hours (GMT+8), providing tier-1 security operations centre (SOC) analysts with immediate situational awareness and single-click STIX 2.1 / NSRC 997 escalation pathways to execute real-time account freezes.
+
 ---
 
 ## 4.4 Unified Modelling Language (UML) Behavioural & Structural Models
@@ -297,7 +375,7 @@ This specialised endpoint provides optical QR code extraction and forensic analy
 To formally specify system interactions, execution flows, and object-oriented architectures, standard **Unified Modelling Language (UML 2.5)** diagrams are utilised (Fowler, 2003).
 
 ### 4.4.1 UML Use Case Diagram
-The Use Case Diagram (Figure 4.2) models the functional boundaries of the backend system and specifies interactions with external actors:
+The Use Case Diagram (Figure 4.3) models the functional boundaries of the backend system and specifies interactions with external actors:
 * **Actor 1: Browser Extension Client (End User)**: Dispatches DOM payloads for real-time analysis and receives orchestration directives (`BLOCK_RENDER` vs. `SAFE`).
 * **Actor 2: SOC Security Administrator**: Monitors live threat telemetry feeds, analyses the 24-hour velocity timeline, manages mule registry entries, and triggers model retraining.
 * **Actor 3: Law Enforcement (PDRM CCID / NSRC 997)**: Receives automated STIX 2.1 forensic dossiers and executes emergency account freezing directives.
@@ -314,7 +392,7 @@ skinparam UseCaseBorderColor #38bdf8
 skinparam UseCaseBackgroundColor #1e293b
 skinparam UseCaseFontColor #f8fafc
 
-title Figure 4.2: UML Use Case Diagram for PhishGuard-AI Backend Intelligence
+title Figure 4.3: UML Use Case Diagram for PhishGuard-AI Backend Intelligence
 
 left to right direction
 
@@ -352,7 +430,7 @@ UC7 <.. UC9 : <<extend>>
 ```
 
 ### 4.4.2 UML Activity Diagram
-The Activity Diagram (Figure 4.3) illustrates the algorithmic decision logic executed upon receiving an API inspection request, highlighting the parallel execution of the BERT NLP forward pass and the Regex database search via `asyncio.gather()`.
+The Activity Diagram (Figure 4.4) illustrates the algorithmic decision logic executed upon receiving an API inspection request, highlighting the parallel execution of the BERT NLP forward pass and the Regex database search via `asyncio.gather()`.
 
 ```plantuml
 @startuml Activity_Diagram_Chapter_4
@@ -363,7 +441,7 @@ skinparam ActivityBorderColor #38bdf8
 skinparam ActivityBackgroundColor #1e293b
 skinparam ActivityFontColor #f8fafc
 
-title Figure 4.3: UML Activity Diagram: Asynchronous Request Lifecycle & Parallel Execution
+title Figure 4.4: UML Activity Diagram: Asynchronous Request Lifecycle & Parallel Execution
 
 start
 :Client Extension dispatches POST /api/v1/analyze/semantics;
@@ -432,7 +510,7 @@ endif
 ```
 
 ### 4.4.3 UML Sequence Diagram
-The Sequence Diagram (Figure 4.4) chronologically maps the multi-threaded object interactions during a zero-day phishing interception event.
+The Sequence Diagram (Figure 4.5) chronologically maps the multi-threaded object interactions during a zero-day phishing interception event.
 
 ```plantuml
 @startuml Sequence_Diagram_Chapter_4
@@ -445,7 +523,7 @@ skinparam ParticipantBorderColor #38bdf8
 skinparam ParticipantBackgroundColor #1e293b
 skinparam ParticipantFontColor #f8fafc
 
-title Figure 4.4: UML Sequence Diagram: End-to-End Multi-Modal Threat Verification
+title Figure 4.5: UML Sequence Diagram: End-to-End Multi-Modal Threat Verification
 
 autonumber
 actor "End User" as User
@@ -508,7 +586,7 @@ deactivate SW
 ```
 
 ### 4.4.4 UML Class Diagram
-The Class Diagram (Figure 4.5) details the Object-Oriented structure, encapsulation boundaries, and data transfer objects (DTOs) powering the Python backend.
+The Class Diagram (Figure 4.6) details the Object-Oriented structure, encapsulation boundaries, and data transfer objects (DTOs) powering the Python backend.
 
 ```plantuml
 @startuml Class_Diagram_Chapter_4
@@ -521,7 +599,7 @@ skinparam ClassFontColor #f8fafc
 skinparam PackageBorderColor #64748b
 skinparam PackageFontColor #94a3b8
 
-title Figure 4.5: UML Class Diagram: Object-Oriented Architecture & Singleton Engine Pattern
+title Figure 4.6: UML Class Diagram: Object-Oriented Architecture & Singleton Engine Pattern
 
 package "Data Transfer Objects (Pydantic v2)" {
     class SemanticAnalysisRequest {
@@ -624,7 +702,7 @@ skinparam ClassFontColor #f8fafc
 skinparam PackageBorderColor #64748b
 skinparam PackageFontColor #94a3b8
 
-title Figure 4.6: Database Entity-Relationship Diagram (3NF Schema & B-Tree Indexes)
+title Figure 4.7: Database Entity-Relationship Diagram (3NF Schema & B-Tree Indexes)
 
 entity "mule_registry" as MuleEntity {
     * id : INTEGER <<PK, AUTOINCREMENT>>
@@ -806,7 +884,7 @@ skinparam NodeBorderColor #38bdf8
 skinparam NodeBackgroundColor #1e293b
 skinparam NodeFontColor #f8fafc
 
-title Figure 4.7: Physical Deployment Topology & Network Infrastructure
+title Figure 4.8: Physical Deployment Topology & Network Infrastructure
 
 node "Client Endpoint Device\n(User Physical PC / Laptop)" as ClientNode {
     node "Google Chrome Browser (Version 120+)" {
@@ -849,7 +927,7 @@ ASGIComponent --> NFPComponent : API Account Freezing Directives
 @enduml
 ```
 
-The physical infrastructure (Figure 4.7) maps the execution environments across client and server boundaries:
+The physical infrastructure (Figure 4.8) maps the execution environments across client and server boundaries:
 * **Client Host**: Executes the Manifest V3 Google Chrome Extension, performing local DOM extraction and displaying the high-impact red defence shield upon receiving a `BLOCK_RENDER` verdict.
 * **Server Host (Dedicated Local/Edge Infrastructure)**: Hosts the FastAPI/Uvicorn ASGI service on Port 8000. It manages PyTorch CUDA runtimes in dedicated memory spaces, hosts the SQLite WAL database on high-speed NVMe storage, and provides upstream telemetry integration to the **National Scam Response Centre (NSRC 997)** and **National Fraud Portal (NFP)**.
 
