@@ -70,6 +70,8 @@ Rose, S., Borchert, O., Mitchell, S., & Connelly, S. (2020). *Zero Trust Archite
 
 Royal Malaysia Police (PDRM). (2023). *Semakmule: PDRM Commercial Crime Investigation Department (CCID) Portal*. Royal Malaysia Police. Retrieved from [https://semakmule.rmp.gov.my/](https://semakmule.rmp.gov.my/)
 
+Royal Malaysia Police (PDRM). (2024). *Commercial Crime Statistics & Online Financial Fraud Report 2023–2024*. Commercial Crime Investigation Department (CCID), Royal Malaysia Police, Kuala Lumpur. Retrieved from [https://www.rmp.gov.my/](https://www.rmp.gov.my/)
+
 Sahingoz, O. K., Batur, E., Bahtiyar, S. R., & Siris, O. (2019). Machine learning based phishing detection from URLs. *Expert Systems with Applications*, 117, 345–357. [https://doi.org/10.1016/j.eswa.2018.09.029](https://doi.org/10.1016/j.eswa.2018.09.029)
 
 Sindre, G., & Opdahl, A. L. (2005). Eliciting security requirements with misuse cases. *Requirements Engineering*, 10(1), 34–44. [https://doi.org/10.1007/s00766-004-0194-4](https://doi.org/10.1007/s00766-004-0194-4)
