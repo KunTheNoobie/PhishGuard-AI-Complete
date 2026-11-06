@@ -36,7 +36,7 @@ partition "Agile Backend Architecture & Integration (Sprint 3)" {
 }
 
 partition "System Testing, Hardening & CI/CD (Sprint 4)" {
-    :Execute Automated Pytest Suite (120/120 Unit & Integration Tests);
+    :Execute Automated Pytest Suite (122/122 Unit & Integration Tests);
     :Stress Testing & Concurrency Profiling on Uvicorn ASGI;
     :Deploy Live SOC Intelligence Dashboard & CTI Exporters;
 }

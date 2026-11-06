@@ -8,7 +8,7 @@
 | :--- | :--- | :--- | :---: |
 | **Appendix A** | **FastAPI Unified JSON Response Schema & Authentic Payload** | Full OpenAPI 3.0 JSON schema and authentic live JSON response instance. | Chapter 4 (§4.7), Chapter 5 (§5.5.3) |
 | **Appendix B** | **FastAPI Asynchronous Route Implementation Snippet** | Production Python code showing `asyncio.to_thread`, `asyncio.gather`, and Pydantic validation. | Chapter 4 (§4.4.4), Chapter 5 (§5.4.1) |
-| **Appendix C** | **Automated Test Suite Output Logs (Pytest CI/CD)** | Full raw terminal output of the 120 automated test cases passing in 8.93 seconds. | Chapter 3 (§3.2.3), Chapter 5 (§5.5.4) |
+| **Appendix C** | **Automated Test Suite Output Logs (Pytest CI/CD)** | Full raw terminal output of the 122 automated test cases passing in 9.74 seconds. | Chapter 3 (§3.2.3), Chapter 5 (§5.5.4) |
 | **Appendix D** | **Live BERT Inference Validation Results** | Real-time terminal output logs across test payloads, whitelist bypass, and mule queries. | Chapter 5 (§5.5.2, §5.5.1) |
 | **Appendix E** | **Threat Intelligence Monitoring Dashboard Layout** | ASCII topology, metrics cards, 24h diurnal velocity spectrum, and Geo Radar specifications. | Chapter 4 (§4.3.2), Chapter 5 (§5.5.5) |
 
@@ -236,32 +236,32 @@ async def analyze_web_payload(
 
 ## Appendix C: Automated Test Suite Output Logs
 
-The following raw terminal output validates the successful execution of the continuous integration (CI) test harness using `pytest` and `pytest-asyncio`. The system executed **120 individual test cases** achieving a **100% pass rate** in under **9.0 seconds**.
+The following raw terminal output validates the successful execution of the continuous integration (CI) test harness using `pytest` and `pytest-asyncio`. The system executed **122 individual test cases** achieving a **100% pass rate** in under **10.0 seconds**.
 
 ```text
 ============================= test session starts =============================
 platform win32 -- Python 3.14.3, pytest-9.1.1, pluggy-1.6.0
-rootdir: C:\Users\yiler\Downloads\PhishGuard-AI-Complete
+rootdir: C:\Users\yiler\Downloads\Y3S2 BMCS3414 Project II\PhishGuard-AI-Complete
 plugins: anyio-4.14.0, locust-2.44.4, asyncio-1.4.0
 asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
-collected 120 items
+collected 122 items
 
-tests\test_endpoints.py ......................                           [ 18%]
-tests\test_enhancements.py ............................................. [ 55%]
-.                                                                        [ 56%]
+tests\test_endpoints.py ........................                         [ 19%]
+tests\test_enhancements.py ............................................. [ 56%]
+.                                                                        [ 57%]
 tests\test_mule_scanner.py ..............                                [ 68%]
-tests\test_nlp_engine.py .........                                       [ 75%]
+tests\test_nlp_engine.py .........                                       [ 76%]
 tests\test_repository.py ........                                        [ 82%]
 tests\test_sanitizer.py .............                                    [ 93%]
 tests\test_visual.py ........                                            [100%]
 
 ============================== warnings summary ===============================
 tests/test_endpoints.py::TestHealthEndpoint::test_health_returns_200
-  C:\Users\yiler\Downloads\PhishGuard-AI-Complete\venv\Lib\site-packages\slowapi\extension.py:720: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
+  C:\Users\yiler\Downloads\Y3S2 BMCS3414 Project II\PhishGuard-AI-Complete\venv\Lib\site-packages\slowapi\extension.py:720: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
     if asyncio.iscoroutinefunction(func):
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-======================= 120 passed, 1 warning in 8.93s ========================
+======================= 122 passed, 1 warning in 9.74s ========================
 ```
 
 ---

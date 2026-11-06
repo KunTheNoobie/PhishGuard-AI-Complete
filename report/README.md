@@ -20,7 +20,7 @@
 | **Chapter 5** | Implementation and Testing | [`Chapter_5_Implementation_Testing.md`](file:///c:/Users/yiler/Downloads/PhishGuard-AI-Complete/report/Chapter_5_Implementation_Testing.md) | ✅ Complete |
 | **Chapter 6** | Discussions and Conclusion | [`Chapter_6_Discussion_Conclusion.md`](file:///c:/Users/yiler/Downloads/PhishGuard-AI-Complete/report/Chapter_6_Discussion_Conclusion.md) | ✅ Complete |
 | **References** | Academic Bibliography (APA 7th Edition with DOIs and links) | [`References.md`](file:///c:/Users/yiler/Downloads/PhishGuard-AI-Complete/report/References.md) | ✅ Complete |
-| **Appendices** | API Schemas, Code Snippets, Pytest Logs (120/120), Inference Logs, SOC Dashboard | [`Appendices.md`](file:///c:/Users/yiler/Downloads/PhishGuard-AI-Complete/report/Appendices.md) | ✅ Complete |
+| **Appendices** | API Schemas, Code Snippets, Pytest Logs (122/122), Inference Logs, SOC Dashboard | [`Appendices.md`](file:///c:/Users/yiler/Downloads/PhishGuard-AI-Complete/report/Appendices.md) | ✅ Complete |
 
 ---
 
@@ -55,7 +55,7 @@ All 21 PlantUML architectural diagrams are embedded within their respective mark
   - *Figure 5.1*: Data Preprocessing, Sanitization, and WordPiece Ingestion Pipeline.
   - *Figure 5.2*: Empirical Confusion Matrix & AI Performance Metric Breakdown (109,870 Test Set).
   - *Figure 5.3*: End-to-End Latency Benchmark & Asynchronous Execution Breakdown (363.36 ms Average).
-  - *Figure 5.4*: Automated CI/CD Test Suite Architecture (120/120 Tests - 100% Pass Rate).
+  - *Figure 5.4*: Automated CI/CD Test Suite Architecture (122/122 Tests - 100% Pass Rate).
 * [`Chapter_6_Diagrams.puml`](file:///c:/Users/yiler/Downloads/PhishGuard-AI-Complete/report/diagrams/Chapter_6_Diagrams.puml):
   - *Figure 6.1*: Edge-Adjacent Self-Hosted Microservice vs. Third-Party Cloud AI Architecture.
   - *Figure 6.2*: Technical Challenge Root-Cause and Architectural Resolution Dependency Model.

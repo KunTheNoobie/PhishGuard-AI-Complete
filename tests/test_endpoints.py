@@ -411,3 +411,37 @@ class TestDashboardEndpoints:
         assert "account_number" in acct
         assert "bank_name" in acct
         assert "report_count" in acct
+
+    @pytest.mark.asyncio
+    async def test_semantics_with_text_content_payload(self, test_client: AsyncClient) -> None:
+        resp = await test_client.post(
+            "/api/v1/analyze/semantics",
+            json={
+                "url": "https://suspicious-test-portal.xyz/verify",
+                "text_content": "Urgent verification required: please transfer fee to Maybank account 112233445566 immediately.",
+                "extract_mules": True,
+            },
+            headers=AUTH_HEADERS,
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["orchestration"] == "BLOCK_RENDER"
+        assert data["verdict"] == "BLOCK_RENDER"
+        assert data["is_whitelisted"] is False
+        assert len(data["mule_accounts_flagged"]) > 0
+
+    @pytest.mark.asyncio
+    async def test_analyze_quishing_endpoint(self, test_client: AsyncClient) -> None:
+        dummy_b64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+        resp = await test_client.post(
+            "/api/v1/analyze/quishing",
+            json={"image_base64": dummy_b64, "page_url": "https://fake-duitnow.top"},
+            headers=AUTH_HEADERS,
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "quishing_threat" in data
+        assert "quishing_score" in data
+        assert "verdict" in data
+        assert "risk_factors" in data
+

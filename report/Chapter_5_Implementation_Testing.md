@@ -12,7 +12,7 @@ This chapter documents:
 5. The mathematical resolution of a critical domain-level false-positive anomaly via the in-memory **28-Bank Trusted Domain Whitelist (`frozenset`)** and URL Context Injection.
 6. Empirical evaluation of the neural network over a sequestered 109,870-record test set, achieving an **Accuracy of 98.68%** and an **F1-Score of 97.67%** (Sokolova & Lapalme, 2009).
 7. High-concurrency performance benchmarking (Locust) demonstrating a stable **average decision latency of 363.36 milliseconds** (well within the sub-1,000ms SLA).
-8. Continuous Integration / Continuous Deployment (CI/CD) validation via a comprehensive **120-test automated Pytest suite** achieving a 100% pass rate.
+8. Continuous Integration / Continuous Deployment (CI/CD) validation via a comprehensive **122-test automated Pytest suite** achieving a 100% pass rate.
 
 ---
 
@@ -470,10 +470,10 @@ skinparam ComponentFontColor #f8fafc
 skinparam PackageBorderColor #64748b
 skinparam PackageFontColor #94a3b8
 
-title Figure 5.4: Automated CI/CD Test Suite Architecture (120/120 Tests - 100% Pass Rate)
+title Figure 5.4: Automated CI/CD Test Suite Architecture (122/122 Tests - 100% Pass Rate)
 
 package "PhishGuard-AI Automated Test Suite (Pytest & pytest-asyncio)" {
-    [tests/test_endpoints.py\n(22 Tests - API Auth, Routes, & HTTP Verdicts)] as T1
+    [tests/test_endpoints.py\n(24 Tests - API Auth, Routes, & HTTP Verdicts)] as T1
     [tests/test_enhancements.py\n(46 Tests - Whitelist, BII, Quishing & CTI)] as T2
     [tests/test_mule_scanner.py\n(14 Tests - 8-Bank Regex & Semakmule SQL)] as T3
     [tests/test_nlp_engine.py\n(9 Tests - BERT Tokenisation & Mock Engine)] as T4
@@ -495,10 +495,10 @@ T7 --> TestApp : Optical Logo & QR Tests
 note bottom of TestApp
   =========================================
   PYTEST AUTOMATED TEST RUNNER VERDICT:
-  • Total Test Cases Executed: 120
-  • Total Passed:              120 (100.0%)
+  • Total Test Cases Executed: 122
+  • Total Passed:              122 (100.0%)
   • Total Failed / Errored:    0   (0.00%)
-  • Total Execution Runtime:   8.93 seconds
+  • Total Execution Runtime:   9.74 seconds
   =========================================
 end note
 
@@ -507,22 +507,22 @@ end note
 
 The system codebase was subjected to an automated continuous integration test harness built on `pytest` and `pytest-asyncio`, illustrated in Figure 5.4. Testing utilised `httpx.AsyncClient` communicating directly with the FastAPI application instance.
 
-The comprehensive test suite contains **120 individual test cases** covering 100% of core system logic across 7 test modules, summarised in Table 5.5.
+The comprehensive test suite contains **122 individual test cases** covering 100% of core system logic across 7 test modules, summarised in Table 5.5.
 
 **Table 5.5: Automated Test Suite Summary & Execution Results**
 
 | Test Module File | Test Count | Specific Logic & Functional Verification Scope | Execution Status |
 | :--- | :---: | :--- | :---: |
-| `tests/test_endpoints.py` | 22 | API Bearer authentication, Pydantic schema validation, and HTTP response codes. | **100% PASS** |
+| `tests/test_endpoints.py` | 24 | API Bearer authentication, Pydantic schema validation, Quishing scan, and HTTP response codes. | **100% PASS** |
 | `tests/test_enhancements.py` | 46 | 28-Bank Whitelist, BII Levenshtein scoring, Quishing QR decoding, and STIX CTI. | **100% PASS** |
 | `tests/test_mule_scanner.py` | 14 | 8-Bank Regex bytecode extraction and SQLite `mule_registry` matching. | **100% PASS** |
 | `tests/test_sanitizer.py` | 13 | BeautifulSoup DOM tag stripping, XSS injection filtering, and text normalisation. | **100% PASS** |
 | `tests/test_nlp_engine.py` | 9 | BERT WordPiece tokenisation, tensor formatting, and confidence calibration. | **100% PASS** |
 | `tests/test_repository.py` | 8 | Relational 3NF SQLite schema persistence, B-Tree lookups, and WAL mode concurrency. | **100% PASS** |
 | `tests/test_visual.py` | 8 | Optical logo matching and computer vision client-server bridge validation. | **100% PASS** |
-| **Total Test Suite** | **120** | **Comprehensive System Core & Enhancement Coverage** | **120 / 120 (100%)** |
+| **Total Test Suite** | **122** | **Comprehensive System Core & Enhancement Coverage** | **122 / 122 (100%)** |
 
-All 120 automated test cases executed in **$8.93\text{ seconds}$** with zero failures, proving the structural robustness and regression resistance of the backend architecture.
+All 122 automated test cases executed in **$9.74\text{ seconds}$** with zero failures, proving the structural robustness and regression resistance of the backend architecture.
 
 ---
 
@@ -543,6 +543,6 @@ Key empirical milestones achieved in this chapter include:
 1. **Model Fine-Tuning Convergence**: Fine-tuned BERT Base Uncased over 549k records, achieving an **Accuracy of 98.68%**, a **Precision of 97.49%**, a **Recall of 97.86%**, and an **F1-Score of 97.67%**.
 2. **False-Positive Mitigation**: Engineered the in-memory 28-Bank Trusted Whitelist (`frozenset`) and URL Context Prepending, completely eliminating false alarms on legitimate financial institutions while preserving 98.5% detection on typosquatted clones (`rnaybank.com`).
 3. **Sub-400ms Asynchronous Latency SLA**: Achieved an average end-to-end response latency of **$363.36\text{ ms}$** via `asyncio.to_thread()` tensor offloading and `asyncio.gather()` parallel execution.
-4. **100% Automated CI/CD Test Validation**: Successfully executed **120 / 120 automated Pytest test cases** in 8.93 seconds with zero defects.
+4. **100% Automated CI/CD Test Validation**: Successfully executed **122 / 122 automated Pytest test cases** in 9.74 seconds with zero defects.
 
 These empirical results provide mathematical and operational validation for the system. The subsequent and final chapter—**Chapter 6: Discussions and Conclusion**—synthesises project achievements, reviews academic limitations, and outlines future research trajectories.

@@ -3,34 +3,18 @@ PhishGuard-AI — Response Envelope Schemas.
 ===========================================
 
 Defines the unified JSON response structure returned by all analysis
-endpoints.  The envelope follows the **JSend** convention extended with
+endpoints. The envelope follows the **JSend** convention extended with
 an ``orchestration`` directive consumed by the browser extension's
-content-script to decide whether to block page rendering.
+content-script to decide whether to block page rendering, and provides
+top-level convenience fields for direct threat intelligence consumption.
 
 Architecture Layer : DTO / Presentation
 Thesis Reference   : §3.5 — Outbound Data Contracts & Orchestration Signals
-
-Response Shape
---------------
-.. code-block:: json
-
-    {
-        "meta": {
-            "transaction_id": "uuid4",
-            "processing_time_ms": 142.7
-        },
-        "data": {
-            "semantic_analysis": { ... },
-            "mule_scan": { ... }
-        },
-        "orchestration": "BLOCK_RENDER | SAFE"
-    }
 """
 
 from __future__ import annotations
 
-from typing import Any
-
+from typing import Any, Optional
 from pydantic import BaseModel, Field
 
 
@@ -105,7 +89,7 @@ class DataBlock(BaseModel):
 
 
 # ==============================================================================
-# Top-Level Envelope
+# Top-Level Envelopes
 # ==============================================================================
 
 class AnalysisResponse(BaseModel):
@@ -126,6 +110,17 @@ class AnalysisResponse(BaseModel):
         description="Orchestration directive: 'BLOCK_RENDER' or 'SAFE'.",
         examples=["BLOCK_RENDER", "SAFE"],
     )
+
+    # Top-level unified fields for thesis and OpenAPI compatibility (§4.3.2)
+    status: str = Field(default="success", description="API execution status.")
+    verdict: Optional[str] = Field(default=None, description="Final orchestration directive ('BLOCK_RENDER' or 'SAFE').")
+    risk_score: Optional[float] = Field(default=None, description="Calibrated multi-vector risk probability.")
+    bert_score: Optional[float] = Field(default=None, description="Raw semantic threat probability from BERT.")
+    is_whitelisted: Optional[bool] = Field(default=None, description="True if domain matched 28-Bank Trusted Whitelist.")
+    brand_impersonation: Optional[dict[str, Any]] = Field(default=None, description="Brand impersonation profile.")
+    mule_accounts_flagged: Optional[list[dict[str, Any]]] = Field(default=None, description="List of matched mule accounts.")
+    execution_time_ms: Optional[float] = Field(default=None, description="Total server-side processing latency in ms.")
+    timestamp: Optional[str] = Field(default=None, description="ISO-8601 evaluation timestamp.")
 
     model_config = {
         "json_schema_extra": {
@@ -155,7 +150,49 @@ class AnalysisResponse(BaseModel):
                         },
                     },
                     "orchestration": "BLOCK_RENDER",
+                    "status": "success",
+                    "verdict": "BLOCK_RENDER",
+                    "risk_score": 0.985,
+                    "bert_score": 0.972418,
+                    "is_whitelisted": False,
+                    "mule_accounts_flagged": [
+                        {
+                            "account_number": "1234567890",
+                            "bank_name": "Maybank",
+                            "report_count": 14,
+                        }
+                    ],
+                    "execution_time_ms": 142.7,
                 }
             ]
         }
     }
+
+
+class QuishingAnalysisRequest(BaseModel):
+    """Payload schema for optical QR and Quishing forensic inspection (§4.3.3)."""
+
+    image_base64: str = Field(
+        ...,
+        title="Base64 Encoded QR Code Image",
+        description="Base64-encoded image bytes of the suspicious QR code.",
+    )
+    page_url: Optional[str] = Field(
+        None,
+        title="Page URL",
+        description="URL of the page where the QR code was rendered.",
+    )
+
+
+class QuishingAnalysisResponse(BaseModel):
+    """Forensic evaluation response for Quishing inspection."""
+
+    quishing_threat: bool = Field(..., description="True if payload is flagged as malicious.")
+    quishing_score: float = Field(..., description="Calibrated quishing forensic probability.")
+    decoded_payload: str = Field(..., description="Decoded URL or PayNet EMVCo string.")
+    verdict: str = Field(..., description="Defensive action: 'BLOCK_RENDER' or 'SAFE'.")
+    risk_factors: list[str] = Field(default_factory=list, description="Forensic risk flags.")
+    raw_payload: Optional[str] = Field(default=None, description="Exact raw decoded payload.")
+    is_duitnow_scheme: Optional[bool] = Field(default=None, description="True if DuitNow EMVCo QR code.")
+    extracted_destination_urls: Optional[list[str]] = Field(default_factory=list, description="Extracted URLs.")
+    extracted_mule_accounts: Optional[list[str]] = Field(default_factory=list, description="Extracted mule accounts.")

@@ -47,6 +47,8 @@ from schemas.response import (
     DataBlock,
     MetaBlock,
     MuleScanResult,
+    QuishingAnalysisRequest,
+    QuishingAnalysisResponse,
     SemanticResult,
 )
 from services.sanitizer import sanitize_dom
@@ -187,7 +189,8 @@ async def analyse_semantics(
     )
 
     # ── 2. ETL Sanitisation ──
-    sanitized_text: str = sanitize_dom(payload.dom_content)
+    raw_content = payload.dom_content or payload.text_content or ""
+    sanitized_text: str = sanitize_dom(raw_content)
     if not sanitized_text:
         logger.warning(
             "[%s] Sanitised text is empty — DOM may be purely structural.",
@@ -287,10 +290,10 @@ async def analyse_semantics(
     # ── 5. Smart Multi-Modal Correlated Orchestration Verdict ──
     brand_result = profile_brand_impersonation(url_str, sanitized_text)
     heur_result = analyze_url_heuristics(url_str)
-    lower_dom = sanitized_text.lower()
-    has_scam_keywords = any(kw.lower() in lower_dom for kw in BILINGUAL_SCAM_KEYWORDS)
+    combined_corpus = f"{url_str.lower()} {sanitized_text.lower()}"
+    has_scam_keywords = any(kw.lower() in combined_corpus for kw in BILINGUAL_SCAM_KEYWORDS)
     has_login_or_creds = any(
-        w in lower_dom
+        w in combined_corpus
         for w in (
             "login", "log in", "sign in", "signin", "password", "kata laluan",
             "tac", "otp", "pin", "credential", "security code", "masuk akaun"
@@ -300,13 +303,15 @@ async def analyse_semantics(
     # A genuine threat exhibits concrete corroborating fraud indicators:
     # 1. Registered or newly detected money-mule account / DuitNow proxy
     # 2. Brand impersonation targeting financial/tech brands on an unverified domain
-    # 3. Severe deceptive domain heuristics (IP hostname, punycode, deceptive subdomains) + phishing/login cues
-    # 4. Explicit social engineering / financial coercion phrasing
-    # 5. Phishing semantic label WITH login/credential input on an unverified domain
+    # 3. High-confidence BERT semantic threat probability (>= MALICIOUS_THRESHOLD)
+    # 4. Severe deceptive domain heuristics (IP hostname, punycode, deceptive subdomains) + phishing/login cues
+    # 5. Explicit social engineering / financial coercion phrasing
+    # 6. Phishing semantic label WITH login/credential input on an unverified domain
     is_corroborated_threat = (
         mule_result["mule_detected"]
         or bool(mule_result.get("flagged_accounts"))
         or brand_result["is_impersonation"]
+        or (bert_result["is_malicious"] and bert_result["confidence"] >= MALICIOUS_THRESHOLD)
         or (heur_result["is_suspicious"] and (bert_result["is_malicious"] or has_scam_keywords))
         or (has_scam_keywords and bert_result["is_malicious"])
         or (bert_result["is_malicious"] and (has_login_or_creds or heur_result["is_suspicious"]))
@@ -353,12 +358,12 @@ async def analyse_semantics(
             await db.commit()
 
             from api.dashboard_endpoints import broadcast_threat_event
-            asyncio.create_task(broadcast_threat_event("new_threat", {
+            broadcast_threat_event("new_threat", {
                 "log_id": log_id,
                 "malicious_url": str(payload.url),
                 "bert_score": round(bert_result["confidence"], 4),
                 "timestamp": "Just now",
-            }))
+            })
         except Exception as e:
             logger.warning("[%s] Real-time telemetry ingestion error: %s", transaction_id, e)
 
@@ -382,6 +387,15 @@ async def analyse_semantics(
             ),
         ),
         orchestration=verdict,
+        status="success",
+        verdict=verdict,
+        risk_score=round(float(bert_result["confidence"]) if not is_trusted else 0.0, 4),
+        bert_score=round(float(bert_result["confidence"]), 6),
+        is_whitelisted=is_trusted,
+        brand_impersonation=brand_result,
+        mule_accounts_flagged=mule_result.get("flagged_accounts", []),
+        execution_time_ms=elapsed_ms,
+        timestamp=time.strftime("%Y-%m-%dT%H:%M:%S+08:00"),
     )
 
     logger.info(
@@ -391,3 +405,50 @@ async def analyse_semantics(
     )
 
     return response
+
+
+# ==============================================================================
+# POST /api/v1/analyze/quishing
+# ==============================================================================
+
+@router.post(
+    "/analyze/quishing",
+    response_model=QuishingAnalysisResponse,
+    summary="Decode QR Code and Forensically Audit Embedded Payload (§4.3.3)",
+    description=(
+        "Accepts a base64-encoded image containing a QR code matrix, decodes "
+        "the embedded payload via OpenCV cv2.QRCodeDetector, and audits the payload "
+        "against PayNet EMVCo DuitNow payment specifications and phishing threat indicators."
+    ),
+    status_code=200,
+)
+@router.post(
+    "/analyse/quishing",
+    response_model=QuishingAnalysisResponse,
+    include_in_schema=False,
+    status_code=200,
+)
+async def analyze_quishing_endpoint(
+    payload: QuishingAnalysisRequest,
+    _api_key: str = Depends(verify_api_key),
+) -> QuishingAnalysisResponse:
+    """Optical Quishing forensic scan endpoint."""
+    from services.quishing_scanner import decode_and_scan_qr_image
+
+    scan_res = decode_and_scan_qr_image(payload.image_base64)
+    quish_score = float(scan_res.get("quishing_score", 0.0))
+    is_threat = quish_score >= 0.70 or bool(scan_res.get("extracted_mule_accounts"))
+    verdict = "BLOCK_RENDER" if is_threat else "SAFE"
+
+    return QuishingAnalysisResponse(
+        quishing_threat=is_threat,
+        quishing_score=quish_score,
+        decoded_payload=scan_res.get("raw_payload", ""),
+        verdict=verdict,
+        risk_factors=scan_res.get("risk_factors", []),
+        raw_payload=scan_res.get("raw_payload", ""),
+        is_duitnow_scheme=scan_res.get("is_duitnow_scheme", False),
+        extracted_destination_urls=scan_res.get("extracted_destination_urls", []),
+        extracted_mule_accounts=scan_res.get("extracted_mule_accounts", []),
+    )
+

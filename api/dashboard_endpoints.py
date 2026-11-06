@@ -36,42 +36,45 @@ router: Final[APIRouter] = APIRouter(
 )
 
 # ── Live Real-Time SSE Stream Subscribers Channel ──
-_SSE_SUBSCRIBERS: Final[set[asyncio.Queue]] = set()
+_SSE_CLIENTS: Final[set[asyncio.Queue]] = set()
+_SSE_SUBSCRIBERS: Final[set[asyncio.Queue]] = _SSE_CLIENTS
 
-async def broadcast_threat_event(event_type: str, data: dict[str, Any]) -> None:
-    """Broadcast real-time threat intelligence event to all connected dashboard SSE subscribers."""
-    payload = f"event: {event_type}\ndata: {json.dumps(data)}\n\n"
+def broadcast_threat_event(event_type: str, data: dict[str, Any]) -> None:
+    """Broadcast an event to all connected dashboard SSE clients."""
+    payload = json.dumps({"event": event_type, "data": data})
     dead = set()
-    for queue in list(_SSE_SUBSCRIBERS):
+    for queue in list(_SSE_CLIENTS):
         try:
             queue.put_nowait(payload)
         except Exception:
             dead.add(queue)
-    _SSE_SUBSCRIBERS.difference_update(dead)
+    _SSE_CLIENTS.difference_update(dead)
 
 
 @router.get(
     "/stream",
-    summary="Real-time Server-Sent Events (SSE) stream for live threat telemetry",
+    summary="Real-time Server-Sent Events stream for live threat telemetry",
 )
 async def sse_threat_stream(request: Request) -> StreamingResponse:
-    """Server-Sent Events (SSE) stream for real-time threat telemetry updates."""
-    queue: asyncio.Queue[str] = asyncio.Queue(maxsize=100)
-    _SSE_SUBSCRIBERS.add(queue)
+    """Stream real-time threat intelligence and telemetry via Server-Sent Events (SSE)."""
+    client_queue: asyncio.Queue = asyncio.Queue(maxsize=100)
+    _SSE_CLIENTS.add(client_queue)
 
     async def event_generator():
         try:
-            yield f"event: connected\ndata: {json.dumps({'status': 'connected'})}\n\n"
+            # Send initial connected ping
+            yield "event: connected\ndata: {\"status\": \"connected\"}\n\n"
             while True:
                 if await request.is_disconnected():
                     break
                 try:
-                    msg = await asyncio.wait_for(queue.get(), timeout=15.0)
-                    yield msg
+                    message = await asyncio.wait_for(client_queue.get(), timeout=15.0)
+                    yield f"event: update\ndata: {message}\n\n"
                 except asyncio.TimeoutError:
-                    yield ": keepalive\n\n"
+                    # Keep-alive heartbeat
+                    yield ": heartbeat\n\n"
         finally:
-            _SSE_SUBSCRIBERS.discard(queue)
+            _SSE_CLIENTS.discard(client_queue)
 
     return StreamingResponse(
         event_generator(),
@@ -289,7 +292,7 @@ async def quick_scan_url(request: Request, payload: QuickScanRequest) -> dict[st
         try:
             from database.repository import log_threat_telemetry
             log_id = await log_threat_telemetry(target_url, score, db)
-            await broadcast_threat_event("new_threat", {
+            broadcast_threat_event("new_threat", {
                 "log_id": log_id,
                 "malicious_url": target_url,
                 "bert_score": round(score, 4),
@@ -703,63 +706,6 @@ async def get_distributions(request: Request) -> dict[str, Any]:
     }
 
 
-
-
-# ==============================================================================
-# GET /api/v1/dashboard/stream (Server-Sent Events)
-# ==============================================================================
-
-import json
-import asyncio
-from fastapi.responses import StreamingResponse
-
-# Set of active subscriber queues for broadcasting live threat events
-_SSE_CLIENTS: set[asyncio.Queue] = set()
-
-def broadcast_threat_event(event_type: str, data: dict[str, Any]) -> None:
-    """Broadcast an event to all connected dashboard SSE clients."""
-    payload = json.dumps({"event": event_type, "data": data})
-    for queue in list(_SSE_CLIENTS):
-        try:
-            queue.put_nowait(payload)
-        except Exception:
-            _SSE_CLIENTS.discard(queue)
-
-
-@router.get(
-    "/stream",
-    summary="Real-time Server-Sent Events stream",
-)
-async def sse_threat_stream(request: Request) -> StreamingResponse:
-    """Stream real-time threat intelligence and telemetry via Server-Sent Events (SSE)."""
-    client_queue: asyncio.Queue = asyncio.Queue(maxsize=100)
-    _SSE_CLIENTS.add(client_queue)
-
-    async def event_generator():
-        try:
-            # Send initial connected ping
-            yield "event: connected\ndata: {\"status\": \"connected\"}\n\n"
-            while True:
-                if await request.is_disconnected():
-                    break
-                try:
-                    message = await asyncio.wait_for(client_queue.get(), timeout=15.0)
-                    yield f"event: update\ndata: {message}\n\n"
-                except asyncio.TimeoutError:
-                    # Keep-alive heartbeat
-                    yield ": heartbeat\n\n"
-        finally:
-            _SSE_CLIENTS.discard(client_queue)
-
-    return StreamingResponse(
-        event_generator(),
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",
-        },
-    )
 
 
 # ==============================================================================

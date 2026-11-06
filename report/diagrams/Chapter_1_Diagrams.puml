@@ -169,7 +169,7 @@ partition "Agile Development (Microservice & API Architecture)" {
     :7. Engineer Regex Bytecode & SQLite 3NF Mule Registry;
     :8. Implement In-Memory 28-Bank Trusted Whitelist;
     :9. Build Live SOC Telemetry Dashboard & Geo Radar;
-    :10. Unit & Integration Testing (Pytest Suite - 120/120 Tests);
+    :10. Unit & Integration Testing (Pytest Suite - 122/122 Tests);
 }
 
 partition "System Deployment & Continuous Verification" {

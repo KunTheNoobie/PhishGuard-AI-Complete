@@ -143,22 +143,26 @@ FastAPI automatically generates interactive **OpenAPI 3.0 (Swagger UI)** documen
 ### 4.3.2 Primary Endpoint Contract: `POST /api/v1/analyze/semantics`
 This core endpoint orchestrates the real-time threat decision pipeline.
 
-#### Request JSON Schema (`SemanticAnalysisRequest`):
+#### Request JSON Schema (`SemanticAnalysisRequest` / `WebPayload`):
 ```json
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "SemanticAnalysisRequest",
   "type": "object",
-  "required": ["url", "text_content"],
+  "required": ["url"],
   "properties": {
     "url": {
       "type": "string",
       "format": "uri",
       "description": "The absolute target URL visited by the browser client."
     },
+    "dom_content": {
+      "type": "string",
+      "description": "Raw outerHTML captured by the browser extension content script."
+    },
     "text_content": {
       "type": "string",
-      "description": "Sanitised innerText extracted from the webpage DOM."
+      "description": "Alternative sanitised innerText extracted from the webpage DOM."
     },
     "origin": {
       "type": "string",
@@ -173,18 +177,27 @@ This core endpoint orchestrates the real-time threat decision pipeline.
 }
 ```
 
-#### Response JSON Schema (`SemanticAnalysisResponse`):
+#### Response JSON Schema (`SemanticAnalysisResponse` / `AnalysisResponse`):
 ```json
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "SemanticAnalysisResponse",
   "type": "object",
-  "required": ["verdict", "risk_score", "bert_score", "is_whitelisted", "execution_time_ms"],
+  "required": ["orchestration", "verdict", "risk_score", "bert_score", "is_whitelisted", "meta", "data", "execution_time_ms"],
   "properties": {
+    "orchestration": {
+      "type": "string",
+      "enum": ["BLOCK_RENDER", "SAFE"],
+      "description": "Primary orchestration directive consumed by the browser extension."
+    },
     "verdict": {
       "type": "string",
       "enum": ["BLOCK_RENDER", "SAFE"],
-      "description": "Final orchestration directive dispatched to browser extension."
+      "description": "Mirrors orchestration directive for top-level consumers."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["success", "error"]
     },
     "risk_score": {
       "type": "number",
@@ -206,8 +219,9 @@ This core endpoint orchestrates the real-time threat decision pipeline.
       "type": "object",
       "properties": {
         "is_impersonation": { "type": "boolean" },
-        "targeted_brand": { "type": "string" },
-        "similarity_index": { "type": "number" }
+        "target_brand": { "type": "string" },
+        "impersonation_index": { "type": "number" },
+        "is_official_domain": { "type": "boolean" }
       }
     },
     "mule_accounts_flagged": {
@@ -217,14 +231,46 @@ This core endpoint orchestrates the real-time threat decision pipeline.
         "properties": {
           "account_number": { "type": "string" },
           "bank_name": { "type": "string" },
-          "report_count": { "type": "integer" },
-          "platform_flagged": { "type": "string" }
+          "report_count": { "type": "integer" }
+        }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "properties": {
+        "transaction_id": { "type": "string" },
+        "processing_time_ms": { "type": "number" }
+      }
+    },
+    "data": {
+      "type": "object",
+      "properties": {
+        "semantic_analysis": {
+          "type": "object",
+          "properties": {
+            "label": { "type": "string" },
+            "confidence": { "type": "number" },
+            "is_malicious": { "type": "boolean" },
+            "sanitized_text_preview": { "type": "string" }
+          }
+        },
+        "mule_scan": {
+          "type": "object",
+          "properties": {
+            "accounts_extracted": { "type": "array", "items": { "type": "string" } },
+            "flagged_accounts": { "type": "array" },
+            "mule_detected": { "type": "boolean" }
+          }
         }
       }
     },
     "execution_time_ms": {
       "type": "number",
       "description": "Total server-side processing latency in milliseconds."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
     }
   }
 }

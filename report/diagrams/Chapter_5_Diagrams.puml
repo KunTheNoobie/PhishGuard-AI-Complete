@@ -134,10 +134,10 @@ skinparam ComponentFontColor #f8fafc
 skinparam PackageBorderColor #64748b
 skinparam PackageFontColor #94a3b8
 
-title Figure 5.4: Automated CI/CD Test Suite Architecture (120/120 Tests - 100% Pass Rate)
+title Figure 5.4: Automated CI/CD Test Suite Architecture (122/122 Tests - 100% Pass Rate)
 
 package "PhishGuard-AI Automated Test Suite (Pytest & pytest-asyncio)" {
-    [tests/test_endpoints.py\n(22 Tests - API Auth, Routes, & HTTP Verdicts)] as T1
+    [tests/test_endpoints.py\n(24 Tests - API Auth, Routes, & HTTP Verdicts)] as T1
     [tests/test_enhancements.py\n(46 Tests - Whitelist, BII, Quishing & CTI)] as T2
     [tests/test_mule_scanner.py\n(14 Tests - 8-Bank Regex & Semakmule SQL)] as T3
     [tests/test_nlp_engine.py\n(9 Tests - BERT Tokenization & Mock Engine)] as T4
@@ -159,10 +159,10 @@ T7 --> TestApp : Optical Logo & QR Tests
 note bottom of TestApp
   =========================================
   PYTEST AUTOMATED TEST RUNNER VERDICT:
-  • Total Test Cases Executed: 120
-  • Total Passed:              120 (100.0%)
+  • Total Test Cases Executed: 122
+  • Total Passed:              122 (100.0%)
   • Total Failed / Errored:    0   (0.00%)
-  • Total Execution Runtime:   8.93 seconds
+  • Total Execution Runtime:   9.74 seconds
   =========================================
 end note
 

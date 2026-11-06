@@ -35,7 +35,7 @@ In machine learning engineering, this linear paradigm fails catastrophically bec
 |   │ 1. Agile Sprint Management  ──> Bi-weekly sprint backlog, continuous microservice refactoring│  |
 |   │ 2. MLOps Data Pipeline      ──> Multi-lingual dataset harvesting, cleaning & tokenisation   │  |
 |   │ 3. Automated Model Auditing ──> Loss convergence tracking, F1 evaluation & tensor profiling │  |
-|   │ 4. Continuous Integration   ──> Pytest CI/CD (120/120 automated test cases enforcing 100%) │  |
+|   │ 4. Continuous Integration   ──> Pytest CI/CD (122/122 automated test cases enforcing 100%) │  |
 |   │ 5. ASGI Microservice Pack   ──> Sub-400ms SLA validation on Uvicorn asynchronous server     │  |
 |   └─────────────────────────────────────────────────────────────────────────────────────────────┘  |
 +----------------------------------------------------------------------------------------------------+
@@ -84,7 +84,7 @@ partition "Agile Backend Architecture & Integration (Sprint 3)" {
 }
 
 partition "System Testing, Hardening & CI/CD (Sprint 4)" {
-    :Execute Automated Pytest Suite (120/120 Unit & Integration Tests);
+    :Execute Automated Pytest Suite (122/122 Unit & Integration Tests);
     :Stress Testing & Concurrency Profiling on Uvicorn ASGI;
     :Deploy Live SOC Intelligence Dashboard & CTI Exporters;
 }
@@ -105,7 +105,7 @@ The project was executed across four structured engineering sprints spanning two
 | **Sprint 1** | **Data Engineering & Requirements Analysis** | • Ingested and cleaned the 549,346-record Kaggle phishing corpus and localised Malaysian scam datasets.<br>• Designed the normalised Third Normal Form (**3NF**) relational database schema in SQLite for money mule registries.<br>• Formulated functional, non-functional, and negative misuse requirements. |
 | **Sprint 2** | **Deep Learning Model Training & Optimisation** | • Instantiated pre-trained `bert-base-uncased` transformer architecture in PyTorch.<br>• Applied WordPiece subword tokenisation to raw DOM text and URL strings.<br>• Executed supervised fine-tuning with the AdamW optimiser, tracking loss convergence and early stopping.<br>• Evaluated model checkpoints across Precision, Recall, F1-Score, and ROC-AUC metrics. |
 | **Sprint 3** | **FastAPI Microservice & Asynchronous Integration** | • Developed asynchronous RESTful endpoints in FastAPI (`POST /api/v1/analyze/semantics`).<br>• Engineered pre-compiled Python Regex bytecode for 8 Malaysian bank formats.<br>• Implemented asynchronous database querying via `aiosqlite` in Write-Ahead Logging (WAL) mode.<br>• Integrated `asyncio.to_thread()` and `asyncio.gather()` for parallel, non-blocking execution. |
-| **Sprint 4** | **System Hardening, Testing & SOC Deployment** | • Constructed the automated **Pytest Test Suite** comprising **120 unit and integration test cases**.<br>• Built the in-memory **28-Bank Trusted Domain Whitelist (`frozenset`)** for 0ms false-positive avoidance.<br>• Deployed the Live SOC Dashboard with Server-Sent Events (SSE) telemetry, 24h GMT+8 velocity charts, and STIX 2.1 CTI exporters.<br>• Conducted stress testing and concurrency benchmarking on the Uvicorn ASGI server. |
+| **Sprint 4** | **System Hardening, Testing & SOC Deployment** | • Constructed the automated **Pytest Test Suite** comprising **122 unit and integration test cases**.<br>• Built the in-memory **28-Bank Trusted Domain Whitelist (`frozenset`)** for 0ms false-positive avoidance.<br>• Deployed the Live SOC Dashboard with Server-Sent Events (SSE) telemetry, 24h GMT+8 velocity charts, and STIX 2.1 CTI exporters.<br>• Conducted stress testing and concurrency benchmarking on the Uvicorn ASGI server. |
 
 ---
 
@@ -244,7 +244,7 @@ The Non-Functional Requirements establish rigorous operational constraints gover
 | | **NFR 2.3** | In-Memory Whitelist SLA | Trusted domain whitelist lookups utilising Python `frozenset` hash tables shall resolve in **$< 1.0\text{ millisecond}$**. |
 | **3.0 Reliability** | **NFR 3.1** | Event Loop Availability | CPU-bound tensor operations shall be offloaded via `asyncio.to_thread()`, ensuring the ASGI event loop achieves 99.9% availability. |
 | | **NFR 3.2** | Database Concurrency | The SQLite database shall operate in **Write-Ahead Logging (WAL)** mode with connection pooling, supporting concurrent reads and writes without locking. |
-| | **NFR 3.3** | Test Suite Coverage | The codebase shall maintain a 100% pass rate across all **120 automated Pytest test cases** in the continuous integration pipeline. |
+| | **NFR 3.3** | Test Suite Coverage | The codebase shall maintain a 100% pass rate across all **122 automated Pytest test cases** in the continuous integration pipeline. |
 | **4.0 Maintainability** | **NFR 4.1** | Open API Standard | The backend shall automatically generate interactive Swagger UI / OpenAPI 3.0 documentation at `/docs` reflecting all active schemas. |
 | | **NFR 4.2** | Modular Architecture | The codebase shall maintain strict separation of concerns across `/api/` routers, `/services/` domain engines, and `/tests/` suites. |
 
@@ -278,7 +278,7 @@ The software ecosystem was selected based on performance, asynchronous capabilit
 | **BeautifulSoup4 & lxml** | BS4 4.12+ | Executes high-speed DOM sanitisation, stripping executable scripts and isolating semantic natural language. |
 | **Scikit-learn & Pandas** | Scikit-Learn 1.5+ / Pandas 2.2+ | Executes dataset stratified splitting, feature matrix vectorisation, and confusion matrix computation. |
 | **OpenCV (cv2)** | OpenCV-Python 4.10+ | Executes optical matrix decoding (`cv2.QRCodeDetector`) for Quishing PayNet EMVCo QR forensics. |
-| **Pytest & pytest-asyncio** | Pytest 9.1+ | Powers the automated CI/CD test suite enforcing 120/120 passing unit and integration tests. |
+| **Pytest & pytest-asyncio** | Pytest 9.1+ | Powers the automated CI/CD test suite enforcing 122/122 passing unit and integration tests. |
 
 ---
 
@@ -466,7 +466,7 @@ An AUC approaching $1.0$ indicates exceptional mathematical separability between
 This chapter has established the methodological engineering foundation, rigorous system requirements, and data science mathematical formulations governing the **PhishGuard-AI** backend platform.
 
 Key methodologies and analytical outputs established in this chapter include:
-1. **Agile-MLOps Hybrid Lifecycle**: Structured development into four focused sprints combining rapid API refactoring with empirical machine learning tuning and automated Pytest CI/CD (120/120 tests passing).
+1. **Agile-MLOps Hybrid Lifecycle**: Structured development into four focused sprints combining rapid API refactoring with empirical machine learning tuning and automated Pytest CI/CD (122/122 tests passing).
 2. **Adversarial Requirements & Misuse Modelling**: Formulated legal constraints (PDPA data sovereignty requiring on-premises BERT deployment) and derived defensive mitigations against DoS flooding, typosquatting evasion, and SQL injection.
 3. **Comprehensive Functional & Non-Functional Requirements**: Mapped 19 Functional Requirements across 5 subsystems and established strict Non-Functional SLAs ($< 400\text{ ms}$ latency, Model Singleton pattern, and WAL mode concurrency).
 4. **Data Science ETL & Tokenisation Pipeline**: Detailed BeautifulSoup HTML sanitisation, BERT WordPiece subword decomposition, AdamW loss optimisation, and confusion matrix evaluation metrics.
