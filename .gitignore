@@ -42,6 +42,14 @@ visual_identity/data/
 visual_identity/runs/
 visual_identity/.ultralytics/
 
+# Administrative forms & appointment records (Never push student personal forms to GitHub)
+*FORM*
+*Form*
+*Appointment*
+*appointment*
+*Record*
+*record*
+
 # Convenience batch scripts (user-local)
 SETUP_WINDOWS.bat
 START_BACKEND.bat
