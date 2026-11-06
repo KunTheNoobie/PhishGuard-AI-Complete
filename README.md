@@ -6,7 +6,7 @@
   <p>Real-time financial scam detection, quishing defense, money-mule syndicate tracking, and automated SOC incident mitigation powered by fine-tuned BERT NLP, YOLOv8 Computer Vision, PayNet EMVCo QR decoding, Brand Impersonation Profiling, and STIX 2.1 Threat Sharing.</p>
 
   [![CI/CD Test Pipeline](https://github.com/KunTheNoobie/PhishGuard-AI-Complete/actions/workflows/test.yml/badge.svg)](https://github.com/KunTheNoobie/PhishGuard-AI-Complete/actions)
-  [![Tests: 120 Passed](https://img.shields.io/badge/Tests-120%20Passed%20(100%25)-brightgreen)](https://github.com/KunTheNoobie/PhishGuard-AI-Complete)
+  [![Tests: 122 Passed](https://img.shields.io/badge/Tests-122%20Passed%20(100%25)-brightgreen)](https://github.com/KunTheNoobie/PhishGuard-AI-Complete)
   [![PhishGuard-AI](https://img.shields.io/badge/Version-v3.2.0%20Enterprise-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
   [![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B%20%2F%203.14-blue.svg?logo=python&logoColor=white)](https://python.org)
   [![Manifest V3](https://img.shields.io/badge/Chrome%20Extension-Manifest%20V3-4285F4?logo=googlechrome&logoColor=white)](https://developer.chrome.com/docs/extensions/mv3/intro/)
@@ -135,7 +135,7 @@ Continuous live tracking and zero false-positive protection across leading finan
 | **Real-Time Streaming** | Server-Sent Events (SSE) via `asyncio.Queue` broadcast |
 | **Frontend Dashboard** | HTML5, Vanilla JavaScript (ES6+), High-Contrast Glassmorphism CSS, SVG Canvas |
 | **Threat Sharing Formats** | OASIS STIX 2.1 JSON, ArcSight/Splunk CEF, RFC 5424 Syslog, CSV |
-| **Testing & CI/CD** | Pytest, Asyncio Test Suite (120 test cases, 100% pass), GitHub Actions |
+| **Testing & CI/CD** | Pytest, Asyncio Test Suite (122 test cases, 100% pass), GitHub Actions |
 
 ---
 
@@ -175,7 +175,7 @@ python -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload
 
 ## 🧪 Automated Testing Suite
 
-PhishGuard-AI includes a comprehensive unit and integration test suite with **120 tests passing with 100% code coverage across all modules**:
+PhishGuard-AI includes a comprehensive unit and integration test suite with **122 tests passing with 100% code coverage across all modules**:
 
 ```powershell
 .\venv\Scripts\python.exe -m pytest
@@ -186,18 +186,17 @@ PhishGuard-AI includes a comprehensive unit and integration test suite with **12
 platform win32 -- Python 3.14.3, pytest-9.1.1, pluggy-1.6.0
 rootdir: C:\Users\yiler\Downloads\PhishGuard-AI-Complete
 plugins: anyio-4.14.0, locust-2.44.4, asyncio-1.4.0
-collected 120 items
+collected 122 items
 
-tests\test_endpoints.py ......................                           [ 18%]
-tests\test_enhancements.py ............................................. [ 55%]
-.                                                                        [ 56%]
+tests\test_endpoints.py ........................                         [ 19%]
+tests\test_enhancements.py .............................................. [ 57%]
 tests\test_mule_scanner.py ..............                                [ 68%]
 tests\test_nlp_engine.py .........                                       [ 75%]
 tests\test_repository.py ........                                        [ 82%]
 tests\test_sanitizer.py .............                                    [ 93%]
 tests\test_visual.py ........                                            [100%]
 
-======================= 120 passed in 9.77s ====================================
+======================= 122 passed in 9.20s ====================================
 ```
 
 ---
