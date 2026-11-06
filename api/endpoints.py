@@ -452,3 +452,24 @@ async def analyze_quishing_endpoint(
         extracted_mule_accounts=scan_res.get("extracted_mule_accounts", []),
     )
 
+
+# ==============================================================================
+# GET /api/v1/mule-registry (Browser Extension & Direct Query Alias)
+# ==============================================================================
+
+@router.get(
+    "/mule-registry",
+    summary="Direct Mule Registry Query Alias",
+    include_in_schema=False,
+)
+@router.get(
+    "/mules",
+    summary="Direct Mule Registry Query Alias",
+    include_in_schema=False,
+)
+async def direct_mule_registry_alias(request: Request) -> dict[str, Any]:
+    """Expose mule registry directly under /api/v1/mule-registry for extension clients."""
+    from api.dashboard_endpoints import get_mule_registry
+    return await get_mule_registry(request)
+
+
