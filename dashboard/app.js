@@ -24,7 +24,8 @@ function applyTheme(t) {
     localStorage.setItem("phishguard_theme", t);
 }
 
-const savedTheme = localStorage.getItem("phishguard_theme") || "cyberpunk";
+const savedTheme = ["cyberpunk", "matrix", "abyss"].includes(localStorage.getItem("phishguard_theme"))
+    ? localStorage.getItem("phishguard_theme") : "cyberpunk";  // ignores retired themes such as "apple"
 applyTheme(savedTheme);
 
 const $themeSelector = document.getElementById("themeSelector");
