@@ -1,0 +1,44 @@
+{
+  "heuristics_only": {
+    "rule": "block if any URL heuristic indicator is present",
+    "tp": 22,
+    "fp": 1,
+    "fn": 38,
+    "tn": 59,
+    "n": 120,
+    "accuracy": 0.675,
+    "precision": 0.9565,
+    "recall": 0.3667,
+    "f1": 0.5301,
+    "false_positive_rate": 0.0167,
+    "false_negative_rate": 0.6333,
+    "latency_ms": {
+      "mean": 0.0152,
+      "p95": 0.019
+    }
+  },
+  "visual_yolov8n": {
+    "available": true,
+    "screenshots": [
+      "cimb.jpg",
+      "hong_leong_bank.jpg",
+      "maybank.jpg",
+      "public_bank.jpg",
+      "rhb.jpg"
+    ],
+    "resolution": "1600x900",
+    "calls": 50,
+    "latency_ms": {
+      "mean": 65.46,
+      "p50": 64.446,
+      "p95": 72.54
+    },
+    "note": "CPU inference including base64 decoding; page-level F1 not measurable on the HTML benchmark.",
+    "logo_detection_validation": {
+      "precision": 0.979,
+      "recall": 0.996,
+      "map50": 0.991,
+      "source": "visual_identity/runs/phishguard_logo_yolov8n/results.csv, epoch 46"
+    }
+  }
+}

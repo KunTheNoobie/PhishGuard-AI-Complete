@@ -11,7 +11,8 @@ Interactive:
     locust -f tests/locustfile.py --host http://127.0.0.1:8000
 
 Headless (the form used for the dissertation benchmark; see
-``evaluation/README.md`` for the exact commands and server settings):
+the *Evaluation artefacts* section of
+``README.md`` for the exact commands and server settings):
     locust -f tests/locustfile.py --host http://127.0.0.1:8000 --headless \
            -u 50 -r 5 -t 60s --csv evaluation/results/locust/run_50u
 

@@ -361,7 +361,7 @@ def _write_summary(out_dir: Path, result: dict[str, Any]) -> None:
     for item in result["misclassified"]:
         kind = "false negative" if item["label"] == 1 else "false positive"
         lines.append(f"- {item['id']} ({item['category']}, {kind}): {item['url']}")
-    (out_dir / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    (out_dir / "summary.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def main() -> None:

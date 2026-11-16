@@ -1,5 +1,18 @@
 # Changelog
 
+## Documentation and report figures — 16 November 2026
+
+No change to the behaviour of the service.
+
+- **Figure generator** — `evaluation/figkit.py`, `evaluation/figures_diagrams.py` and a rewritten
+  `evaluation/make_report_figures.py` produce all 30 report figures (architecture, ERD, sequence, activity,
+  use-case, class, security layers, deployment, methodology, threat model, evaluation charts) at 300 DPI
+  from measured results. `evaluation/benchmark_components.py` measures per-detector latency and F1.
+- **Removed** the PlantUML sources (`report/diagrams/`), the Markdown chapter exports under `report/`,
+  the legacy image `report/image55_master.png`, the superseded `fig_*.png` charts and the outdated
+  ad-hoc script `tests/validate_live.py`. The dissertation is maintained only as the Word document.
+- `evaluation/README.md` merged into `README.md`; benchmark summaries are written as `summary.txt`.
+
 ## v3.2.0 — 16 November 2026
 
 Supervisor: Dr. Ng Yen Phing. Backend / AI core: Liew Yi Ler (Module 1).
@@ -13,7 +26,7 @@ causes: the BERT model is a *URL* classifier but was being fed page text; a bran
 anywhere in page text counted as impersonation; and credential keywords were matched as
 substrings ("pin" in "shopping"). v3.2.0 fixes the decision logic and hardens the API.
 On the same benchmark v3.2.0 scores 97.5 % accuracy with 0 false positives
-(see `evaluation/README.md` for the full method and caveats).
+(see the *Evaluation artefacts* section of `README.md` for the full method and caveats).
 
 ### Detection logic
 
