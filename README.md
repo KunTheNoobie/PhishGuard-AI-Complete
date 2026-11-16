@@ -367,12 +367,21 @@ performance on synthetic compositions, not on live phishing pages.
 
 ### 6. Report figures
 
-Every chart and diagram in the dissertation (`report/PhishGuard-AI_Project_1_&_2_Report_LiewYiLer.docx`) is generated from the files above by one script, at 300 DPI with a single palette and typeface (`evaluation/figkit.py`, `evaluation/figures_diagrams.py`). No hand-drawn or PlantUML diagrams are used.
+The dissertation (`report/PhishGuard-AI_Project_1_&_2_Report_LiewYiLer.docx`) uses three kinds of figure, all at 300 DPI:
+
+* **Architecture, UML, ERD, sequence, activity, deployment and workflow diagrams** are native draw.io files in
+  `report/diagrams_drawio/`. Open one in [diagrams.net](https://app.diagrams.net) (or the draw.io desktop app) to edit it,
+  then export it as PNG at 300 DPI with a white background into `report/figures/` under the same name.
+* **Quantitative charts** (confusion matrices, ROC, false-positive comparison, Locust latency and throughput, test and
+  coverage breakdown, training loss) are generated from the committed results by `evaluation/make_report_figures.py`
+  in the same palette as the diagrams (`evaluation/figkit.py`).
+* **Screenshots** (`report/figures/ui_*.png`) were captured from the running v3.2.0 system with Playwright driving
+  headless Microsoft Edge with the extension loaded.
 
 ```bash
 python -m evaluation.benchmark_components      # per-component latency and F1 (trade-off chart)
-python -m evaluation.make_report_figures       # all figures -> report/figures/*.png
-python -m evaluation.make_report_figures erd sequence   # regenerate selected figures only
+python -m evaluation.make_report_figures       # all charts -> report/figures/*.png
+python -m evaluation.make_report_figures roc tests_coverage   # regenerate selected charts only
 ```
 
 ---

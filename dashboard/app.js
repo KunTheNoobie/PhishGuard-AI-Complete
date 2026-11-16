@@ -1532,6 +1532,64 @@ function initSseStream() {
 // ORCHESTRATOR
 // ═══════════════════════════════════════════════════════════════════
 
+// ── Mule report review queue (GET /mule-reports, POST /mule-reports/{id}/review) ──
+async function loadMuleReviewQueue() {
+    const body = document.getElementById("muleReviewBody");
+    const badge = document.getElementById("muleReviewCount");
+    const filter = document.getElementById("muleReviewStatus");
+    if (!body) return;
+    try {
+        const status = filter ? filter.value : "PENDING";
+        const data = await apiFetch(`/mule-reports?status=${encodeURIComponent(status)}&limit=100`);
+        if (badge) badge.textContent = String(data.count);
+        if (!data.reports.length) {
+            body.innerHTML = `<tr class="table-empty"><td colspan="8">No ${escapeHtml(status.toLowerCase())} reports.</td></tr>`;
+            return;
+        }
+        body.innerHTML = data.reports.map((r) => {
+            const pending = r.status === "PENDING";
+            const actions = pending
+                ? `<button class="action-btn action-btn--primary review-btn" data-id="${r.report_id}" data-decision="APPROVE">Approve</button>
+                   <button class="action-btn review-btn" data-id="${r.report_id}" data-decision="REJECT">Reject</button>`
+                : `<span style="opacity:0.7">${r.reviewed_at ? escapeHtml(formatTimestamp(r.reviewed_at)) : "—"}</span>`;
+            return `<tr>
+                <td>${r.report_id}</td>
+                <td style="font-family: var(--font-mono, monospace);">${escapeHtml(r.account_number)}</td>
+                <td>${escapeHtml(r.bank_name || "Unknown")}</td>
+                <td style="font-family: var(--font-mono, monospace); max-width:260px;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(r.page_url || "—")}</td>
+                <td>${escapeHtml(r.source || "extension")}</td>
+                <td>${escapeHtml(formatTimestamp(r.created_at))}</td>
+                <td><span class="report-badge ${pending ? "report-badge--warning" : (r.status === "APPROVED" ? "report-badge--danger" : "report-badge--info")}">${escapeHtml(r.status)}</span></td>
+                <td style="white-space:nowrap;">${actions}</td>
+            </tr>`;
+        }).join("");
+    } catch (err) {
+        body.innerHTML = `<tr class="table-empty"><td colspan="8">Review queue unavailable: ${escapeHtml(err.message)}</td></tr>`;
+    }
+}
+
+document.addEventListener("click", async (event) => {
+    const btn = event.target.closest(".review-btn");
+    if (!btn) return;
+    btn.disabled = true;
+    try {
+        const outcome = await apiFetch(`/mule-reports/${btn.dataset.id}/review`, {
+            method: "POST",
+            body: JSON.stringify({ decision: btn.dataset.decision }),
+        });
+        showCyberToast(btn.dataset.decision === "APPROVE" ? "success" : "info", `Report ${btn.dataset.id} ${outcome.status}`,
+            btn.dataset.decision === "APPROVE" ? "Account promoted into the mule registry." : "Report closed without blocking.");
+        await refreshAll();
+    } catch (err) {
+        showCyberToast("error", "Review failed", err.message);
+        btn.disabled = false;
+    }
+});
+
+document.addEventListener("change", (event) => {
+    if (event.target && event.target.id === "muleReviewStatus") loadMuleReviewQueue();
+});
+
 async function refreshAll() {
     try {
         const [stats, telemetry, mule, simStatus] = await Promise.all([
@@ -1551,7 +1609,8 @@ async function refreshAll() {
 
         muleData = mule.accounts;
         renderMuleRegistry();
-        
+        loadMuleReviewQueue();
+
         if (simStatus.simulator_running) {
             $simToggleBtn.className = "sim-toggle-btn on";
             $simToggleBtn.innerHTML = "⚡ Simulation: ACTIVE";

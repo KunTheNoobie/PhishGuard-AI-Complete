@@ -1,11 +1,24 @@
 # Changelog
 
+## Report figures and dashboard review queue — 17 November 2026
+
+- **draw.io diagrams** — every architecture, UML, ERD, sequence, activity, deployment and workflow diagram of the
+  dissertation is now a native draw.io file in `report/diagrams_drawio/` (21 diagrams), exported at 300 DPI.
+  `evaluation/figures_diagrams.py` (matplotlib box diagrams) was removed; `evaluation/make_report_figures.py` now
+  produces only the quantitative charts, restyled to the draw.io palette.
+- **Live screenshots** — extension popup (SAFE and DANGEROUS), the BLOCK_RENDER interstitial, the authenticated SOC
+  dashboard, the review queue, the quishing scanner, STIX/CEF exports and `/docs`, captured from the running service.
+- **Dashboard: mule-report review queue** — new panel above the mule registry lists user reports by status with
+  Approve / Reject actions, using the existing `GET /api/v1/dashboard/mule-reports` and
+  `POST /api/v1/dashboard/mule-reports/{id}/review` endpoints. Previously the queue was reachable only through the API.
+- Unused asset `dashboard/logo.png` removed earlier in this cycle; no other change to service behaviour.
+
 ## Documentation and report figures — 16 November 2026
 
 No change to the behaviour of the service.
 
-- **Figure generator** — `evaluation/figkit.py`, `evaluation/figures_diagrams.py` and a rewritten
-  `evaluation/make_report_figures.py` produce all 30 report figures (architecture, ERD, sequence, activity,
+- **Figure generator** — `evaluation/figkit.py`, `evaluation/figures_diagrams.py` (since replaced by draw.io
+  sources) and a rewritten `evaluation/make_report_figures.py` produced all 30 report figures (architecture, ERD, sequence, activity,
   use-case, class, security layers, deployment, methodology, threat model, evaluation charts) at 300 DPI
   from measured results. `evaluation/benchmark_components.py` measures per-detector latency and F1.
 - **Removed** the PlantUML sources (`report/diagrams/`), the Markdown chapter exports under `report/`,

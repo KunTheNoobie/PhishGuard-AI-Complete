@@ -996,6 +996,50 @@
             </div>
         </section>
 
+        <!-- ─── Mule Report Review Queue (v3.2.0) ─── -->
+        <section class="panel" id="muleReviewPanel" aria-label="Mule report review queue">
+            <div class="panel__header">
+                <div class="panel__header-left">
+                    <h2 class="panel__title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+                        Mule Report Review Queue
+                    </h2>
+                    <span class="panel__badge" id="muleReviewCount">0</span>
+                </div>
+                <div class="panel__actions">
+                    <select id="muleReviewStatus" class="page-size-select" aria-label="Report status filter">
+                        <option value="PENDING" selected>Pending</option>
+                        <option value="APPROVED">Approved</option>
+                        <option value="REJECTED">Rejected</option>
+                        <option value="all">All</option>
+                    </select>
+                </div>
+            </div>
+            <p class="panel__hint" style="margin: 0 0 0.6rem; font-size: 0.78rem; opacity: 0.75;">
+                Accounts reported by users from the browser extension. A report blocks nothing until an analyst approves it;
+                approval promotes the account into the registry.
+            </p>
+            <div class="table-wrapper">
+                <table class="table" id="muleReviewTable">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Account Number</th>
+                            <th>Bank</th>
+                            <th>Reported On Page</th>
+                            <th>Source</th>
+                            <th>Submitted</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="muleReviewBody">
+                        <tr class="table-empty"><td colspan="8">Loading review queue...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
         <!-- ─── Mule Account Registry ─── -->
         <section class="panel" aria-label="Mule bank account registry">
             <div class="panel__header">

@@ -1,10 +1,11 @@
 """
-PhishGuard-AI — Dissertation Figure Generator (300 DPI, unified style).
+PhishGuard-AI â€” Dissertation Figure Generator (300 DPI, unified style).
 ========================================================================
 
-Generates every figure of Chapters 1–6 into ``report/figures/``.  Charts are
-computed from committed result files; diagrams are drawn from the v3.2.0
-source code (see ``figures_diagrams.py``).  Nothing is hand-edited.
+Generates every quantitative chart of the dissertation into ``report/figures/``
+from committed result files.  Architecture, UML and workflow diagrams are not
+drawn here: they are draw.io sources in ``report/diagrams_drawio/`` (exported to
+``report/figures/`` at 300 DPI).  Nothing is hand-edited.
 
 Prerequisites (all committed or reproducible):
     evaluation/results/{baseline_v3.0.0, final_v3.2.0, ablation_no_bert_v3.2.0}/
@@ -12,7 +13,7 @@ Prerequisites (all committed or reproducible):
     evaluation/results/components/metrics.json
     evaluation/results/locust/*.csv
     evaluation/results/coverage/coverage.json
-    phishguard_custom_model/ (tokenizer; checkpoint-27468 for the loss curve)
+    phishguard_custom_model/checkpoint-27468/trainer_state.json (loss curve)
 
 Run from the repository root:
     python -m evaluation.make_report_figures
@@ -32,8 +33,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from evaluation import figures_diagrams as dg  # noqa: E402
-from evaluation.figkit import (AMBER, BLUE, GREEN, GREY, INK, LINE, MUTED, NAVY, PURPLE, RED, TEAL, TONES,  # noqa: E402
+from evaluation.figkit import (AMBER, BLUE, GREEN, GREY, INK, LINE, MUTED, NAVY, PURPLE, RED, TEAL,  # noqa: E402
                                apply_style, save)
 
 import matplotlib.pyplot as plt  # noqa: E402
@@ -42,7 +42,7 @@ RESULTS = ROOT / "evaluation" / "results"
 OUT = ROOT / "report" / "figures"
 
 
-# ── data loaders ──────────────────────────────────────────────────────────────
+# â”€â”€ data loaders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def rows(tag: str) -> list[dict]:
     return list(csv.DictReader((RESULTS / tag / "per_sample.csv").open(encoding="utf-8")))
@@ -83,7 +83,7 @@ def cm_from(rows_, pred_key="pipeline_pred", score_key=None, thr=0.75):
     return np.array([[tn, fp], [fn, tp]])
 
 
-# ── chart helpers ─────────────────────────────────────────────────────────────
+# â”€â”€ chart helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def draw_cm(ax, cm, title, cmap_color):
     from matplotlib.colors import LinearSegmentedColormap
@@ -104,9 +104,9 @@ def draw_cm(ax, cm, title, cmap_color):
     ax.tick_params(length=0)
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# Chapter 2 — trade-off chart
-# ══════════════════════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# Chapter 2 â€” trade-off chart
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 def tradeoff(path):
     apply_style()
@@ -128,7 +128,7 @@ def tradeoff(path):
     offsets = [(8, 0), (-10, 0), (-10, -6), (8, 0), (-10, 4)]
     for (name, lat, f1, fpr, col), (dx, dy) in zip(pts, offsets):
         ax.scatter(lat, f1, s=40 + fpr * 260, color=col, edgecolor="white", linewidth=0.8, zorder=4)
-        ax.annotate(f"{name}\nF1 {f1:.3f} · FPR {fpr * 100:.1f} %", (lat, f1), textcoords="offset points",
+        ax.annotate(f"{name}\nF1 {f1:.3f} Â· FPR {fpr * 100:.1f} %", (lat, f1), textcoords="offset points",
                     xytext=(dx, dy), fontsize=5.9, color=col, va="center", ha="left" if dx > 0 else "right")
     vis = comp["visual_yolov8n"]["latency_ms"]["mean"]
     ax.axvline(vis, color=BLUE, lw=0.8, ls="--")
@@ -157,47 +157,9 @@ def tradeoff(path):
     save(fig, path)
 
 
-# ══════════════════════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 # Chapter 5
-# ══════════════════════════════════════════════════════════════════════════════
-
-def bert_architecture(path):
-    from evaluation.figkit import Canvas
-    params = None
-    try:
-        from safetensors import safe_open
-        with safe_open(str(ROOT / "phishguard_custom_model" / "model.safetensors"), "pt") as f:
-            params = sum(int(np.prod(f.get_slice(k).get_shape())) for k in f.keys())
-    except Exception:
-        pass
-    c = Canvas(6.5, 2.1)
-    c.text(0.1, 1.98, "Fine-tuned BERT URL classifier — tensor shapes and decision interface", size=8, weight="bold",
-           ha="left")
-    steps = [
-        ("Input", ["URL without", "scheme / www.", "rnaybank2u.com/…"], "grey"),
-        ("Tokenizer", ["WordPiece", "vocab 30,522", "pad / trunc. 128"], "blue"),
-        ("Embeddings", ["token + position", "+ segment", "128 × 768"], "blue"),
-        ("12 encoders", ["12 heads · d_k 64", "FFN 3,072 · GELU", "dropout 0.1"], "navy"),
-        ("[CLS] pooler", ["768 → 768 · tanh", "dropout 0.1"], "navy"),
-        ("Classifier", ["linear 768 → 2", "softmax", "LEGIT. / PHISHING"], "purple"),
-        ("Signal", ["PHISHING and", "p ≥ 0.75", "→ verdict engine"], "red"),
-    ]
-    w = (6.3 - 6 * 0.1) / 7
-    prev = None
-    for i, (t, ls, tone) in enumerate(steps):
-        n = c.box(0.1 + i * (w + 0.1), 1.0, w, 0.82, title=t, lines=ls, tone=tone, header=True, size=5.3,
-                  title_size=5.6)
-        if prev:
-            c.arrow(prev.right, n.left, color=INK, lw=0.8, head=4)
-        prev = n
-    c.box(0.1, 0.12, 6.3, 0.75, tone="grey", fill="white", edge=LINE, title="Training configuration (Colab, Tesla T4)",
-          title_color=INK, lines=[
-              f"bert-base-uncased{'' if params is None else f', {params:,} parameters'} · AdamW, lr 2e-5 linear decay, weight decay 0.01 · "
-              "batch 16 · 1 epoch = 27,468 steps (3 h 03 min)",
-              "Cross-entropy over two logits · train 439,476 / hold-out 109,870 URLs · inference on CPU in a worker thread "
-              "(mean 108 ms per URL)"], size=5.9, title_size=6.4)
-    c.save(path)
-
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 def training_loss(path):
     apply_style()
@@ -275,7 +237,7 @@ def confusion_compare(path):
     ax.set_ylim(0, 135)
     ax.set_yticks([0, 20, 40, 60, 80, 100])
     ax.set_ylabel("%")
-    ax.set_title("FPR 78.3 % → 0 %", fontsize=7.4)
+    ax.set_title("FPR 78.3 % â†’ 0 %", fontsize=7.4)
     ax.legend(loc="upper left", ncol=2, fontsize=5.6, handlelength=1, columnspacing=0.6)
     ax.grid(axis="x", visible=False)
     fig.suptitle("Malaysian benchmark (60 legitimate, 60 malicious pages)", x=0.01, ha="left", fontsize=8.5,
@@ -292,7 +254,7 @@ def roc_chart(path):
                               ("p_url_raw", "BERT, URL with scheme", BLUE, "--"),
                               ("p_composite", "BERT, URL + page text (v3.0.0 input)", AMBER, ":")]:
         pts = roc(y, [float(r[key]) for r in fin])
-        ax.plot([p[0] for p in pts], [p[1] for p in pts], color=col, ls=ls, lw=1.4, label=f"{lab} — AUC {auc(pts):.3f}")
+        ax.plot([p[0] for p in pts], [p[1] for p in pts], color=col, ls=ls, lw=1.4, label=f"{lab} â€” AUC {auc(pts):.3f}")
     ops = [("v3.0.0 pipeline", "baseline_v3.0.0", AMBER, "s"), ("rules, no model", "ablation_no_bert_v3.2.0", TEAL, "^"),
            ("v3.2.0 pipeline", "final_v3.2.0", NAVY, "o")]
     for lab, tag, col, mk in ops:
@@ -396,7 +358,7 @@ def locust_timeseries(path):
         rps = [float(r["Requests/s"]) for r in hist]
         p95 = [float(r["95%"]) if r["95%"] not in ("N/A", "") else np.nan for r in hist]
         ax.plot(t, rps, color=NAVY, lw=1.2, label="requests / s")
-        ax.plot(t, [u / 5 for u in users], color=GREY, lw=1, ls="--", label="users ÷ 5")
+        ax.plot(t, [u / 5 for u in users], color=GREY, lw=1, ls="--", label="users Ã· 5")
         ax.set_xlabel("time (s)")
         ax.set_ylabel("requests / s")
         ax.set_ylim(0, 62)
@@ -455,40 +417,17 @@ def tests_coverage(path):
     ax2.set_yticks(range(len(keep)), labs, fontsize=6.0)
     ax2.set_xlim(0, 105)
     ax2.set_xlabel("statement + branch coverage (%)")
-    ax2.set_title("Coverage per module (≥ 20 statements)", loc="left")
+    ax2.set_title("Coverage per module (â‰¥ 20 statements)", loc="left")
     ax2.grid(axis="y", visible=False)
     fig.tight_layout(w_pad=1.5)
     save(fig, path)
 
 
-# ══════════════════════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 FIGURES = {
-    # chapter 1
-    "kill_chain": lambda p: dg.kill_chain(p),
-    "decision_funnel": lambda p: dg.decision_funnel(p, rows("final_v3.2.0")),
-    "module_boundary": lambda p: dg.module_boundary(p),
-    "gantt": lambda p: dg.gantt(p),
-    # chapter 2
-    "exposure_window": lambda p: dg.exposure_window(p),
-    "wordpiece": None,  # needs tokenizer, handled in main
-    "tradeoff": tradeoff,
-    # chapter 3
-    "methodology": lambda p: dg.methodology(p),
-    "threat_model": lambda p: dg.threat_model(p),
-    "data_splits": None,
-    # chapter 4
-    "architecture": lambda p: dg.architecture(p),
-    "use_case": lambda p: dg.use_case(p),
-    "activity": lambda p: dg.activity(p),
-    "sequence": lambda p: dg.sequence(p),
-    "class_diagram": lambda p: dg.class_diagram(p),
-    "erd": lambda p: dg.erd(p),
-    "security_layers": lambda p: dg.security_layers(p),
-    "deployment": lambda p: dg.deployment(p),
-    # chapter 5
-    "bert_architecture": bert_architecture,
-    "training_loss": training_loss,
+    "tradeoff": tradeoff,              # Chapter 2
+    "training_loss": training_loss,    # Chapter 5
     "kaggle_cm": kaggle_cm,
     "confusion_compare": confusion_compare,
     "roc": roc_chart,
@@ -496,45 +435,16 @@ FIGURES = {
     "locust_overview": locust_overview,
     "locust_timeseries": locust_timeseries,
     "tests_coverage": tests_coverage,
-    # chapter 6
-    "hosting_comparison": lambda p: dg.hosting_comparison(p),
-    "challenges": lambda p: dg.challenges(p),
-    "roadmap": lambda p: dg.roadmap(p),
 }
-
-
-def wordpiece_examples():
-    from transformers import AutoTokenizer
-    tok = AutoTokenizer.from_pretrained(str(ROOT / "phishguard_custom_model"))
-    fin = {r["url"]: r for r in rows("final_v3.2.0")}
-    out = []
-    for url, lab in [("https://rnaybank2u.com/home/login", "look-alike (malicious)"),
-                     ("https://www.maybank2u.com.my/home/m2u/common/login.do", "official portal (legitimate)"),
-                     ("https://ringgitplus.com/en/blog/bank-news/maybank-revises-fixed-deposit-rates.html",
-                      "news article (legitimate)")]:
-        stripped = url.split("://", 1)[1]
-        stripped = stripped[4:] if stripped.startswith("www.") else stripped
-        out.append((stripped, tok.tokenize(stripped)[:40], float(fin[url]["p_url_stripped"]), lab))
-    return out
 
 
 def main(only: list[str] | None = None) -> None:
     OUT.mkdir(parents=True, exist_ok=True)
-    for old in OUT.glob("*.png"):
-        if only is None:
-            old.unlink()
-    cats = Counter(r["category"] for r in rows("final_v3.2.0"))
     for name, fn in FIGURES.items():
         if only and name not in only:
             continue
-        path = OUT / f"{name}.png"
-        if name == "wordpiece":
-            dg.wordpiece(path, wordpiece_examples())
-        elif name == "data_splits":
-            dg.data_splits(path, cats)
-        else:
-            fn(path)
-        print("  ", path.name)
+        fn(OUT / f"{name}.png")
+        print("  ", f"{name}.png")
 
 
 if __name__ == "__main__":
