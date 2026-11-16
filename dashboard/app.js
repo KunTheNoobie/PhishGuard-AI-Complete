@@ -24,7 +24,7 @@ function applyTheme(t) {
     localStorage.setItem("phishguard_theme", t);
 }
 
-const savedTheme = localStorage.getItem("phishguard_theme") || "cyberpunk";
+const savedTheme = localStorage.getItem("phishguard_theme") || "apple";
 applyTheme(savedTheme);
 
 const $themeSelector = document.getElementById("themeSelector");

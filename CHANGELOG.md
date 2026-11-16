@@ -1,5 +1,16 @@
 # Changelog
 
+## Apple-style interface — 17 November 2026
+
+- **Dashboard** — new default theme `dashboard/apple.css` ("Apple Light"): #F5F5F7 surface, translucent white cards,
+  system typography, 12–16 px radii, hairline borders, pill badges. The previous dark themes remain selectable.
+- **Extension popup** — same light design language (`chrome_extension/popup/popup.css`); gauge colours use Apple
+  system colours.
+- **Block overlay** — redesigned card listing the verdict and rule, BERT probability, Semakmule registry result,
+  brand / visual check and risk score; all dynamic values are HTML-escaped. New **Report to SOC** button sends the
+  account to the review queue through a new `PHISHGUARD_REPORT_MULE` service-worker message.
+- No API, authentication or schema change; 198 tests pass.
+
 ## Report figures and dashboard review queue — 17 November 2026
 
 - **draw.io diagrams** — every architecture, UML, ERD, sequence, activity, deployment and workflow diagram of the

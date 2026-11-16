@@ -851,6 +851,28 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message.type === "PHISHGUARD_REPORT_MULE") {
+    // Submitted from the block overlay; reports enter the analyst review queue.
+    (async () => {
+      try {
+        const settings = await getSettings();
+        const res = await fetchWithTimeout(`${settings.apiBaseUrl}/api/v1/mule-reports`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${settings.apiToken}` },
+          body: JSON.stringify({
+            account_number: String(message.accountNumber || "").trim(),
+            bank_name: message.bankName || "Unknown",
+            page_url: message.pageUrl || undefined
+          })
+        }, 6000);
+        sendResponse({ ok: res.status === 201, status: res.status });
+      } catch (_e) {
+        sendResponse({ ok: false, status: 0 });
+      }
+    })();
+    return true;
+  }
+
   if (message.type === "PHISHGUARD_GET_SETTINGS") {
     getSettings().then((settings) => {
       sendResponse({ ok: true, settings });

@@ -807,3 +807,103 @@ h1 {
   from { opacity: 0; transform: scale(0.92); }
   to { opacity: 1; transform: scale(1); }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   APPLE-STYLE LIGHT DESIGN (v3.2.0)
+   macOS / iOS-inspired surfaces: #F5F5F7 base, translucent white cards,
+   system typography, 12–16 px radii, hairline borders, pill badges.
+   This layer overrides the earlier dark rules.
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  color-scheme: light;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI Variable Text", "Segoe UI", Arial, sans-serif;
+  --bg-dark: #F5F5F7;
+  --bg-card: rgba(255, 255, 255, 0.82);
+  --bg-card-hover: #FFFFFF;
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --accent-primary: #0071E3;
+  --accent-cyan: #0A84FF;
+  --accent-emerald: #34C759;
+  --accent-amber: #FF9F0A;
+  --accent-rose: #FF3B30;
+}
+body { background: #F5F5F7; color: #1D1D1F; letter-spacing: -0.01em; }
+.popup-shell { padding: 18px 16px 16px; }
+h1 { color: #1D1D1F; letter-spacing: -0.02em; }
+.brand-group span, .brand-group p, .topbar p { color: #6E6E73; }
+
+.soc-live-banner, .soc-live-banner.offline {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: saturate(180%) blur(20px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  color: #1D1D1F;
+}
+.soc-latency-tag, .ping-badge, .ping-badge.online, .ping-badge.offline {
+  background: rgba(0, 113, 227, 0.08); color: #0071E3; border: none; border-radius: 999px; font-weight: 600;
+}
+.ping-pulse-dot { background: #34C759; box-shadow: 0 0 0 3px rgba(52, 199, 89, 0.2); }
+.ping-pulse-dot.offline { background: #FF3B30; box-shadow: 0 0 0 3px rgba(255, 59, 48, 0.18); }
+
+.popup-tabs { background: rgba(118, 118, 128, 0.12); border: none; border-radius: 10px; padding: 2px; }
+.tab-btn { color: #3A3A3C; border-radius: 8px; font-weight: 600; }
+.tab-btn.active { background: #FFFFFF; color: #1D1D1F; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); }
+
+.result-panel, .module-panel, .settings, .history-item, .popup-modal-card {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: saturate(180%) blur(20px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.06);
+  color: #1D1D1F;
+}
+.result-panel::before { border-radius: 16px 16px 0 0; }
+.result-panel.safe { border-top: 3px solid #34C759; }
+.result-panel.suspicious { border-top: 3px solid #FF9F0A; }
+.result-panel.dangerous { border-top: 3px solid #FF3B30; }
+.current-domain, .status-title { color: #1D1D1F; }
+.scan-time, .scan-meta, .reason, .history-time { color: #6E6E73; }
+.gauge-bg { stroke: rgba(0, 0, 0, 0.06); }
+.gauge-text, .gauge-text span { color: #1D1D1F; }
+
+.status-pill { border-radius: 999px; font-weight: 600; padding: 5px 12px; }
+.status-pill.safe { background: rgba(52, 199, 89, 0.14); color: #248A3D; border-color: transparent; }
+.status-pill.suspicious { background: rgba(255, 159, 10, 0.16); color: #B25000; border-color: transparent; }
+.status-pill.neutral { background: rgba(118, 118, 128, 0.12); color: #3A3A3C; border-color: transparent; }
+.status-pill.dangerous, .status-pill:not(.safe):not(.suspicious):not(.neutral) { background: rgba(255, 59, 48, 0.12); color: #D70015; border-color: transparent; }
+
+.module-row { border-bottom: 1px solid rgba(0, 0, 0, 0.06); }
+.module-label { color: #3A3A3C; }
+.module-value { border-radius: 999px; font-weight: 600; border: none; }
+.module-value.safe { background: rgba(52, 199, 89, 0.14); color: #248A3D; }
+.module-value.suspicious { background: rgba(255, 159, 10, 0.16); color: #B25000; }
+.module-value.dangerous { background: rgba(255, 59, 48, 0.12); color: #D70015; }
+.module-value.neutral, .module-value.unavailable { background: rgba(118, 118, 128, 0.12); color: #6E6E73; }
+
+.action-pill-btn {
+  background: #FFFFFF; color: #1D1D1F; border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 999px; font-weight: 600;
+}
+.action-pill-btn:hover { background: #F2F2F7; }
+.action-pill-btn.trusted { background: rgba(52, 199, 89, 0.14); color: #248A3D; border-color: transparent; }
+.primary-button {
+  background: #0071E3; color: #FFFFFF; border-radius: 12px; font-weight: 600; font-size: 13px; padding: 10px 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+.primary-button:hover { background: #0077ED; filter: none; }
+.secondary-button, .clear-btn {
+  background: #FFFFFF; color: #0071E3; border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 12px; font-weight: 600;
+}
+#openDashboardBtn { background: rgba(0, 113, 227, 0.08) !important; border-color: transparent !important; color: #0071E3 !important; }
+.settings { color: #3A3A3C; }
+.settings summary { color: #1D1D1F; }
+input, .popup-modal-input { background: #FFFFFF; color: #1D1D1F; border: 1px solid rgba(0, 0, 0, 0.12); border-radius: 10px; }
+input:focus, .popup-modal-input:focus { border-color: #0071E3; box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15); outline: none; }
+.history-domain, .history-title { color: #1D1D1F; }
+.history-badge { border-radius: 999px; }
+.history-badge.safe { background: rgba(52, 199, 89, 0.14); color: #248A3D; }
+.history-badge.suspicious { background: rgba(255, 159, 10, 0.16); color: #B25000; }
+.history-badge.dangerous { background: rgba(255, 59, 48, 0.12); color: #D70015; }
+.popup-modal-overlay { background: rgba(0, 0, 0, 0.2); backdrop-filter: blur(10px); }
+.popup-toast { background: rgba(255, 255, 255, 0.92); color: #1D1D1F; border: 1px solid rgba(0, 0, 0, 0.08); border-radius: 14px; backdrop-filter: blur(20px); }
+.soc-live-left strong, #socPingStatus { color: #1D1D1F; }

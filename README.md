@@ -375,7 +375,7 @@ The dissertation (`report/PhishGuard-AI_Project_1_&_2_Report_LiewYiLer.docx`) us
 * **Quantitative charts** (confusion matrices, ROC, false-positive comparison, Locust latency and throughput, test and
   coverage breakdown, training loss) are generated from the committed results by `evaluation/make_report_figures.py`
   in the same palette as the diagrams (`evaluation/figkit.py`).
-* **Screenshots** (`report/figures/ui_*.png`) were captured from the running v3.2.0 system with Playwright driving
+* **Screenshots** (`report/figures/ui_*.png`) show the Apple-style light interface and were captured from the running v3.2.0 system with Playwright driving
   headless Microsoft Edge with the extension loaded.
 
 ```bash
