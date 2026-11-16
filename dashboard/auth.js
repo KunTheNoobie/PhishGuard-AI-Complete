@@ -101,10 +101,16 @@
 
     function addSignOutControl() {
         const mount = function () {
-            const btn = el("button",
-                "position:fixed;right:14px;bottom:14px;z-index:2147482000;padding:6px 12px;border-radius:999px;" +
-                "border:1px solid rgba(148,163,184,0.4);background:rgba(15,23,42,0.85);color:#cbd5e1;" +
-                "font:600 12px Inter,system-ui,sans-serif;cursor:pointer;", "Sign out");
+            // Sits in the header toolbar so it never covers page content; the
+            // fixed corner position is only a fallback for pages without one.
+            const slot = document.querySelector(".header__status");
+            const btn = el("button", slot
+                ? "height:30px;padding:0 12px;border-radius:999px;border:1px solid rgba(148,163,184,0.4);" +
+                  "background:rgba(15,23,42,0.85);color:#cbd5e1;font:600 12px Inter,system-ui,sans-serif;" +
+                  "cursor:pointer;white-space:nowrap;flex:0 0 auto;"
+                : "position:fixed;right:14px;bottom:14px;z-index:2147482000;padding:6px 12px;border-radius:999px;" +
+                  "border:1px solid rgba(148,163,184,0.4);background:rgba(15,23,42,0.85);color:#cbd5e1;" +
+                  "font:600 12px Inter,system-ui,sans-serif;cursor:pointer;", "Sign out");
             btn.type = "button";
             btn.title = "End this SOC dashboard session";
             btn.addEventListener("click", async function () {
@@ -114,7 +120,7 @@
                     window.location.reload();
                 }
             });
-            document.body.appendChild(btn);
+            (slot || document.body).appendChild(btn);
         };
         if (document.body) { mount(); } else { document.addEventListener("DOMContentLoaded", mount); }
     }

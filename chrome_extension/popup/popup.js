@@ -178,11 +178,11 @@ function updateGauge(scoreFraction, riskLevel) {
   gaugeScore.textContent = `${Math.round(score * 100)}%`;
 
   if (riskLevel === "dangerous" || score >= 0.75) {
-    gaugeProgress.style.stroke = "#FF3B30";
+    gaugeProgress.style.stroke = "#ef4444";
   } else if (riskLevel === "suspicious" || score >= 0.50) {
-    gaugeProgress.style.stroke = "#FF9F0A";
+    gaugeProgress.style.stroke = "#f59e0b";
   } else {
-    gaugeProgress.style.stroke = "#34C759";
+    gaugeProgress.style.stroke = "#10b981";
   }
 }
 

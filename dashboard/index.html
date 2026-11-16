@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="apple">
+<html lang="en">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -10,7 +10,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
-    <link rel="stylesheet" href="apple.css" />
     <style>
         /* ═══════════════════════════════════════════════════════════════════
            EMBEDDED FAILSAFE CYBERPUNK GLASSMORPHIC STYLES
@@ -94,9 +93,8 @@
             backdrop-filter: blur(18px);
             border-bottom: 1px solid var(--border-subtle);
             box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
-            gap: 0.75rem;
-            flex-wrap: nowrap;
-            overflow-x: auto;
+            gap: 0.5rem 0.75rem;
+            flex-wrap: wrap;
         }
 
         .header__brand { display: flex; align-items: center; gap: 0.6rem; flex-shrink: 0; }
@@ -112,7 +110,7 @@
             line-height: 1.1;
         }
         .header__subtitle { font-size: 0.68rem; color: var(--text-muted); font-weight: 500; margin: 0; }
-        .header__status { display: flex; align-items: center; gap: 0.45rem; flex-wrap: nowrap; flex-shrink: 0; margin-left: auto; }
+        .header__status { display: flex; align-items: center; justify-content: flex-end; gap: 0.45rem; flex-wrap: wrap; flex: 1 1 auto; min-width: 0; margin-left: auto; }
         .header__status-group {
             display: inline-flex;
             align-items: center;
@@ -563,7 +561,6 @@
             <!-- Theme Settings -->
             <div class="header__status-group" title="Theme Customization">
                 <select id="themeSelector" class="page-size-select" style="height: 30px; font-size: 0.76rem;" title="Switch Theme">
-                    <option value="apple">Apple Light</option>
                     <option value="cyberpunk">Cyber Neon</option>
                     <option value="matrix">Matrix Emerald</option>
                     <option value="abyss">OLED Abyss</option>
@@ -1017,7 +1014,7 @@
                     </select>
                 </div>
             </div>
-            <p class="panel__hint" style="margin: 0 0 0.6rem; font-size: 0.78rem; opacity: 0.75;">
+            <p class="panel__hint" style="margin: 0; padding: 0.75rem 1.5rem; font-size: 0.78rem; line-height: 1.5; opacity: 0.75; border-bottom: 1px solid var(--border-subtle);">
                 Accounts reported by users from the browser extension. A report blocks nothing until an analyst approves it;
                 approval promotes the account into the registry.
             </p>

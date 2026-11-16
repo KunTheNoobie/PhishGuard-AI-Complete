@@ -1,5 +1,19 @@
 # Changelog
 
+## Cyber Neon restored — 17 November 2026
+
+- **Dashboard** — `dashboard/apple.css` and the "Apple Light" option removed; Cyber Neon is the default theme again
+  (Matrix Emerald and OLED Abyss stay selectable). The mule-report review queue and every other v3.2.0 feature are kept.
+- **No overlapping controls** — the header toolbar wraps onto a second row instead of running off-screen at laptop
+  widths; the **Sign out** control now sits in the toolbar rather than floating over page content; the review-queue
+  hint has proper padding.
+- **Extension popup** — the light layer is removed and the dark Cyber Neon styling restored; the missing
+  `.status-pill.dangerous` style is added so the DANGEROUS badge renders as a red pill.
+- **Block overlay** — dark Cyber Neon card (red border, slate background) keeping the multi-vector breakdown
+  (verdict and rule, BERT probability, Semakmule registry, brand / visual check, risk score) and the **Report to SOC**
+  button; badges and rows wrap so long values never overlap. Fetch timeouts are unchanged (8 s semantic, 12 s visual).
+- **Report** — the seven UI figures were retaken live in Cyber Neon and the interface-design text and Table 4.8 updated.
+
 ## Apple-style interface — 17 November 2026
 
 - **Dashboard** — new default theme `dashboard/apple.css` ("Apple Light"): #F5F5F7 surface, translucent white cards,
