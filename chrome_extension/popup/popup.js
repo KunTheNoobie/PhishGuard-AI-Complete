@@ -61,6 +61,17 @@ function sendRuntimeMessage(message) {
   });
 }
 
+/** fetch() with an AbortController timeout so the popup never hangs on a stalled backend. */
+async function fetchWithTimeout(url, options = {}, timeoutMs = 5000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function getStoredConfig() {
   try {
     const response = await sendRuntimeMessage({ type: "PHISHGUARD_GET_SETTINGS" });
@@ -649,23 +660,30 @@ async function handleFlagMule(mules) {
   
   try {
     const config = await getStoredConfig();
-    const res = await fetch(`${config.apiBaseUrl}/api/v1/mule-registry`, {
+    // Reports enter an analyst review queue (POST /api/v1/mule-reports); the
+    // account is only added to the blocking registry once an analyst approves it.
+    const res = await fetchWithTimeout(`${config.apiBaseUrl.replace(/\/$/, "")}/api/v1/mule-reports`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${config.apiToken}`
+      },
       body: JSON.stringify({
-        account_number: acc,
-        bank_name: bank,
-        platform_flagged: "Chrome Extension User Escalation",
-        report_count: 1
+        account_number: String(acc).trim(),
+        bank_name: bank
       })
-    });
-    if (res.ok) {
-      showToast("danger", "Escalated to NSRC", `Account ${acc} (${bank}) registered to fraud blacklist.`);
+    }, 6000);
+    if (res.status === 201) {
+      showToast("success", "Report submitted", `Account ${acc} (${bank}) is queued for SOC analyst review.`);
+    } else if (res.status === 422) {
+      showToast("warning", "Invalid account number", "Use digits, spaces or dashes only (6 to 34 characters).");
+    } else if (res.status === 401 || res.status === 403) {
+      showToast("warning", "Not authorised", "Check the API token in the extension settings.");
     } else {
-      showToast("warning", "Recorded Locally", `Report saved for ${acc}.`);
+      showToast("warning", "Report not submitted", `Backend returned HTTP ${res.status}.`);
     }
   } catch (_e) {
-    showToast("info", "Queued", `Report cached offline for ${acc}.`);
+    showToast("warning", "Report not submitted", "The PhishGuard backend could not be reached. Please try again.");
   }
 }
 
@@ -678,7 +696,7 @@ async function checkBackendHealthPing() {
     const config = await getStoredConfig();
     const baseUrl = (config.apiBaseUrl || "http://127.0.0.1:8000").replace(/\/$/, "");
     const start = performance.now();
-    const res = await fetch(`${baseUrl}/health`, { method: "GET" });
+    const res = await fetchWithTimeout(`${baseUrl}/health`, { method: "GET" }, 3000);
     const latency = Math.max(1, Math.round(performance.now() - start));
 
     if (res.ok) {

@@ -1,994 +1,454 @@
-# Chapter 4: System Design
+<!-- Generated from PhishGuard-AI_Project_1_&_2_Report_LiewYiLer.docx (v3.2.0, 16 November 2026). The Word document is the authoritative version; edit it, not this file. -->
 
-## 4.1 Introduction & Architectural Principles
+# Chapter 4
 
-The System Design phase represents the critical engineering bridge that translates the theoretical cybersecurity methodologies, non-functional constraints, and mathematical metrics formulated in Chapter 3 into concrete, executable technical blueprints. In enterprise-grade security engineering, deploying computationally intensive deep learning models alongside real-time web interceptors requires an architecture capable of guaranteeing sub-second response times, zero false alarms on legitimate banking portals, and complete data privacy.
+## System Design
+
+### 4.1 Introduction & Architectural Principles
+
+The System Design phase represents the critical engineering bridge that translates the theoretical cybersecurity methodologies, non-functional constraints, and mathematical metrics formulated in Chapter 3 into concrete, executable technical blueprints. In enterprise-grade security engineering, deploying computationally intensive deep learning models alongside real-time web interceptors requires an architecture that keeps response times low and avoids false alarms on legitimate banking portals, and complete data privacy.
 
 This chapter details the comprehensive structural, behavioural, and persistence architecture of the **Semantic Threat Intelligence and Mule Account Verification Engine** developed as an individual module by Liew Yi Ler.
 
 The architectural design of the backend is governed by five core foundational principles:
-1. **Decoupled N-Tier Microservices Topology**: Isolates computationally heavy PyTorch tensor operations and database queries from the client-side Google Chrome extension, preventing client browser thread blocking (Newman, 2015).
-2. **Zero Trust Edge Verification (ZTA)**: Enforces NIST SP 800-207 principles (*"Never Trust, Always Verify"*), evaluating raw DOM payloads independently of SSL/TLS certificates or domain age.
-3. **Singleton In-Memory Model Management**: Employs the Singleton design pattern (Gamma et al., 1994) to load the 440 MB BERT Transformer model into system RAM strictly once during server initialisation, eliminating run-time disk I/O latency.
-4. **Asynchronous Non-Blocking Concurrency**: Leverages the Asynchronous Server Gateway Interface (ASGI), offloading CPU-bound operations via `asyncio.to_thread()` and executing database I/O concurrently using `asyncio.gather()`.
-5. **Strict Defence-in-Depth Hardening**: Integrates Bearer token authentication, `SlowAPI` token-bucket rate limiting, Pydantic input sanitisation, and parameterised SQL bindings to guarantee backend resilience.
 
----
+- **Decoupled N-Tier Microservices Topology**: Isolates computationally heavy PyTorch tensor operations and database queries from the client-side Google Chrome extension, preventing client browser thread blocking (Newman, 2015).
+- **Zero Trust Edge Verification (ZTA)**: Enforces NIST SP 800-207 principles ("Never Trust, Always Verify"), evaluating raw DOM payloads independently of SSL/TLS certificates or domain age.
+- **Singleton In-Memory Model Management**: Employs the Singleton design pattern (Gamma et al., 1994) to load the 440 MB BERT Transformer model into system RAM strictly once during server initialisation, eliminating run-time disk I/O latency.
+- **Asynchronous Non-Blocking Concurrency**: Leverages the Asynchronous Server Gateway Interface (ASGI), offloading CPU-bound operations via asyncio.to_thread() and executing database I/O concurrently using asyncio.gather().
+- **Strict Defence-in-Depth Hardening**: Integrates Bearer token authentication, SlowAPI fixed-window rate limiting, Pydantic input sanitisation, and parameterised SQL bindings to guarantee backend resilience.
 
-## 4.2 High-Level System Architecture & N-Tier Decomposition
+### 4.2 High-Level System Architecture & N-Tier Decomposition
 
 The PhishGuard-AI backend is architected as a decoupled, multi-tiered client-server system organised into three distinct logical tiers, visualised in Figure 4.1.
 
-```plantuml
-@startuml NTier_Architecture_Chapter_4
-!theme vibrant
-skinparam backgroundColor #0f172a
-skinparam ArrowColor #38bdf8
-skinparam ComponentBorderColor #38bdf8
-skinparam ComponentBackgroundColor #1e293b
-skinparam ComponentFontColor #f8fafc
-skinparam InterfaceFontColor #38bdf8
-skinparam PackageBorderColor #64748b
-skinparam PackageFontColor #94a3b8
+*[Figure: see the Word report]*
 
-title Figure 4.1: PhishGuard-AI Decoupled N-Tier Microservice Architecture
+#### 4.2.1 Tier 1: Client Edge & API Gateway Tier
 
-package "Tier 1: Client Edge & API Gateway Tier" {
-    [Manifest V3 Browser Extension\n(Content Script & Service Worker)] as ExtClient
-    interface "POST /api/v1/analyze/semantics\n(Bearer Auth / Port 8000)" as GatewayAPI
-    [FastAPI / Uvicorn ASGI Server\n(Non-Blocking Event Loop)] as ASGIServer
-    [Pydantic v2 Request Validator\n(Strict Type & Sanitisation Schema)] as PydanticValidator
-    [SlowAPI Token-Bucket Limiter\n(60 req/min Anti-DoS)] as RateLimiter
-}
-
-package "Tier 2: Threat Intelligence & Inference Tier (Backend Brain)" {
-    [28-Bank Trusted Whitelist\n(frozenset In-Memory Cache)] as WhitelistFilter
-    
-    package "Asynchronous Worker Thread Pool (asyncio.to_thread)" {
-        [Semantic Threat Engine\n(BERT Base Uncased Singleton / PyTorch)] as BERTEngine
-        [Brand Impersonation Profiler\n(Levenshtein Distance & Heuristics)] as BrandProfiler
-        [Optical Quishing Decoder\n(OpenCV cv2.QRCodeDetector)] as QuishingEngine
-    }
-    
-    package "Deterministic Pattern Matching Engine" {
-        [Mule Account Verification Engine\n(Pre-Compiled Regex Bytecode for 8 Banks)] as RegexEngine
-    }
-    
-    [Multi-Vector Risk Aggregator & Calibrator\n(asyncio.gather Parallel Coroutine)] as Aggregator
-}
-
-package "Tier 3: Data Persistence & Telemetry Tier" {
-    database "SQLite 3NF Storage (aiosqlite / WAL Mode)" {
-        [mule_registry Table\n(B-Tree Indexed account_number)] as MuleTable
-        [threat_telemetry Table\n(Forensic Audit Trail & BERT Scores)] as TelemetryTable
-        [whitelisted_domains Table\n(Bank Domains & Educational Immunity)] as WhitelistTable
-    }
-    
-    package "Enterprise SOC Intelligence & CTI" {
-        [Server-Sent Events (SSE) Hub\n(GET /api/v1/dashboard/stream)] as SSEHub
-        [Live SOC Intelligence Dashboard\n(24h GMT+8 Velocity & Geo Radar)] as SOCDashboard
-        [NSRC 997 & STIX 2.1 Exporters\n(CEF / Syslog / PDRM Dossier)] as CTIExporter
-    }
-}
-
-ExtClient --> GatewayAPI : 1. Ingests Raw DOM & URL
-GatewayAPI --> RateLimiter : 2. Enforces Rate Limit
-RateLimiter --> PydanticValidator : 3. Validates Payload Schema
-PydanticValidator --> ASGIServer : 4. Dispatches Sanitised Object
-ASGIServer --> WhitelistFilter : 5. Fast-Path In-Memory Whitelist Lookup
-WhitelistFilter --> Aggregator : Whitelisted (Instant SAFE)
-WhitelistFilter --> BERTEngine : Non-Whitelisted: Parallel Task 1 (asyncio.to_thread)
-WhitelistFilter --> RegexEngine : Non-Whitelisted: Parallel Task 2 (Regex Scan)
-RegexEngine --> MuleTable : 6. Asynchronous SELECT (O(log N))
-BERTEngine --> Aggregator : 7. Semantic Threat Probability
-MuleTable --> RegexEngine : 8. Mule Match Record
-RegexEngine --> Aggregator : 9. Financial Fraud Flag
-Aggregator --> TelemetryTable : 10. Persists Audit Log (Non-blocking)
-Aggregator --> ASGIServer : 11. Final Verdict (<400ms SLA)
-ASGIServer --> ExtClient : 12. Returns JSON (BLOCK_RENDER / SAFE)
-TelemetryTable --> SSEHub : 13. Broadcasts Live Event Stream
-SSEHub --> SOCDashboard : 14. Real-Time Telemetry Feed
-SOCDashboard --> CTIExporter : 15. Standardised Law Enforcement Dispatch
-
-@enduml
-```
-
-### 4.2.1 Tier 1: Client Edge & API Gateway Tier
 The Application Gateway Tier operates as the asynchronous, hardened perimeter of the backend service. Deployed on **FastAPI** over the **Uvicorn** Asynchronous Server Gateway Interface (ASGI), it provides:
-* **Cryptographic Request Authentication**: Enforces HTTP `Authorisation: Bearer <API_KEY>` headers on all analysis routes.
-* **Denial-of-Service Protection**: Implements `SlowAPI` token-bucket rate limiting (60 requests/minute per client IP) to prevent algorithmic exhaustion.
-* **Payload Validation & Sanitisation**: Uses `Pydantic v2` data transfer models to strictly validate data types, strip executable tags via `BeautifulSoup`, and catch malformed JSON payloads prior to downstream routing.
 
-### 4.2.2 Tier 2: Threat Intelligence & Inference Tier (Backend Core)
+- **Request Authentication**: Enforces HTTP Authorization: Bearer <API_KEY> headers on all analysis routes, compared in constant time (hmac.compare_digest). Dashboard routes additionally require the administrative key or a server-side session (Section 4.7).
+- **Denial-of-Service Protection**: Implements SlowAPI fixed-window rate limiting (60 requests/minute per client IP) to prevent algorithmic exhaustion.
+- **Payload Validation & Sanitisation**: Uses Pydantic v2 data transfer models to strictly validate data types, strip executable tags via BeautifulSoup, and catch malformed JSON payloads prior to downstream routing.
+
+#### 4.2.2 Tier 2: Threat Intelligence & Inference Tier (Backend Core)
+
 The processing core executes multi-modal AI and deterministic fraud classification:
-* **In-Memory 28-Bank Trusted Whitelist (`frozenset`)**: Evaluates incoming target domains against verified Malaysian financial institutions (`maybank2u.com.my`, `pbebank.com`, `cimbclicks.com.my`). Bypasses AI inference with $0\text{ ms}$ overhead for authentic portals, completely preventing false-positive disruptions.
-* **Semantic NLP Engine (PyTorch BERT Singleton)**: Instantiates the fine-tuned `bert-base-uncased` Transformer model in local RAM. Offloaded to worker threads via `asyncio.to_thread()`, it executes WordPiece tokenisation and multi-head attention forward passes to compute a semantic coercion score ($P_{\text{bert}} \in [0.0, 1.0]$).
-* **Mule Account Verification Engine**: Executes pre-compiled Regular Expression (Regex) bytecode tailored to 8 Malaysian bank account formats, extracting numerical strings and querying the database without thread blocking.
-* **Brand Impersonation Profiler**: Computes normalised **Levenshtein Distance** metrics against 10 domestic banking brands to identify typosquatting mutations (`rnaybank.com`).
-* **Optical Quishing Decoder**: Utilises OpenCV `cv2.QRCodeDetector()` to decode embedded EMVCo Merchant-Presented DuitNow QR codes from base64 images.
 
-### 4.2.3 Tier 3: Data Persistence & Telemetry Tier
+- **In-Memory Trusted Domain Whitelist (frozenset)**: Evaluates the request hostname against verified Malaysian financial institutions (maybank2u.com.my, pbebank.com, cimbclicks.com.my) and a list of major global platforms, matching exact hosts and subdomains. A whitelisted page skips model inference (mean 0.28 ms in the benchmark) and is never blocked. Domains under which the public can publish pages, such as web.app or vercel.app, are deliberately excluded.
+- **BERT URL Classifier (PyTorch Singleton)**: Loads the fine-tuned bert-base-uncased model once at start-up. Each request passes the scheme-stripped URL through WordPiece tokenisation (maximum 128 tokens) and a forward pass executed in a worker thread via asyncio.to_thread(); the softmax output gives the label and its confidence. A PHISHING label at or above the 0.75 threshold is a supporting signal, never a verdict.
+- **Mule Account Verification Engine**: Executes pre-compiled Regular Expression (Regex) bytecode tailored to 8 Malaysian bank account formats, extracting numerical strings and querying the database without thread blocking.
+- **Brand Impersonation Profiler**: Distinguishes three tiers of evidence: a protected brand string embedded in a hostname the brand does not own, a look-alike of a brand string found by homoglyph normalisation and bounded Levenshtein distance (rnaybank2u.com), and a brand merely named in the page text.
+- **Optical Quishing Decoder**: Utilises OpenCV cv2.QRCodeDetector() to decode embedded EMVCo Merchant-Presented DuitNow QR codes from base64 images.
+- **Corroborated Verdict Engine:** Reduces the outputs of all detectors to a vector of eleven boolean signals and applies rules R1–R6 (Section 4.6.1). It returns the orchestration directive, the rule that fired, a risk score and human-readable indicators.
+
+#### 4.2.3 Tier 3: Data Persistence & Telemetry Tier
+
 The persistence layer provides non-blocking relational storage and real-time security event broadcasting:
-* **SQLite Database in WAL Mode**: Structured in **Third Normal Form (3NF)**, operating under Write-Ahead Logging (WAL) with B-Tree indexes on `account_number`, enabling sub-millisecond asynchronous queries (`aiosqlite`).
-* **Server-Sent Events (SSE) Hub**: Broadcasts real-time threat telemetry events to active Security Operations Centre (SOC) dashboard clients over persistent HTTP connections.
-* **CTI & Law Enforcement Exporters**: Synthesises threat records into standardised **OASIS STIX 2.1 JSON bundles**, ArcSight CEF logs, and 1-click **National Scam Response Centre (NSRC 997)** dispatch dossiers.
 
----
+- **SQLite Database in WAL Mode**: Three tables (mule_registry, threat_telemetry and mule_reports) with one foreign key and five B-Tree indexes, operating under Write-Ahead Logging (WAL) with foreign-key enforcement enabled and accessed asynchronously through aiosqlite.
+- **Server-Sent Events (SSE) Hub**: Broadcasts real-time threat telemetry events to active Security Operations Centre (SOC) dashboard clients over persistent HTTP connections.
+- **CTI & Law Enforcement Exporters**: Synthesises threat records into standardised **OASIS STIX 2.1 JSON bundles**, ArcSight CEF logs, and case summaries formatted for hand-off to the National Scam Response Centre (NSRC 997).
 
-## 4.3 System Interfaces, API Contracts & OpenAPI Specifications
+### 4.3 System Interfaces, API Contracts & OpenAPI Specifications
 
-### 4.3.1 RESTful API Interface & OpenAPI Documentation
-The backend strictly complies with the **Representational State Transfer (REST)** architectural model (Fielding, 2000). All communications are stateless, utilising standard HTTP response codes and JSON serialised payloads (Crockford, 2006). 
+#### 4.3.1 RESTful API Interface & OpenAPI Documentation
 
-FastAPI automatically generates interactive **OpenAPI 3.0 (Swagger UI)** documentation served at `/docs`, enabling standardised client-server integration testing.
+The backend strictly complies with the **Representational State Transfer (REST)** architectural model (Fielding, 2000). All communications are stateless, utilising standard HTTP response codes and JSON serialised payloads (Crockford, 2006).
+
+FastAPI automatically generates interactive **OpenAPI 3.0 (Swagger UI)** documentation served at /docs, enabling standardised client-server integration testing.
+
+*[Figure: see the Word report]*
+
+#### 4.3.2 REST Endpoint Inventory
+
+The OpenAPI schema generated by the application at version 3.2.0 documents 72 operations. Table 4.1 lists the endpoints used by the browser extension and by API clients; the 64 administrative dashboard operations are grouped in Table 4.5. All request and response bodies are JSON (application/json) and all authenticated routes expect the header Authorization: Bearer <key>.
+
+**Table 4.1: Client-Facing REST Endpoints**
+
+| Method and route | Purpose | Authentication | Rate limit | Success |
+| --- | --- | --- | --- | --- |
+| POST /api/v1/analyze/semantics<br>(alias /api/v1/analyse/semantics) | Analyse one page: BERT URL classification, mule scan, corroborated verdict | API key (Bearer) | 60/minute per IP | 200 AnalysisResponse |
+| POST /api/v1/analyze/quishing<br>(alias /api/v1/analyse/quishing) | Decode a QR image and audit the payload (DuitNow EMVCo, URLs, accounts) | API key (Bearer) | None | 200 QuishingAnalysisResponse |
+| POST /api/visual/analyze | Detect bank logos in a screenshot and compare them with the page domain | API key (Bearer) | None | 200 VisualAnalyzeResponse |
+| POST /api/v1/mule-reports | Queue a suspected mule account for analyst review | API key (Bearer) | 60/minute per IP | 201 {report_id, status, already_registered} |
+| GET /api/v1/mule-registry<br>(alias /api/v1/mules) | Read-only registry listing for the extension popup | API key (Bearer) | None | 200 registry list |
+| POST /api/v1/dashboard/auth/login | Exchange the administrative key for a session cookie | None (public) | 5/minute per IP | 200 {authenticated, expires_in} + Set-Cookie |
+| GET /api/v1/dashboard/auth/session | Report whether the caller holds a valid session | None (public) | None | 200 {authenticated} |
+| POST /api/v1/dashboard/auth/logout | Destroy the session and clear the cookie | None (public) | None | 200 {authenticated: false} |
+| GET /health | Liveness probe | None (public) | None | 200 {status, service, version} |
+
+#### 4.3.3 Primary Endpoint Contract: POST /api/v1/analyze/semantics
+
+This endpoint orchestrates the real-time decision pipeline. The request body is validated by the Pydantic model WebPayload before any business logic runs (Table 4.2); a request that fails validation never reaches the model.
+
+**Table 4.2: Request Schema (WebPayload) and Validation Rules**
+
+| Field | Type | Required | Validation rule |
+| --- | --- | --- | --- |
+| url | string (HttpUrl) | Yes | Must be an absolute http or https URL; otherwise HTTP 422. |
+| dom_content | string | One of dom_content / text_content | Raw outerHTML of the page; at most 5,000,000 characters. |
+| text_content | string | One of dom_content / text_content | Visible text of the page; at most 5,000,000 characters. |
+| origin | string | No | Optional origin or referrer header. |
+| extract_mules | boolean | No (default true) | Flag reserved for clients that wish to state mule scanning explicitly. |
+| (model rule) | — | — | At least one of dom_content or text_content must contain a non-whitespace character; an empty payload returns HTTP 422. When only one is supplied it is mirrored into the other. |
+
+The response envelope (Table 4.3) keeps the nested meta and data blocks used since Project I and adds top-level fields that explain the verdict. Listing 4.1 shows a response captured from the running system for a look-alike Maybank page.
+
+**Table 4.3: Response Schema (AnalysisResponse)**
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| meta.transaction_id | string (UUID v4) | Identifier of this analysis, also written to the server log. |
+| meta.processing_time_ms | number | Server-side time for BERT inference and mule scan. |
+| data.semantic_analysis | object | label (PHISHING or LEGITIMATE), confidence in [0, 1], is_malicious (label is PHISHING and confidence ≥ 0.75), sanitized_text_preview (first 200 characters). |
+| data.mule_scan | object | accounts_extracted (array of strings), flagged_accounts (array of {account_number, bank_name, report_count}), mule_detected (boolean). |
+| orchestration / verdict | string | BLOCK_RENDER or SAFE. The extension acts on this field. |
+| decision_rule | string or null | Rule that produced a block (R1_MULE_REGISTRY … R6_EVASIVE_INFRASTRUCTURE); null when SAFE. |
+| threat_indicators | array of strings | Human-readable reasons for the verdict, shown on the block overlay. |
+| signals | object of booleans | The eleven signals evaluated by the verdict engine (Table 4.13). |
+| risk_score | number | Severity of the rule that fired (0.90–0.99), or an advisory value below 0.50 when SAFE; 0.0 for whitelisted pages. |
+| bert_score | number | Softmax confidence of the label predicted by BERT. |
+| is_whitelisted | boolean | True if the hostname matched the trusted-domain whitelist. |
+| brand_impersonation | object | target_brand, is_official_domain, brand_in_hostname, lookalike_domain, brand_mentioned, impersonation_index, matched_brand_cues, hostname. |
+| mule_accounts_flagged | array | Copy of data.mule_scan.flagged_accounts for convenience. |
+| status, execution_time_ms, timestamp | string, number, string | "success"; processing time; ISO-8601 time in GMT+8. |
+
+**Listing 4.1: Captured Response for http://maybank2u-secure-login.top/m2u/login (abridged)**
 
 ```
-+----------------------------------------------------------------------------------------------------+
-|                         FASTAPI CORE RESTful API ROUTE REGISTRY                                    |
-+----------------------------------------------------------------------------------------------------+
-|   HTTP Method      Endpoint URI                       Function & Security Scope                    |
-|  ─────────────    ───────────────────────────────    ────────────────────────────────────────────  |
-|   POST            /api/v1/analyze/semantics          Real-Time Multi-Modal DOM & Mule Verification |
-|   POST            /api/v1/analyze/quishing           Optical Base64 DuitNow QR Code Forensic Scan  |
-|   GET             /api/v1/dashboard/stream           Server-Sent Events (SSE) Live Telemetry Stream|
-|   GET             /api/v1/dashboard/distributions    24-Hour Threat Velocity Spectrum (GMT+8)      |
-|   GET             /api/v1/dashboard/geo-threats      Geographic Attack Origin Nodes & ASNs         |
-|   GET             /api/v1/dashboard/mules            Paginated Mule Registry Search & Filter       |
-|   DELETE          /api/v1/dashboard/mules/{id}       Administrative Mule Record Revocation         |
-|   POST            /api/v1/dashboard/export/stix      OASIS STIX 2.1 Threat Bundle JSON Exporter    |
-|   POST            /api/v1/dashboard/escalate/nsrc    NSRC 997 & National Fraud Portal Case Freeze  |
-+----------------------------------------------------------------------------------------------------+
-```
-
-### 4.3.2 Primary Endpoint Contract: `POST /api/v1/analyze/semantics`
-This core endpoint orchestrates the real-time threat decision pipeline.
-
-#### Request JSON Schema (`SemanticAnalysisRequest` / `WebPayload`):
-```json
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "SemanticAnalysisRequest",
-  "type": "object",
-  "required": ["url"],
-  "properties": {
-    "url": {
-      "type": "string",
-      "format": "uri",
-      "description": "The absolute target URL visited by the browser client."
+  "meta": {
+    "transaction_id": "b12c2998-ed8b-4185-83a5-da429cf43ffa",
+    "processing_time_ms": 115.64
+  },
+  "data": {
+    "semantic_analysis": {
+      "label": "PHISHING",
+      "confidence": 0.999911,
+      "is_malicious": true,
+      "sanitized_text_preview": "Maybank2u Your account access has been limited. Log in and enter the TAC sent to your phone to restore access."
     },
-    "dom_content": {
-      "type": "string",
-      "description": "Raw outerHTML captured by the browser extension content script."
-    },
-    "text_content": {
-      "type": "string",
-      "description": "Alternative sanitised innerText extracted from the webpage DOM."
-    },
-    "origin": {
-      "type": "string",
-      "description": "Optional HTTP origin or referrer header."
-    },
-    "extract_mules": {
-      "type": "boolean",
-      "default": true,
-      "description": "Flag to enable deterministic Regex mule account scanning."
+    "mule_scan": {
+      "accounts_extracted": [],
+      "flagged_accounts": [],
+      "mule_detected": false
     }
-  }
+  },
+  "orchestration": "BLOCK_RENDER",
+  "decision_rule": "R2_BRAND_IN_HOSTNAME",
+  "risk_score": 0.97,
+  "threat_indicators": [
+    "Hostname embeds protected brand 'Maybank' (maybank) on a domain it does not own",
+    "High-risk disposable TLD detected (.top)"
+  ],
+  "signals": {
+    "mule": false,
+    "brand_host": true,
+    "lookalike": false,
+    "brand_mention": false,
+    "bert": true,
+    "heuristic": true,
+    "heuristic_strong": true,
+    "credential_form": true,
+    "credential_text": true,
+    "credential_request": true,
+    "scam_language": false
+  },
+  "bert_score": 0.999911,
+  "is_whitelisted": false
 }
 ```
+Table 4.4 lists every status code the endpoint can return together with the body the client receives. The same error conventions apply to the other authenticated routes.
 
-#### Response JSON Schema (`SemanticAnalysisResponse` / `AnalysisResponse`):
-```json
-{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "SemanticAnalysisResponse",
-  "type": "object",
-  "required": ["orchestration", "verdict", "risk_score", "bert_score", "is_whitelisted", "meta", "data", "execution_time_ms"],
-  "properties": {
-    "orchestration": {
-      "type": "string",
-      "enum": ["BLOCK_RENDER", "SAFE"],
-      "description": "Primary orchestration directive consumed by the browser extension."
-    },
-    "verdict": {
-      "type": "string",
-      "enum": ["BLOCK_RENDER", "SAFE"],
-      "description": "Mirrors orchestration directive for top-level consumers."
-    },
-    "status": {
-      "type": "string",
-      "enum": ["success", "error"]
-    },
-    "risk_score": {
-      "type": "number",
-      "minimum": 0.0,
-      "maximum": 1.0,
-      "description": "Calibrated multi-vector risk score."
-    },
-    "bert_score": {
-      "type": "number",
-      "minimum": 0.0,
-      "maximum": 1.0,
-      "description": "Raw semantic threat probability generated by BERT Transformer."
-    },
-    "is_whitelisted": {
-      "type": "boolean",
-      "description": "True if domain matched 28-Bank Trusted Whitelist."
-    },
-    "brand_impersonation": {
-      "type": "object",
-      "properties": {
-        "is_impersonation": { "type": "boolean" },
-        "target_brand": { "type": "string" },
-        "impersonation_index": { "type": "number" },
-        "is_official_domain": { "type": "boolean" }
-      }
-    },
-    "mule_accounts_flagged": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "account_number": { "type": "string" },
-          "bank_name": { "type": "string" },
-          "report_count": { "type": "integer" }
-        }
-      }
-    },
-    "meta": {
-      "type": "object",
-      "properties": {
-        "transaction_id": { "type": "string" },
-        "processing_time_ms": { "type": "number" }
-      }
-    },
-    "data": {
-      "type": "object",
-      "properties": {
-        "semantic_analysis": {
-          "type": "object",
-          "properties": {
-            "label": { "type": "string" },
-            "confidence": { "type": "number" },
-            "is_malicious": { "type": "boolean" },
-            "sanitized_text_preview": { "type": "string" }
-          }
-        },
-        "mule_scan": {
-          "type": "object",
-          "properties": {
-            "accounts_extracted": { "type": "array", "items": { "type": "string" } },
-            "flagged_accounts": { "type": "array" },
-            "mule_detected": { "type": "boolean" }
-          }
-        }
-      }
-    },
-    "execution_time_ms": {
-      "type": "number",
-      "description": "Total server-side processing latency in milliseconds."
-    },
-    "timestamp": {
-      "type": "string",
-      "format": "date-time"
-    }
-  }
-}
-```
+**Table 4.4: Status Codes and Error-Handling Schema**
 
-### 4.3.3 Secondary Endpoint Contract: `POST /api/v1/analyze/quishing`
-This specialised endpoint provides optical QR code extraction and forensic analysis to intercept QR-code phishing (Quishing) campaigns exploiting Malaysian payment rails (e.g. DuitNow, PayNet EMVCo).
+| Status | Condition | Response body | Client behaviour |
+| --- | --- | --- | --- |
+| 200 OK | Analysis completed | AnalysisResponse (Table 4.3) | Apply the orchestration directive. |
+| 401 Unauthorized | Authorization header missing, or the key is wrong | {"detail": "Not authenticated"} or {"detail": {"error": "INVALID_API_KEY", "message": …}} | Treated as a backend error: offline heuristics are used and the error appears in the popup diagnostics. |
+| 422 Unprocessable Entity | Malformed URL, empty content, or wrong types | {"detail": [{"type", "loc", "msg", …}]} (Pydantic error list) | Logged as a client error; offline heuristics are used. |
+| 429 Too Many Requests | More than 60 requests in a minute from one IP | {"error": "Rate limit exceeded: 60 per 1 minute"} | Offline heuristics are used until the window resets. |
+| 503 Service Unavailable | PyTorch out-of-memory or CUDA failure caught by the global RuntimeError handler | {"error": "MODEL_INFERENCE_FAILURE", "message": …} | Offline heuristics are used. |
+| 500 Internal Server Error | Any other unhandled exception | FastAPI default error body | Offline heuristics are used. |
 
-#### Request JSON Schema (`QuishingAnalysisRequest`):
-```json
-{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "QuishingAnalysisRequest",
-  "type": "object",
-  "required": ["image_base64"],
-  "properties": {
-    "image_base64": {
-      "type": "string",
-      "description": "Base64-encoded raw image bytes of the suspicious QR code matrix."
-    },
-    "page_url": {
-      "type": "string",
-      "format": "uri",
-      "description": "The URL of the hosting webpage where the QR code was rendered."
-    }
-  }
-}
-```
+#### 4.3.4 Supporting Endpoint Contracts
 
-#### Response JSON Schema (`QuishingAnalysisResponse`):
-```json
-{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "QuishingAnalysisResponse",
-  "type": "object",
-  "required": ["quishing_threat", "quishing_score", "decoded_payload", "verdict"],
-  "properties": {
-    "quishing_threat": {
-      "type": "boolean",
-      "description": "True if decoded QR payload contains malicious redirect or mule credentials."
-    },
-    "quishing_score": {
-      "type": "number",
-      "minimum": 0.0,
-      "maximum": 1.0,
-      "description": "Calibrated quishing forensic risk probability."
-    },
-    "decoded_payload": {
-      "type": "string",
-      "description": "Decoded textual URL or PayNet EMVCo payment string."
-    },
-    "verdict": {
-      "type": "string",
-      "enum": ["BLOCK_RENDER", "SAFE"],
-      "description": "Defensive action dispatched to browser client."
-    },
-    "risk_factors": {
-      "type": "array",
-      "items": { "type": "string" },
-      "description": "List of heuristic forensic flags (e.g. fake PDRM summon, brand keyword impersonation)."
-    }
-  }
-}
-```
+**Quishing analysis (POST /api/v1/analyze/quishing).** The request carries image_base64 (required) and an optional page_url. The image is decoded with OpenCV's QRCodeDetector and the payload is audited against PayNet EMVCo DuitNow conventions and the URL heuristics. The response contains quishing_threat, quishing_score, decoded_payload, verdict, risk_factors, is_duitnow_scheme, extracted_destination_urls and extracted_mule_accounts. The verdict is BLOCK_RENDER when the score is at least 0.70 or when the payload contains a registry account.
 
-### 4.3.4 Supporting User Interface Wireframes & System Interaction Mockups
+**Visual analysis (POST /api/visual/analyze).** The request carries current_url and screenshot (a data URL or raw base64, at most 15,000,000 characters), with optional page_title and visible_text. The response contains detected_logos (brand, confidence, bounding box), risk_level (safe, suspicious or dangerous) and reason. A logo of a supported bank detected with confidence of at least 0.85 on a domain that the bank does not own yields dangerous; lower confidence yields suspicious. An undecodable screenshot returns HTTP 400 (INVALID_SCREENSHOT) and an unavailable model returns HTTP 503 (VISUAL_MODEL_UNAVAILABLE).
 
-To satisfy requirements engineering and user experience (UX) specifications, the backend platform is engineered to interact with two primary front-end graphical interfaces: (1) the **Client-Side High-Impact Alert Interstitial Overlay** (executed in the user's browser upon receiving a `BLOCK_RENDER` verdict), and (2) the **Enterprise Security Operations Centre (SOC) Live Telemetry Dashboard** (served at `/dashboard/` for security analysts and incident response teams).
+**Mule report (POST /api/v1/mule-reports).** The request carries account_number (6 to 34 characters, digits with optional spaces, dashes or a leading plus sign; anything else returns HTTP 422), an optional bank_name and an optional page_url. The report is stored with status PENDING and HTTP 201 is returned with the report identifier. The account does not enter the blocking registry until an analyst approves the report through POST /api/v1/dashboard/mule-reports/{report_id}/review with the body {"decision": "APPROVE"} or {"decision": "REJECT"}; reviewing a report twice returns HTTP 409 and an unknown identifier returns HTTP 404.
 
-Figure 4.2 presents the architectural wireframes and interface mockups governing these two operational environments.
+**Dashboard operations.** Every route under /api/v1/dashboard other than the three auth routes requires the administrative key or a valid session cookie and otherwise returns HTTP 401 with the body {"detail": {"error": "DASHBOARD_AUTH_REQUIRED", "message": …}}. Table 4.5 groups the 64 operations (38 GET, 25 POST and 1 DELETE) by function.
 
-```text
-+----------------------------------------------------------------------------------------------------+
-|  FIGURE 4.2 (PANEL A): CLIENT-SIDE HIGH-IMPACT ALERT INTERSTITIAL SCREEN MOCKUP (CHROME OVERLAY)    |
-+----------------------------------------------------------------------------------------------------+
-|                                                                                                    |
-|   ┌────────────────────────────────────────────────────────────────────────────────────────────┐   |
-|   │ 🚨 CRITICAL CYBERSECURITY WARNING                                          [🛡️ PHISHGUARD] │   |
-|   │ DECEPTIVE FINANCIAL CLONE INTERCEPTED                                                      │   |
-|   ├────────────────────────────────────────────────────────────────────────────────────────────┤   |
-|   │                                                                                            │   |
-|   │   [⚠️ HIGH RISK DETECTED]                                                                   │   |
-|   │   The website you are trying to visit has been flagged as a fraudulent credential harvesting│   |
-|   │   portal designed to impersonate a verified Malaysian financial institution.               │   |
-|   │                                                                                            │   |
-|   │   • Target Entity Impersonated : Malayan Banking Berhad (Maybank2u)                        │   |
-|   │   • Deceptive URL Intercepted  : http://rnaybank2u.com.my/auth/login.php                   │   |
-|   │   • AI Semantic Phishing Score : 0.985 (98.5% Confidence - BERT Base Uncased)              │   |
-|   │   • Brand Impersonation Index  : 0.925 (Levenshtein Distance = 1 Homoglyph Mutation)       │   |
-|   │   • Money Mule Match Identified: ⚠️ PDRM Semakmule Record Flagged                          │   |
-|   │                                  Account: 112233445566 (Maybank | 14 Fraud Reports)        │   |
-|   │                                                                                            │   |
-|   │   --------------------------------------------------------------------------------------   │   |
-|   │   RECOMMENDED DEFENSIVE ACTIONS:                                                           │   |
-|   │                                                                                            │   |
-|   │   [ 🛑 LEAVE THIS DANGEROUS SITE IMMEDIATELY (RECOMMENDED) ]                               │   |
-|   │   [ 🌐 PROCEED TO GENUINE MAYBANK PORTAL (https://www.maybank2u.com.my) ]                  │   |
-|   │   [ ⚙️ View Forensic Technical Details ]      [ ⚠️ Report False Positive to SOC ]           │   |
-|   │                                                                                            │   |
-|   └────────────────────────────────────────────────────────────────────────────────────────────┘   |
-|                                                                                                    |
-+----------------------------------------------------------------------------------------------------+
-|  FIGURE 4.2 (PANEL B): ENTERPRISE SOC LIVE THREAT INTELLIGENCE DASHBOARD UI WIREFRAME              |
-+----------------------------------------------------------------------------------------------------+
-|                                                                                                    |
-|  [🛡️ PHISHGUARD-AI SOC WAR ROOM]    [🟢 SSE STREAM: ACTIVE]   [TIME: 01:14:43 GMT+8]   [⚡ 18ms SLA]  |
-|  ================================================================================================  |
-|                                                                                                    |
-|  [EXECUTIVE KPI METRICS CARDS]                                                                     |
-|   ┌─────────────────────┐ ┌─────────────────────┐ ┌─────────────────────┐ ┌─────────────────────┐  |
-|   │ 🚨 Threats Blocked  │ │ 🤖 BERT Confidence  │ │ 🐴 Mule Accounts    │ │ ⚡ Avg API Latency  │  |
-|   │      159 Total      │ │        88.58%       │ │     72 Active DB    │ │      363.36 ms      │  |
-|   │   +18 in last 1hr   │ │   Threshold >= 0.70 │ │  PDRM CCID Synced   │ │  Target < 1,000ms   │  |
-|   └─────────────────────┘ └─────────────────────┘ └─────────────────────┘ └─────────────────────┘  |
-|                                                                                                    |
-|  [24-HOUR THREAT VELOCITY SPECTRUM (MALAYSIA STANDARD TIME GMT+8)]     [INTERVAL: 24h | 12h | 8h]  |
-|   100% |                                      █ (Diurnal Peak: 14:00)                              |
-|    75% |               █          █   █   █   █   █   █                                            |
-|    50% |       █   █   █   █  █   █   █   █   █   █   █   █   █   █                                |
-|    25% |   █   █   █   █   █  █   █   █   █   █   █   █   █   █   █   █   █                        |
-|     0% └───┴───┴───┴───┴───┴──┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴────────────────────────  |
-|          02:00   05:00   08:00    11:00   14:00   17:00   20:00   23:00 (MYT)                      |
-|                                                                                                    |
-|  [LIVE THREAT TELEMETRY & ATTACK INFRASTRUCTURE RADAR]                                             |
-|   #   Timestamp (MYT)   Target URL & Payload        Brand Target  Mule Record  Score   Action  ASN |
-|  ───  ────────────────  ──────────────────────────  ────────────  ───────────  ──────  ──────  ─── |
-|  159  01:10:00 GMT+8    http://rnaybank-secure.top  Maybank2u     112233445566 0.985   BLOCK   TM  |
-|  158  00:45:12 GMT+8    http://cimb-clicks-auth.cc  CIMB Clicks   None         0.927   BLOCK   CF  |
-|  157  00:15:30 GMT+8    http://pbebank-login.xyz    Public Bank   None         0.796   BLOCK   SG  |
-|  156  23:40:00 GMT+8    https://www.maybank2u.com.my Maybank2u    None         0.000   WHITE   TM  |
-|                                                                                                    |
-|  [CTI THREAT SHARING & 1-CLICK LAW ENFORCEMENT DISPATCH]                                           |
-|   [ 🚨 Dispatch Dossier to NSRC 997 ]  [ 🔒 Account Freeze Directive (NFP) ]  [ 📄 Export STIX 2.1 ]|
-|                                                                                                    |
-+----------------------------------------------------------------------------------------------------+
-```
+**Table 4.5: Administrative Dashboard Operations by Function (all require administrative authentication)**
 
-#### User Experience (UX) Architecture & Cognitive Safeguard Rationale
+| Function | Route families under /api/v1/dashboard | Operations |
+| --- | --- | --- |
+| Telemetry and statistics | stats, telemetry (list, export, per-event report, takedown notice, explanation, sandbox preview), distributions, geo-threats, threat-graph, brand-campaign-matrix, system-health, diagnostics | 14 |
+| Live stream | stream (Server-Sent Events: connected, update and heartbeat frames) | 1 |
+| Mule registry and reports | mule-registry (list, add, bulk add, delete), mule-reports (list, review) | 6 |
+| On-demand analysis | quick-scan, batch-inspect, sandbox-inspect, multi-vector-score, ssl-intel, quishing, typosquat-radar | 8 |
+| Threat-intelligence export | export (CEF, Syslog, sinkhole rules and others), taxii2, yara-rules, suricata-rules, mitre-matrix, threat-feeds | 14 |
+| Response and administration | domains (quarantine, whitelist), playbooks, nsrc, webhooks, db (maintenance, backup), simulator, red-team | 21 |
+
+#### 4.3.5 Supporting User Interface Wireframes & System Interaction Mockups
+
+To satisfy requirements engineering and user experience (UX) specifications, the backend platform is engineered to interact with two primary front-end graphical interfaces: (1) the **Client-Side High-Impact Alert Interstitial Overlay** (executed in the user's browser upon receiving a BLOCK_RENDER verdict), and (2) the **Enterprise Security Operations Centre (SOC) Live Telemetry Dashboard** (served at /dashboard/ for security analysts and incident response teams).
+
+The two mock-ups below present the architectural wireframes and interface mockups governing these two operational environments.
+
+*[Figure: see the Word report]*
+
+**User Experience (UX) Architecture & Cognitive Safeguard Rationale**
+
 The design of these visual supporting elements is grounded in cognitive cybersecurity principles:
-1. **Mitigating "System 1" Cognitive Biases (Kahneman, 2011)**: Standard passive browser warnings (e.g. subtle padlock colour alterations) are frequently bypassed because victims browse under automatic, fast-paced cognitive heuristics. The **Client-Side High-Impact Alert Interstitial** dismounts the deceptive DOM from the client rendering tree, replacing it with an un-ignorable high-contrast crimson overlay that disrupts automatic victim momentum and forces conscious, deliberate cognitive evaluation.
-2. **Actionable Remediation over Ambiguity**: Rather than presenting abstract technical diagnostics, the interstitial explicitly communicates the impersonated banking brand, the quantified AI risk confidence score, and provides a direct, zero-risk hyperlink to the verified official banking website (`https://www.maybank2u.com.my`).
-3. **Operational SOC Visual Ergonomics**: The **Threat Intelligence Dashboard** visualises diurnal attack rhythms synchronised to Malaysian business hours (GMT+8), providing tier-1 security operations centre (SOC) analysts with immediate situational awareness and single-click STIX 2.1 / NSRC 997 escalation pathways to execute real-time account freezes.
 
----
+- **Mitigating "System 1" Cognitive Biases (Kahneman, 2011)**: Standard passive browser warnings (e.g. subtle padlock colour alterations) are frequently bypassed because victims browse under automatic, fast-paced cognitive heuristics. The **Client-Side High-Impact Alert Interstitial** dismounts the deceptive DOM from the client rendering tree, replacing it with an un-ignorable high-contrast crimson overlay that disrupts automatic victim momentum and forces conscious, deliberate cognitive evaluation.
+- **Actionable Remediation over Ambiguity**: Rather than presenting abstract technical diagnostics, the interstitial explicitly communicates the impersonated banking brand, the quantified AI risk confidence score, and provides a direct, zero-risk hyperlink to the verified official banking website (https://www.maybank2u.com.my).
+- **Operational SOC Visual Ergonomics**: The **Threat Intelligence Dashboard** visualises diurnal attack rhythms synchronised to Malaysian business hours (GMT+8), providing tier-1 security operations centre (SOC) analysts with immediate situational awareness and single-click STIX 2.1 / NSRC 997 escalation pathways to execute real-time account freezes.
 
-## 4.4 Unified Modelling Language (UML) Behavioural & Structural Models
+### 4.4 Unified Modelling Language (UML) Behavioural & Structural Models
 
 To formally specify system interactions, execution flows, and object-oriented architectures, standard **Unified Modelling Language (UML 2.5)** diagrams are utilised (Fowler, 2003).
 
-### 4.4.1 UML Use Case Diagram
-The Use Case Diagram (Figure 4.3) models the functional boundaries of the backend system and specifies interactions with external actors:
-* **Actor 1: Browser Extension Client (End User)**: Dispatches DOM payloads for real-time analysis and receives orchestration directives (`BLOCK_RENDER` vs. `SAFE`).
-* **Actor 2: SOC Security Administrator**: Monitors live threat telemetry feeds, analyses the 24-hour velocity timeline, manages mule registry entries, and triggers model retraining.
-* **Actor 3: Law Enforcement (PDRM CCID / NSRC 997)**: Receives automated STIX 2.1 forensic dossiers and executes emergency account freezing directives.
+#### 4.4.1 Use Case Diagram
 
-```plantuml
-@startuml Use_Case_Chapter_4
-!theme vibrant
-skinparam backgroundColor #0f172a
-skinparam ArrowColor #38bdf8
-skinparam ActorBorderColor #38bdf8
-skinparam ActorBackgroundColor #1e293b
-skinparam ActorFontColor #f8fafc
-skinparam UseCaseBorderColor #38bdf8
-skinparam UseCaseBackgroundColor #1e293b
-skinparam UseCaseFontColor #f8fafc
+The Use Case Diagram (Figure 4.2) models the functional boundaries of the backend system and specifies interactions with external actors:
 
-title Figure 4.3: UML Use Case Diagram for PhishGuard-AI Backend Intelligence
+- **Actor 1: Browser Extension Client (End User)**: Dispatches DOM payloads for real-time analysis and receives orchestration directives (BLOCK_RENDER vs. SAFE).
+- **Actor 2: SOC Security Administrator**: Monitors live threat telemetry feeds, analyses the 24-hour velocity timeline, manages mule registry entries, and triggers model retraining.
+- **Actor 3: Law Enforcement (PDRM CCID / NSRC 997)**: Receives automated STIX 2.1 forensic dossiers and executes emergency account freezing directives.
+*[Figure: see the Word report]*
 
-left to right direction
+#### 4.4.2 Activity Diagram
 
-actor "Browser Extension Client\n(End User)" as ClientActor
-actor "SOC Security Administrator" as AdminActor
-actor "Law Enforcement Agency\n(PDRM CCID / NSRC 997)" as PoliceActor
+The Activity Diagram (Figure 4.3) illustrates the algorithmic decision logic executed upon receiving an API inspection request, highlighting the parallel execution of the BERT NLP forward pass and the Regex database search via asyncio.gather().
 
-rectangle "PhishGuard-AI Backend Microservice Boundary" {
-    usecase "UC-01: Analyze Webpage Semantics" as UC1
-    usecase "UC-02: Bypass AI on Trusted Whitelist" as UC2
-    usecase "UC-03: Scan for Mule Accounts" as UC3
-    usecase "UC-04: Decode Quishing QR Matrix" as UC4
-    usecase "UC-05: Stream Live Threat Telemetry" as UC5
-    usecase "UC-06: Monitor 24h Velocity & Geo Radar" as UC6
-    usecase "UC-07: Manage Mule Registry Records" as UC7
-    usecase "UC-08: Export STIX 2.1 & NSRC Dossier" as UC8
-    usecase "UC-09: Trigger Account Freeze Escalation" as UC9
-}
+*[Figure: see the Word report]*
 
-ClientActor --> UC1
-ClientActor --> UC4
-UC1 ..> UC2 : <<include>>
-UC1 ..> UC3 : <<include>>
+#### 4.4.3 UML Sequence Diagram
 
-AdminActor --> UC5
-AdminActor --> UC6
-AdminActor --> UC7
-AdminActor --> UC8
+The Sequence Diagram (Figure 4.4) chronologically maps the multi-threaded object interactions during a zero-day phishing interception event.
 
-PoliceActor --> UC8
-PoliceActor --> UC9
-UC7 <.. UC9 : <<extend>>
+*[Figure: see the Word report]*
 
-@enduml
-```
+#### 4.4.4 UML Class Diagram
 
-### 4.4.2 UML Activity Diagram
-The Activity Diagram (Figure 4.4) illustrates the algorithmic decision logic executed upon receiving an API inspection request, highlighting the parallel execution of the BERT NLP forward pass and the Regex database search via `asyncio.gather()`.
+The Class Diagram (Figure 4.5) details the Object-Oriented structure, encapsulation boundaries, and data transfer objects (DTOs) powering the Python backend.
 
-```plantuml
-@startuml Activity_Diagram_Chapter_4
-!theme vibrant
-skinparam backgroundColor #0f172a
-skinparam ArrowColor #38bdf8
-skinparam ActivityBorderColor #38bdf8
-skinparam ActivityBackgroundColor #1e293b
-skinparam ActivityFontColor #f8fafc
+*[Figure: see the Word report]*
 
-title Figure 4.4: UML Activity Diagram: Asynchronous Request Lifecycle & Parallel Execution
+#### 4.4.5 Detailed Analysis-Pipeline Sequence and Client State Handling
 
-start
-:Client Extension dispatches POST /api/v1/analyze/semantics;
-:FastAPI Gateway enforces Bearer Token Auth & Rate Limiting;
+Figure 4.8 refines the sequence diagram to the level of the implemented components and shows the exact order of operations for a non-whitelisted page that is blocked. Table 4.6 gives the processing performed at each step, with the thresholds and limits taken from the source code.
 
-if (Bearer Token Valid & Rate Limit OK?) then (yes)
-    :Validate Payload Structure via Pydantic Schema;
-else (no)
-    :Return HTTP 401 Unauthorised or HTTP 429 Too Many Requests;
-    stop
-endif
+![Figure 4.8: Detailed Sequence of the Analysis Pipeline (v3.2.0)](figures/fig_sequence_analysis_pipeline.png)
 
-:Extract Domain and Query In-Memory 28-Bank Whitelist (frozenset);
+**Figure 4.8: Detailed Sequence of the Analysis Pipeline (v3.2.0)**
 
-if (Domain in Trusted Whitelist?) then (yes)
-    #lightgreen:Generate Immediate SAFE Verdict (0ms AI Overhead);
-    :Return HTTP 200 { verdict: "SAFE", risk: 0.00 };
-    stop
-else (no: Suspicious / Unverified Domain)
-    :Sanitise DOM Text via BeautifulSoup (Strip HTML/Script Tags);
-    
-    fork
-        partition "Parallel Thread 1: Semantic Intent Analysis" {
-            :Dispatch to Worker Thread (asyncio.to_thread);
-            :Execute WordPiece Subword Tokenisation;
-            :PyTorch BERT Model Forward Pass;
-            :Compute Softmax Probability Score (P_bert);
-        }
-    fork again
-        partition "Parallel Thread 2: Mule Account Verification" {
-            :Execute Pre-Compiled Regex Patterns (8 Malaysian Banks);
-            if (Bank Account Pattern Matched?) then (yes)
-                :Query SQLite mule_registry asynchronously (aiosqlite);
-                if (Account exists in Registry?) then (yes)
-                    :Flag Mule Account (Mule_Match = True);
-                else (no)
-                    :Mule_Match = False;
-                endif
-            else (no)
-                :No Account Pattern Found;
-            endif
-        }
-    fork again
-        partition "Parallel Thread 3: Brand Impersonation Profiling" {
-            :Compute Levenshtein Distance against 10 Bank Domains;
-            :Calculate Brand Impersonation Index (BII);
-        }
-    end fork
-    
-    :Multi-Vector Risk Aggregation & Threshold Calibration;
-    
-    if (P_bert >= 0.70 OR Mule_Match == True OR BII >= 0.85) then (yes: Threat Detected)
-        #red:Assign Verdict = "BLOCK_RENDER";
-        :Compile Threat Breakdown & Forensic Indicators;
-    else (no: Benign Webpage)
-        #lightgreen:Assign Verdict = "SAFE";
-    endif
-    
-    :Asynchronously Log Forensic Record to threat_telemetry DB;
-    :Broadcast Telemetry Event to Active SSE Dashboard Clients;
-    :Return Unified JSON Response Payload to Browser Extension;
-    stop
-endif
+**Table 4.6: Processing Performed at Each Pipeline Step**
 
-@enduml
-```
+| Step | Component | Processing and parameters |
+| --- | --- | --- |
+| 1 | Content script → service worker | Collects the page URL, visible text (including open shadow roots and same-origin frames) and body HTML; the HTML is truncated to 3,000,000 characters. |
+| 2 | Service worker → API | POST with the Bearer key. An AbortController cancels the call after 8 s (12 s for the visual endpoint). |
+| 3 | API gateway | Constant-time key check (401), fixed-window limit of 60 requests per minute per IP (429), Pydantic validation (422). |
+| 4 | Sanitiser | BeautifulSoup removes script, style, noscript, meta, link, svg and iframe subtrees, extracts visible text and collapses whitespace. |
+| 5 | Whitelist | Exact or subdomain match against the trusted-domain sets. On a match BERT is skipped and the verdict is SAFE. |
+| 6 | BERT engine | Input: URL without scheme or www. WordPiece tokenisation, truncation and padding to 128 tokens, forward pass under torch.no_grad() in a worker thread, softmax. Results are cached per URL for 10 minutes. |
+| 7–8 | Mule scanner and SQLite | Eight bank patterns, DuitNow phone and NRIC patterns and a generic 10–14 digit pattern; matches are normalised (spaces, dashes, +60 prefix) and looked up with one parameterised IN query. |
+| 9 | Signal construction | is_malicious is true when the label is PHISHING and the confidence is at least 0.75. |
+| 10 | Verdict engine | Brand profiler tiers, URL heuristics, credential-form detection and scam lexicon are combined by rules R1–R6 (Table 4.14). |
+| 11–12 | Telemetry | For a blocked page only: one row in threat_telemetry and one SSE update frame to connected dashboards. |
+| 13–14 | Response and client action | The extension applies the directive as described in Table 4.7. |
 
-### 4.4.3 UML Sequence Diagram
-The Sequence Diagram (Figure 4.5) chronologically maps the multi-threaded object interactions during a zero-day phishing interception event.
+The browser extension, developed by the project partner, turns the response into one of the client states in Table 4.7. The design principle is fail-safe degradation: a slow or unavailable backend never leaves the user waiting and never blocks a page on the basis of a server error.
 
-```plantuml
-@startuml Sequence_Diagram_Chapter_4
-!theme vibrant
-skinparam backgroundColor #0f172a
-skinparam ArrowColor #38bdf8
-skinparam SequenceLifeLineBorderColor #38bdf8
-skinparam SequenceLifeLineBackgroundColor #1e293b
-skinparam ParticipantBorderColor #38bdf8
-skinparam ParticipantBackgroundColor #1e293b
-skinparam ParticipantFontColor #f8fafc
+**Table 4.7: Chrome Extension State Handling for Backend Outcomes**
 
-title Figure 4.5: UML Sequence Diagram: End-to-End Multi-Modal Threat Verification
+| Backend outcome | Extension state | User-visible behaviour |
+| --- | --- | --- |
+| orchestration = BLOCK_RENDER, or a registry account is flagged | risk_level = dangerous | Full-screen red shield overlay listing the indicators returned by the backend; toolbar badge "!" in red; the user may leave the page or explicitly choose to proceed. |
+| Visual endpoint reports suspicious (logo confidence below 0.85) | risk_level = suspicious (REVIEW) | Amber "?" badge; the page remains usable. |
+| orchestration = SAFE, or official domain | risk_level = safe | Green "OK" badge; no interruption. |
+| Timeout (8 s / 12 s), network error, or HTTP 401, 422, 429, 5xx | Offline heuristics | The service worker evaluates its local official-domain list and typosquatting check; the result is marked as degraded in the popup diagnostics. |
 
-autonumber
-actor "End User" as User
-participant "Chrome Content Script" as CS
-participant "Background Service Worker" as SW
-participant "FastAPI Gateway (ASGI)" as API
-participant "In-Memory Whitelist" as White
-participant "BERT Semantic Engine (Singleton)" as BERT
-participant "Mule Scanner (Regex Engine)" as Mule
-database "SQLite Database (aiosqlite)" as DB
-participant "Live SOC Dashboard" as SOC
+### 4.5 Relational Database Design & Schema Normalisation
 
-User -> CS : Visits Target Webpage (e.g. cloned portal)
-activate CS
-CS -> CS : Extracts sanitised DOM text and target URL
-CS -> SW : Dispatches payload via runtime message
-deactivate CS
+![Figure 4.6: Physical Database Schema (three tables, one foreign key, five indexes)](figures/fig_database_schema_erd.png)
 
-activate SW
-SW -> API : HTTP POST /api/v1/analyze/semantics (Bearer Auth)
-activate API
+**Figure 4.6: Physical Database Schema (three tables, one foreign key, five indexes)**
 
-API -> White : Check domain against frozenset
-activate White
-White --> API : Result = False (Unverified Domain)
-deactivate White
+#### 4.5.1 Third Normal Form (3NF) & B-Tree Indexing Optimisation
 
-par Asynchronous Parallel Execution (asyncio.gather)
-    API -> BERT : asyncio.to_thread(bert_forward_pass, text)
-    activate BERT
-    BERT -> BERT : WordPiece Tokenisation & Tensor Computation
-    BERT --> API : Returns bert_score = 0.972 (Phishing)
-    deactivate BERT
-else
-    API -> Mule : scan_dom_for_mule_accounts(text)
-    activate Mule
-    Mule -> Mule : Executes compiled Regex (Maybank 12-digit match)
-    Mule -> DB : SELECT * FROM mule_registry WHERE account = ?
-    activate DB
-    DB --> Mule : Returns record {bank: "Maybank", reports: 8}
-    deactivate DB
-    Mule --> API : Returns mule_match data
-    deactivate Mule
-end
+The relational schema consists of three tables. The two core tables, mule_registry and threat_telemetry, are in Third Normal Form (3NF) (Elmasri & Navathe, 2015); the review queue mule_reports deliberately repeats the reported account number and bank name so that a report remains meaningful before, and independently of, any registry row:
 
-API -> API : Aggregate risk scores -> Verdict: "BLOCK_RENDER"
-API -> DB : Non-blocking INSERT into threat_telemetry
-API -> SOC : Push SSE event (EventSource broadcast)
-API --> SW : Return HTTP 200 JSON { verdict: "BLOCK_RENDER", risk: 0.985 }
-deactivate API
+- **1NF Compliance**: All attribute domains contain strictly atomic, scalar values; repeating groups and nested arrays are decomposed.
+- **2NF Compliance**: All non-key attributes are fully functionally dependent on the primary key, eliminating partial key dependencies.
+- **3NF Compliance**: No non-key attribute is transitively dependent on the primary key (X → Y transitive dependencies eliminated).
+**B-Tree Indexing Algorithmic Acceleration**
 
-SW -> CS : Command: Render Red Defence Shield
-activate CS
-CS -> CS : Remove malicious DOM & display warning overlay
-CS --> User : Displays Block Shield & Forensic Reason
-deactivate CS
-deactivate SW
+In high-concurrency web defence, executing a full-table sequential scan (O(N)) across thousands of scam records introduces unacceptable latency. By applying **B-Tree Indexing** to the account_number column in the mule_registry table:
 
-@enduml
-```
+Search Time Complexity: 
 
-### 4.4.4 UML Class Diagram
-The Class Diagram (Figure 4.6) details the Object-Oriented structure, encapsulation boundaries, and data transfer objects (DTOs) powering the Python backend.
+Where B represents the branching factor of the B-Tree page. A registry lookup is therefore a negligible share of the end-to-end latency, which is dominated by the BERT forward pass (Section 5.5.3).
 
-```plantuml
-@startuml Class_Diagram_Chapter_4
-!theme vibrant
-skinparam backgroundColor #0f172a
-skinparam ArrowColor #38bdf8
-skinparam ClassBorderColor #38bdf8
-skinparam ClassBackgroundColor #1e293b
-skinparam ClassFontColor #f8fafc
-skinparam PackageBorderColor #64748b
-skinparam PackageFontColor #94a3b8
+#### 4.5.2 Data Dictionaries
 
-title Figure 4.6: UML Class Diagram: Object-Oriented Architecture & Singleton Engine Pattern
-
-package "Data Transfer Objects (Pydantic v2)" {
-    class SemanticAnalysisRequest {
-        + url: HttpUrl
-        + text_content: str
-        + origin: Optional[str]
-        + extract_mules: bool = True
-        + validate_schema(): bool
-    }
-    
-    class SemanticAnalysisResponse {
-        + verdict: str
-        + risk_score: float
-        + bert_score: float
-        + is_whitelisted: bool
-        + brand_impersonation: Dict[str, Any]
-        + mule_accounts_flagged: List[Dict[str, Any]]
-        + execution_time_ms: float
-        + to_json(): str
-    }
-}
-
-package "Core Intelligence Services" {
-    class SemanticEngine <<Singleton>> {
-        - _instance: SemanticEngine
-        - _tokenizer: BertTokenizerFast
-        - _model: BertForSequenceClassification
-        - _device: torch.device
-        - _trusted_whitelist: frozenset
-        + get_instance(): SemanticEngine
-        + is_whitelisted(url: str): bool
-        + analyze_semantics(text: str, url: str): float
-        - _sanitize_dom(raw_html: str): str
-    }
-    
-    class MuleScanner {
-        - _compiled_patterns: Dict[str, Pattern]
-        - _db_pool: aiosqlite.Connection
-        + compile_regex_patterns(): void
-        + extract_account_candidates(text: str): List[str]
-        + query_mule_registry(accounts: List[str]): List[MuleRecord]
-    }
-    
-    class BrandProfiler {
-        - _target_brands: Dict[str, str]
-        + calculate_levenshtein_distance(domain: str): float
-        + evaluate_brand_impersonation(url: str): BrandResult
-    }
-    
-    class QuishingScanner {
-        - _qr_detector: cv2.QRCodeDetector
-        + decode_base64_qr(image_b64: str): str
-        + parse_emvco_payload(payload: str): Dict[str, str]
-    }
-}
-
-package "Data Persistence Layer" {
-    class DatabaseManager {
-        - _db_path: str
-        - _pool: aiosqlite.Connection
-        + initialize_database(): void
-        + log_telemetry(url: str, score: float): void
-        + get_mule_by_account(account: str): Optional[MuleRecord]
-        + delete_mule_record(id: int): bool
-    }
-    
-    class MuleRecord {
-        + id: int
-        + account_number: str
-        + bank_name: str
-        + platform_flagged: str
-        + report_count: int
-        + date_added: datetime
-    }
-}
-
-SemanticAnalysisRequest --> SemanticEngine : Ingested By
-SemanticEngine o-- BrandProfiler : Uses
-SemanticEngine o-- MuleScanner : Aggregates With
-MuleScanner --> DatabaseManager : Queries
-MuleScanner --> MuleRecord : Instantiates
-SemanticEngine --> SemanticAnalysisResponse : Outputs
-DatabaseManager --> MuleTable : Persists
-
-@enduml
-```
-
----
-
-## 4.5 Relational Database Design & Schema Normalisation
-
-```plantuml
-@startuml ERD_Chapter_4
-!theme vibrant
-skinparam backgroundColor #0f172a
-skinparam ArrowColor #38bdf8
-skinparam ClassBorderColor #38bdf8
-skinparam ClassBackgroundColor #1e293b
-skinparam ClassFontColor #f8fafc
-skinparam PackageBorderColor #64748b
-skinparam PackageFontColor #94a3b8
-
-title Figure 4.7: Database Entity-Relationship Diagram (3NF Schema & B-Tree Indexes)
-
-entity "mule_registry" as MuleEntity {
-    * id : INTEGER <<PK, AUTOINCREMENT>>
-    --
-    * account_number : VARCHAR(20) <<UNIQUE, INDEX: idx_mule_account>>
-    * bank_name : VARCHAR(50)
-    * platform_flagged : VARCHAR(50)
-    * report_count : INTEGER <<DEFAULT 1>>
-    * date_added : TIMESTAMP <<DEFAULT CURRENT_TIMESTAMP>>
-}
-
-entity "threat_telemetry" as TelemetryEntity {
-    * log_id : INTEGER <<PK, AUTOINCREMENT>>
-    --
-    * malicious_url : VARCHAR(255)
-    * bert_score : FLOAT
-    * timestamp : TIMESTAMP <<DEFAULT CURRENT_TIMESTAMP, INDEX: idx_telemetry_time>>
-    * country_code : VARCHAR(5)
-    * asn_routed : VARCHAR(100)
-    * action_taken : VARCHAR(20)
-}
-
-entity "whitelisted_domains" as WhitelistEntity {
-    * domain_id : INTEGER <<PK, AUTOINCREMENT>>
-    --
-    * domain_name : VARCHAR(255) <<UNIQUE, INDEX: idx_whitelist_domain>>
-    * institution_name : VARCHAR(100)
-    * category : VARCHAR(50) <<'bank', 'edu', 'gov'>>
-    * date_verified : TIMESTAMP
-}
-
-entity "security_audit_logs" as AuditEntity {
-    * audit_id : INTEGER <<PK, AUTOINCREMENT>>
-    --
-    * client_ip : VARCHAR(45)
-    * endpoint_accessed : VARCHAR(100)
-    * response_status : INTEGER
-    * latency_ms : FLOAT
-    * timestamp : TIMESTAMP
-}
-
-TelemetryEntity ||--o{ AuditEntity : Correlated By IP
-MuleEntity ||--o{ TelemetryEntity : Matched In Threat Log
-
-@enduml
-```
-
-### 4.5.1 Third Normal Form (3NF) & B-Tree Indexing Optimisation
-To eliminate data anomalies and guarantee sub-millisecond lookup times, the relational database schema is normalised to the **Third Normal Form (3NF)** (Elmasri & Navathe, 2015):
-1. **1NF Compliance**: All attribute domains contain strictly atomic, scalar values; repeating groups and nested arrays are decomposed.
-2. **2NF Compliance**: All non-key attributes are fully functionally dependent on the primary key, eliminating partial key dependencies.
-3. **3NF Compliance**: No non-key attribute is transitively dependent on the primary key ($X \rightarrow Y$ transitive dependencies eliminated).
-
-#### B-Tree Indexing Algorithmic Acceleration
-In high-concurrency web defence, executing a full-table sequential scan ($O(N)$) across thousands of scam records introduces unacceptable latency. By applying **B-Tree Indexing** to the `account_number` column in the `mule_registry` table:
-
-$$\text{Search Time Complexity: } \mathcal{O}(\log_B N) \ll \mathcal{O}(N)$$
-
-Where $B$ represents the branching factor of the B-Tree page. Lookups execute in $< 0.5\text{ milliseconds}$, maintaining the sub-400ms end-to-end SLA.
-
----
-
-### 4.5.2 Data Dictionaries
-
-**Table 4.1: Data Dictionary for `mule_registry` Entity**
+**Table 4.8: Data Dictionary for mule_registry Entity**
 
 | Column Name | SQL Data Type | Key / Constraint | Description & Purpose |
-| :--- | :--- | :--- | :--- |
-| `id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` | Unique surrogate key identifying each fraudulent account record. |
-| `account_number` | `VARCHAR(20)` | `NOT NULL UNIQUE INDEX(idx_mule_account)` | The exact bank account or e-wallet identifier flagged for fraud. |
-| `bank_name` | `VARCHAR(50)` | `NOT NULL` | The issuing financial institution (e.g., Maybank, CIMB, Public Bank). |
-| `platform_flagged`| `VARCHAR(50)` | `NOT NULL DEFAULT 'manual'` | The scam platform where the account was reported (e.g., Telegram, FB). |
-| `report_count` | `INTEGER` | `NOT NULL DEFAULT 1` | Cumulative number of verified victim reports lodged against this mule. |
-| `date_added` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | The chronological timestamp when the record was registered (ISO 8601). |
+| --- | --- | --- | --- |
+| id | INTEGER | PRIMARY KEY AUTOINCREMENT | Surrogate key identifying each registry record. |
+| account_number | TEXT | NOT NULL, UNIQUE; index idx_mule_account_number | Bank account number, DuitNow phone number or NRIC flagged for fraud. |
+| bank_name | TEXT | NOT NULL | Issuing institution or proxy type (e.g., Maybank, DuitNow (NRIC)). |
+| platform_flagged | TEXT | NOT NULL DEFAULT 'manual_entry' | Platform or channel where the account was reported. |
+| report_count | INTEGER | NOT NULL DEFAULT 1, CHECK (report_count >= 0) | Cumulative number of reports against the account. |
+| date_added | TEXT | NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')) | ISO-8601 UTC timestamp of registration. |
 
-**Table 4.2: Data Dictionary for `threat_telemetry` Entity**
-
-| Column Name | SQL Data Type | Key / Constraint | Description & Purpose |
-| :--- | :--- | :--- | :--- |
-| `log_id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` | Unique audit record identifier for the intercepted threat event. |
-| `malicious_url` | `VARCHAR(255)` | `NOT NULL` | The complete URL string evaluated by the multi-modal pipeline. |
-| `bert_score` | `FLOAT` | `NOT NULL` | The semantic phishing confidence probability generated by BERT. |
-| `timestamp` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP INDEX(idx_telemetry_time)` | Interception timestamp synchronised to Malaysia Standard Time (GMT+8). |
-| `country_code` | `VARCHAR(5)` | `NOT NULL DEFAULT 'MY'` | ISO 3166-1 alpha-2 country code of the attack infrastructure origin. |
-| `asn_routed` | `VARCHAR(100)` | `NOT NULL` | Autonomous System Number and network provider (e.g., TM Net AS4788). |
-| `action_taken` | `VARCHAR(20)` | `NOT NULL DEFAULT 'BLOCKED'` | The defensive action executed (`BLOCKED`, `FLAGGED`, `WHITELISTED`). |
-
-**Table 4.3: Data Dictionary for `whitelisted_domains` Entity**
+**Table 4.9: Data Dictionary for threat_telemetry Entity**
 
 | Column Name | SQL Data Type | Key / Constraint | Description & Purpose |
-| :--- | :--- | :--- | :--- |
-| `domain_id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` | Unique identifier for the trusted domain record. |
-| `domain_name` | `VARCHAR(255)` | `NOT NULL UNIQUE INDEX(idx_whitelist_domain)` | Normalised root domain of the verified financial/educational portal. |
-| `institution_name`| `VARCHAR(100)` | `NOT NULL` | Official organisation name (e.g., Malayan Banking Berhad). |
-| `category` | `VARCHAR(50)` | `NOT NULL` | Classification scope (`'bank'`, `'edu'`, `'gov'`). |
-| `date_verified` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Date when the domain was cryptographically and administratively vetted. |
+| --- | --- | --- | --- |
+| log_id | INTEGER | PRIMARY KEY AUTOINCREMENT | Identifier of the blocked-page event. |
+| malicious_url | TEXT | NOT NULL; index idx_telemetry_malicious_url | URL that received a BLOCK_RENDER verdict. |
+| bert_score | REAL | NOT NULL, CHECK (bert_score BETWEEN 0.0 AND 1.0) | Risk score recorded for the event (severity of the rule that fired). |
+| timestamp | TEXT | NOT NULL DEFAULT (UTC now); index idx_telemetry_timestamp | ISO-8601 UTC timestamp; the dashboard converts to GMT+8 for display. |
 
----
+**Table 4.10: Data Dictionary for mule_reports Entity**
 
-## 4.6 Mule Account Regex Pattern Matching & Extraction Architecture
+| Column Name | SQL Data Type | Key / Constraint | Description & Purpose |
+| --- | --- | --- | --- |
+| report_id | INTEGER | PRIMARY KEY AUTOINCREMENT | Identifier of the user report. |
+| account_number | TEXT | NOT NULL, CHECK (length BETWEEN 6 AND 34) | Account, phone or NRIC reported by the user (digits and a leading plus sign only). |
+| bank_name | TEXT | NOT NULL DEFAULT 'Unknown' | Issuing bank if the reporter knows it. |
+| source | TEXT | NOT NULL DEFAULT 'extension' | Origin of the report. |
+| page_url | TEXT | NULL | Page on which the account was displayed. |
+| status | TEXT | NOT NULL DEFAULT 'PENDING', CHECK (status IN ('PENDING','APPROVED','REJECTED')) | Review state; index idx_mule_reports_status on (status, created_at). |
+| registry_id | INTEGER | NULL, FOREIGN KEY REFERENCES mule_registry(id) ON DELETE SET NULL; index idx_mule_reports_registry_id | Registry row the report refers to, set when the account is already registered or when the report is approved. |
+| created_at | TEXT | NOT NULL DEFAULT (UTC now) | ISO-8601 UTC timestamp of submission. |
+| reviewed_at | TEXT | NULL | ISO-8601 UTC timestamp of the analyst decision. |
 
-To guarantee zero false positives on generic numbers (e.g., order tracking numbers, phone numbers, postal codes), the Mule Account Scanner compiles bank-specific **Deterministic Finite State Automata (DFA)** using Python's `re.compile()` module.
+The relationship between mule_reports and mule_registry is optional on both sides: a report may exist without a registry row (a pending or rejected report about an unknown account), and a registry row may have any number of reports. ON DELETE SET NULL preserves the audit trail of reports when an analyst removes a registry entry, a behaviour verified by an automated test. The trusted-domain whitelist is not stored in the database: it is an immutable in-memory frozenset defined in core/config.py, so that it cannot be altered through any API. Table 4.11 summarises the integrity mechanisms.
 
-```
-+----------------------------------------------------------------------------------------------------+
-|                         C-LEVEL PRE-COMPILED REGEX BYTECODE PIPELINE                               |
-+----------------------------------------------------------------------------------------------------+
-|                                                                                                    |
-|  [Raw Sanitised DOM Text Ingestion]                                                                |
-|         │                                                                                          |
-|         ▼                                                                                          |
-|  [Iterate Pre-Compiled Bytecode Dictionary (8 Major Malaysian Banks)]                              |
-|   1. Maybank     ──> `\b(1[0-9]{11}|5[0-9]{11})\b`   ──> Matches 12 digits (Prefix 1 or 5)         |
-|   2. CIMB Bank   ──> `\b(7[0-9]{9}|8[0-9]{9}|[0-9]{14})\b` ──> Matches 10 or 14 digits            |
-|   3. Public Bank ──> `\b(3[0-9]{9}|4[0-9]{9}|6[0-9]{9})\b` ──> Matches 10 digits                  |
-|   4. RHB Bank    ──> `\b(1[0-9]{9}|2[0-9]{9}|[0-9]{14})\b` ──> Matches 10 or 14 digits            |
-|   5. Hong Leong  ──> `\b(0[0-9]{10}|1[0-9]{10}|3[0-9]{10})\b` ──> Matches 11 digits              |
-|   6. AmBank      ──> `\b(0[0-9]{12}|2[0-9]{12}|8[0-9]{12})\b` ──> Matches 13 digits              |
-|   7. Bank Islam  ──> `\b(12[0-9]{12}|14[0-9]{12})\b` ──> Matches 14 digits                        |
-|   8. Bank Rakyat ──> `\b(11[0-9]{10}|22[0-9]{10})\b` ──> Matches 12 digits                        |
-|         │                                                                                          |
-|         ▼                                                                                          |
-|  [Candidate Deduplication & Format Tagging]                                                        |
-|         │                                                                                          |
-|         ▼                                                                                          |
-|  [Asynchronous SQLite B-Tree Query: `SELECT * FROM mule_registry WHERE account_number IN (...)`]    |
-+----------------------------------------------------------------------------------------------------+
-```
+**Table 4.11: Keys, Constraints and Indexes**
 
-**Table 4.4: Bank-Specific Regular Expression Bytecode Specifications**
+| Mechanism | Definition | Purpose |
+| --- | --- | --- |
+| Primary keys | mule_registry.id, threat_telemetry.log_id, mule_reports.report_id (INTEGER AUTOINCREMENT) | Stable surrogate identifiers. |
+| Unique constraint | mule_registry.account_number | One registry row per account; enables INSERT … ON CONFLICT upserts. |
+| Foreign key | mule_reports.registry_id → mule_registry.id, ON DELETE SET NULL (PRAGMA foreign_keys = ON) | Links reports to registry rows without orphaning or cascading deletes. |
+| Check constraints | report_count ≥ 0; bert_score in [0, 1]; status in a fixed set; account_number length 6–34 | Rejects invalid data at the storage layer even if application validation is bypassed. |
+| Indexes | idx_mule_account_number, idx_telemetry_malicious_url, idx_telemetry_timestamp, idx_mule_reports_status (status, created_at), idx_mule_reports_registry_id | Logarithmic-time registry lookup, time-ordered telemetry queries and review-queue listing. |
+| Journal mode | PRAGMA journal_mode = WAL | Readers are not blocked by the single writer. |
 
-| Financial Institution | Exact Account Format | Pre-Compiled Regex Pattern | Example Test Payload |
-| :--- | :--- | :--- | :--- |
-| **Maybank** | 12 digits, starts with 1 or 5 | `\b(1[0-9]{11}\|5[0-9]{11})\b` | `514012345678` |
-| **CIMB Bank** | 10 or 14 digits, starts with 7 or 8 | `\b(7[0-9]{9}\|8[0-9]{9}\|[0-9]{14})\b` | `7012345678` |
-| **Public Bank** | 10 digits, starts with 3, 4, or 6 | `\b(3[0-9]{9}\|4[0-9]{9}\|6[0-9]{9})\b` | `3123456789` |
-| **RHB Bank** | 10 or 14 digits, starts with 1 or 2 | `\b(1[0-9]{9}\|2[0-9]{9}\|[0-9]{14})\b` | `21234567890123` |
-| **Hong Leong Bank** | 11 digits, starts with 0, 1, or 3 | `\b(0[0-9]{10}\|1[0-9]{10}\|3[0-9]{10})\b` | `01234567890` |
-| **AmBank** | 13 digits, starts with 0, 2, or 8 | `\b(0[0-9]{12}\|2[0-9]{12}\|8[0-9]{12})\b` | `8123456789012` |
-| **Bank Islam** | 14 digits, starts with 12 or 14 | `\b(12[0-9]{12}\|14[0-9]{12})\b` | `14012345678901` |
-| **Bank Rakyat** | 12 digits, starts with 11 or 22 | `\b(11[0-9]{10}\|22[0-9]{10})\b` | `110123456789` |
-| **Generic Fallback** | 10 to 14 continuous digits | `\b[0-9]{10,14}\b` | Unlisted Institution |
+### 4.6 Mule Account Regex Pattern Matching & Extraction Architecture
 
----
+The Mule Account Scanner compiles one pattern per institution with Python's re.compile() at start-up and reuses the compiled objects for every request. Table 4.12 lists the patterns exactly as configured in core/config.py. They encode length and leading-digit conventions and are approximations rather than an official specification; they will also match other numbers of the same shape, such as order references. For that reason extraction never blocks a page: only a subsequent match in the registry does.
 
-## 4.7 Security Hardening, Defence-in-Depth & Error Handling
+*[Figure: see the Word report]*
 
-```
-+----------------------------------------------------------------------------------------------------+
-|                         DEFENCE-IN-DEPTH SECURITY HARDENING ARCHITECTURE                           |
-+----------------------------------------------------------------------------------------------------+
-|                                                                                                    |
-|  [Layer 1: Network Ingestion]   ──> Token-Bucket Rate Limiting (SlowAPI: 60 req/min per IP)        |
-|  [Layer 2: Authentication]      ──> Cryptographic HTTP Authorisation: Bearer <256-bit Token>       |
-|  [Layer 3: Input Sanitisation]  ──> Pydantic v2 Type Constraints + BeautifulSoup HTML Stripping    |
-|  [Layer 4: SQL Injection Block] ──> Strictly Parameterised `aiosqlite` SQL Binding Placeholders (`?`)|
-|  [Layer 5: Exception Shield]    ──> Global Async Handlers: HTTP 422 (Schema), HTTP 500 (Fail-Safe)|
-|                                                                                                    |
-+----------------------------------------------------------------------------------------------------+
-```
+**Table 4.12: Account-Number and Proxy Patterns (core/config.py)**
 
-1. **Cryptographic Authentication**: Access to threat analysis endpoints requires valid 256-bit API keys passed via `Authorisation: Bearer <token>`. Unauthenticated probing is immediately dropped with HTTP 401 Unauthorised.
-2. **Denial-of-Service (DoS) Mitigation**: The `SlowAPI` token-bucket limiter bounds request volume to 60 requests/minute per client IP. Excess traffic is rejected with HTTP 429 Too Many Requests, protecting worker thread pools from exhaustion.
-3. **SQL Injection Neutralisation**: All database interactions use strictly parameterised SQL queries (`SELECT * FROM mule_registry WHERE account_number = ?`), completely eliminating SQL injection risks.
-4. **Resilient Exception Handling**:
-   * **HTTP 422 Unprocessable Entity**: Automatically returned if the client submits malformed JSON schemas.
-   * **HTTP 500 Internal Error Fail-Safe**: If a PyTorch CUDA memory fault occurs, global exception handlers log the error and return a safe fallback decision, ensuring client browser stability.
+| Financial Institution | Format Matched | Compiled Regex Pattern | Example (seed data) |
+| --- | --- | --- | --- |
+| Maybank | 12 digits, starts with 1 or 5 | \b[15]\d{11}\b | 112233445566 |
+| CIMB Bank | 14 digits, starts with 7 | \b7\d{13}\b | 76001234567890 |
+| Public Bank | 10 digits, starts with 3 | \b3\d{9}\b | 3112233445 |
+| RHB Bank | 14 digits, starts with 2 | \b2\d{13}\b | 21234567890123 |
+| Hong Leong Bank | 10 to 12 digits, starts with 0 or 2 | \b[02]\d{9,11}\b | 234567890123 |
+| AmBank | 13 digits, starts with 8 | \b8\d{12}\b | 8123456789012 |
+| Bank Islam | 14 digits, starts with 1 | \b1\d{13}\b | 14001234567890 |
+| Bank Rakyat | 12 digits, starts with 0 or 2 | \b[02]\d{11}\b | 212345678901 |
+| DuitNow mobile proxy | Malaysian mobile number, optional +60 prefix | \b(?:\+?601[0-9]\|01[0-9])[- ]?[0-9]{7,8}\b | 0198765432 |
+| DuitNow NRIC proxy | NRIC in the form YYMMDD-PB-#### | \b\d{6}-\d{2}-\d{4}\b | 980102-14-5678 |
+| Generic fallback | 10 to 14 consecutive digits | \b\d{10,14}\b | Unlisted institution |
 
----
+#### 4.6.1 Corroborated Verdict Engine
 
-## 4.8 Physical Deployment Architecture & Network Topology
+The verdict engine (services/verdict_engine.py) is the single place where detector outputs become a decision; both the extension endpoint and the dashboard quick-scan call it, so the two paths cannot diverge. The engine first reduces the detector outputs to the boolean signals in Table 4.13 and then applies the rules in Table 4.14 in order. The design follows directly from gap G7 in Table 2.6 and from the baseline measurement in Section 5.5.2: no probabilistic signal is allowed to block a page by itself.
 
-```plantuml
-@startuml Deployment_Topology_Chapter_4
-!theme vibrant
-skinparam backgroundColor #0f172a
-skinparam ArrowColor #38bdf8
-skinparam NodeBorderColor #38bdf8
-skinparam NodeBackgroundColor #1e293b
-skinparam NodeFontColor #f8fafc
+**Table 4.13: Signals Evaluated by the Verdict Engine**
 
-title Figure 4.8: Physical Deployment Topology & Network Infrastructure
+| Signal | Source | Definition |
+| --- | --- | --- |
+| mule | Mule scanner | At least one extracted account is present in mule_registry. |
+| brand_host | Brand profiler | A protected brand string (for example maybank, cimbclicks) or short brand token (rhb, hlb, tng) occurs in a hostname the brand does not own. |
+| lookalike | Brand profiler | A hostname token equals a brand string after homoglyph normalisation (rn→m, 0→o, 1→l, vv→w, 5→s, 3→e) or is within edit distance 1 (strings up to 8 characters) or 2 (longer strings). |
+| brand_mention | Brand profiler | A brand keyword occurs as a whole word in the page text on a non-official domain. |
+| bert | BERT engine | Label PHISHING with confidence ≥ 0.75 for the scheme-stripped URL. |
+| heuristic | URL heuristics | Any of: raw-IP host, punycode host, high-risk TLD, three or more subdomain levels below the registrable domain, deceptive keyword subdomain, non-standard port. |
+| heuristic_strong | URL heuristics | Raw-IP host, punycode host or high-risk TLD. |
+| credential_form | DOM inspection | The HTML contains an input of type password, or an input whose name, id, autocomplete or placeholder denotes an OTP, TAC, PIN, CVV or card number. |
+| credential_text | Text inspection | Word-boundary match of credential vocabulary (password, kata laluan, log masuk …); the short tokens TAC, OTP, PIN and PAC count only inside a request phrase such as "enter your … PIN". |
+| credential_request | Derived | credential_form when the client supplied HTML; credential_text for plain-text submissions. |
+| scam_language | Lexicon | The text contains a phrase from the multilingual scam lexicon (English, Bahasa Melayu and Manglish, Chinese, Bahasa Indonesia). |
 
-node "Client Endpoint Device\n(User Physical PC / Laptop)" as ClientNode {
-    node "Google Chrome Browser (Version 120+)" {
-        artifact "PhishGuard-AI Browser Extension\n(Manifest V3 Chrome Web Store)" as ExtArtifact
-        artifact "DOM Extractor & Red Shield Overlay\n(Vanilla JS / CSS)" as DOMArtifact
-    }
-}
+**Table 4.14: Corroboration Rules (evaluated in order; trusted domains are never blocked)**
 
-node "Local / Dedicated Production Host\n(Windows / Linux Server Environment)" as ServerNode {
-    node "Asynchronous Application Gateway (Port 8000)" {
-        component "FastAPI Web Application\n(Uvicorn ASGI Multi-Worker Server)" as ASGIComponent
-        component "SlowAPI Rate Limiter & Bearer Auth" as SecurityComponent
-    }
-    
-    node "Deep Learning Compute Engine (Local Memory)" {
-        component "PyTorch 2.5 + CUDA Runtime" as PyTorchComponent
-        artifact "Fine-Tuned BERT Base Uncased Model\n(phishguard_bert.pt / 440 MB Singleton)" as ModelArtifact
-        component "OpenCV Quishing Engine" as OpenCVComponent
-    }
-    
-    node "Local NVMe SSD Persistent Storage" {
-        database "SQLite 3NF Database\n(phishguard.db in WAL Mode)" as SQLiteFile
-        file "Forensic Audit & Telemetry Logs" as LogFiles
-    }
-}
+| Rule | Condition | Risk score | Rationale |
+| --- | --- | --- | --- |
+| R1 Mule registry | mule | 0.99 | A deterministic match against a reported account; the only single-signal rule. |
+| R2 Brand in hostname | brand_host AND (credential_form OR credential_text OR scam_language OR bert OR heuristic) | 0.97 | A brand string in a foreign hostname is strong evidence, but group and partner sites exist, so one further signal is required. |
+| R3 Look-alike domain | lookalike AND (credential_form OR credential_text OR bert OR heuristic_strong) | 0.95 | Near-miss spellings also occur innocently (for example paypay versus paypal). |
+| R4 Brand clone | brand_mention AND credential_request AND (bert OR heuristic OR scam_language) | 0.93 | A page that names a brand and asks for credentials on an unaffiliated domain; three-way corroboration because news and forum pages also name brands. |
+| R5 Coercive credential request | credential_request AND scam_language AND (bert OR heuristic) | 0.90 | Urgency or threat wording combined with a credential field. |
+| R6 Evasive infrastructure | heuristic_strong AND bert AND (credential_form OR credential_text OR scam_language OR brand_mention) | 0.90 | Raw-IP, punycode or disposable-TLD hosting together with phishing content. |
+| Otherwise | No rule satisfied | < 0.50 (advisory) | SAFE. Residual suspicion is reported as a low advisory score and an informational indicator. |
 
-node "Law Enforcement & National Security Networks" as ExtNetwork {
-    component "National Scam Response Centre (NSRC 997)" as NSRCComponent
-    component "National Fraud Portal (NFP Bridge)" as NFPComponent
-}
+### 4.7 Security Hardening, Defense-in-Depth & Error Handling
 
-ExtArtifact --> ASGIComponent : Encrypted HTTPS REST API Calls (Sub-400ms)
-ASGIComponent --> SecurityComponent : Validates Token & Rate Limits
-ASGIComponent --> PyTorchComponent : Dispatches Async Worker Thread
-PyTorchComponent --> ModelArtifact : In-Memory Forward Pass
-ASGIComponent --> SQLiteFile : aiosqlite Async Connection Pool
-ASGIComponent --> NSRCComponent : Automated 1-Click Dispatch Dossier
-ASGIComponent --> NFPComponent : API Account Freezing Directives
+*[Figure: see the Word report]*
 
-@enduml
-```
+- **Authentication**: Analysis endpoints require a secret API key passed via Authorization: Bearer <token> and compared in constant time; a missing or wrong key returns HTTP 401. Dashboard endpoints require a separate administrative key (PHISHGUARD_ADMIN_KEY) or a server-side session.
+- **Denial-of-Service (DoS) Mitigation**: The SlowAPI fixed-window limiter bounds request volume to 60 requests/minute per client IP. Excess traffic is rejected with HTTP 429 Too Many Requests, protecting worker thread pools from exhaustion.
+- **SQL Injection Neutralisation**: All database interactions use strictly parameterised SQL queries (SELECT * FROM mule_registry WHERE account_number = ?), completely eliminating SQL injection risks.
+- **Resilient Exception Handling**:
+- **HTTP 422 Unprocessable Entity**: Automatically returned if the client submits malformed JSON schemas.
+- **HTTP 503 Model Fail-Safe**: If a PyTorch out-of-memory or CUDA fault occurs, a global exception handler frees cached GPU memory, logs the error and returns HTTP 503 with the code MODEL_INFERENCE_FAILURE; the extension then falls back to its offline heuristics, so the browser is never left waiting.
+Table 4.15 consolidates the security, privacy and fault-tolerance controls implemented in version 3.2.0, with the source file that implements each control and the automated test module that verifies it. Before this version the dashboard routes were unauthenticated and CORS permitted any origin with credentials; both weaknesses were identified in the security review at the start of Project II and corrected.
 
-The physical infrastructure (Figure 4.8) maps the execution environments across client and server boundaries:
-* **Client Host**: Executes the Manifest V3 Google Chrome Extension, performing local DOM extraction and displaying the high-impact red defence shield upon receiving a `BLOCK_RENDER` verdict.
-* **Server Host (Dedicated Local/Edge Infrastructure)**: Hosts the FastAPI/Uvicorn ASGI service on Port 8000. It manages PyTorch CUDA runtimes in dedicated memory spaces, hosts the SQLite WAL database on high-speed NVMe storage, and provides upstream telemetry integration to the **National Scam Response Centre (NSRC 997)** and **National Fraud Portal (NFP)**.
+**Table 4.15: Security, Privacy and Fault-Tolerance Controls**
 
----
+| Control | Implementation | Verified by |
+| --- | --- | --- |
+| Client authentication | Bearer API key; hmac.compare_digest (core/security.py) | tests/test_endpoints.py |
+| Administrative authentication | All 64 dashboard operations require the admin key or a session created by POST /auth/login; the session identifier is 32 random bytes held server-side for 8 hours and sent as an HttpOnly, SameSite=Strict cookie | tests/test_security.py |
+| Brute-force protection | Login limited to 5 attempts per minute per IP (HTTP 429) | tests/test_security.py |
+| Rate limiting | SlowAPI fixed window, 60 requests per minute per IP on analysis and report endpoints (core/rate_limit.py) | Load test, Section 5.5.3 |
+| CORS | Explicit origin list plus chrome-extension:// origins; no wildcard; allow_credentials = False (main.py) | tests/test_security.py |
+| Response headers | X-Content-Type-Options: nosniff, X-Frame-Options: SAMEORIGIN, Referrer-Policy, Permissions-Policy; Cache-Control: no-store on API responses | tests/test_security.py |
+| Input validation and sanitisation | Pydantic v2 schemas (URL format, 5 MB content cap, account-number pattern); BeautifulSoup removal of script and style content before text analysis | tests/test_endpoints.py, tests/test_sanitizer.py, tests/test_mule_reports.py |
+| SQL injection | Parameterised queries only; CHECK constraints and foreign key in the schema | tests/test_repository.py, tests/test_mule_reports.py |
+| Registry integrity | User reports enter a PENDING queue and need analyst approval; accounts shown on a blocked page are not inserted automatically; the whitelist is immutable and excludes shared-hosting suffixes | tests/test_security.py, tests/test_mule_reports.py |
+| Secret management | Keys read from environment or .env (python-dotenv); start-up warning while the development default key is in use | Manual inspection of start-up log |
+| Extension (Manifest V3) | Explicit content_security_policy for extension pages (script-src 'self'; object-src 'none'; connect-src limited to localhost and HTTPS); no remote code; AbortController timeouts | Manual test in Chrome; node --check on all scripts |
+| Fault tolerance | 503 handler for model faults; telemetry failures are logged and do not affect the response; extension falls back to offline heuristics on any error or timeout | tests/test_security.py (single broadcast); manual test |
+| Privacy | Page content is processed in memory and not stored; only the URL of a blocked page and its score are persisted | Schema inspection (Table 4.9) |
 
-## 4.9 Chapter Summary
+### 4.8 Physical Deployment Architecture & Network Topology
+
+*[Figure: see the Word report]*
+
+The physical infrastructure (Figure 4.7) maps the execution environments across client and server boundaries:
+
+- **Client Host**: Executes the Manifest V3 Google Chrome Extension, performing local DOM extraction and displaying the high-impact red defence shield upon receiving a BLOCK_RENDER verdict.
+- **Server Host (Dedicated Local/Edge Infrastructure)**: Hosts the FastAPI/Uvicorn ASGI service on Port 8000. It manages PyTorch CUDA runtimes in dedicated memory spaces, hosts the SQLite WAL database on high-speed NVMe storage, and provides upstream telemetry integration to the **National Scam Response Centre (NSRC 997)** and **National Fraud Portal (NFP)**.
+
+### 4.9 Chapter Summary
 
 This chapter has detailed the structural blueprints, behavioural execution models, and data persistence architectures governing the **PhishGuard-AI** backend intelligence engine.
 
 Key architectural specifications established in this chapter include:
-1. **N-Tier Microservice Topology**: Decoupled the architecture into API Gateway, Threat Inference, and Data Persistence tiers to guarantee zero browser blocking.
-2. **RESTful API Contracts**: Specified the exact request/response JSON schemas for `POST /api/v1/analyze/semantics` and `POST /api/v1/analyze/quishing`.
-3. **Formal UML Behavioural Models**: Constructed Use Case, Activity, Sequence, and Class diagrams mapping the asynchronous multi-threaded lifecycle.
-4. **Relational Database Design**: Formulated a 3NF-compliant SQLite schema with B-Tree indexing ($O(\log N)$) and comprehensive data dictionaries.
-5. **Deterministic Regex Engine**: Compiled 8 bank-specific C-level regex automata to achieve microsecond financial credential extraction.
-6. **Defence-in-Depth & Deployment**: Hardened the API perimeter with Bearer authentication, token-bucket rate limiting, and mapped physical host topologies.
 
+- **N-Tier Microservice Topology**: Decoupled the architecture into API Gateway, Threat Inference, and Data Persistence tiers to guarantee zero browser blocking.
+- **RESTful API Contracts**: Specified the exact request/response JSON schemas for POST /api/v1/analyze/semantics and POST /api/v1/analyze/quishing.
+- **Formal UML Behavioural Models**: Constructed Use Case, Activity, Sequence, and Class diagrams mapping the asynchronous multi-threaded lifecycle.
+- **Relational Database Design**: Formulated a 3NF-compliant SQLite schema with B-Tree indexing (O(\log N)) and comprehensive data dictionaries.
+- **Deterministic Regex Engine**: Compiled 8 bank-specific C-level regex automata for low-cost extraction of candidate account numbers.
+- **Defense-in-Depth & Deployment**: Hardened the API perimeter with Bearer authentication, fixed-window rate limiting, and mapped physical host topologies.
 These technical specifications form the direct implementation blueprint for **Chapter 5: Implementation and Testing**, which documents the source code implementation, test suites, and empirical verification results.

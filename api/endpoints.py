@@ -6,9 +6,11 @@ Defines the ``/api/v1/analyze/semantics`` endpoint — the primary
 ingestion point for the browser extension.  The handler orchestrates
 the full analysis pipeline:
 
-    DOM Payload → ETL Sanitization → [BERT Inference ∥ Mule Scan]
+    DOM Payload → ETL Sanitization → [BERT URL Inference ∥ Mule Scan]
                                       (asyncio.gather)
-               → Orchestration Verdict → JSON Response
+               → Brand / Heuristic Profiling
+               → Corroborated Verdict (services.verdict_engine)
+               → JSON Response
 
 Security: Protected by the ``verify_api_key`` dependency (Bearer token).
 Concurrency: BERT inference and mule-account scanning execute **in
@@ -28,8 +30,6 @@ from typing import Any, Final
 from urllib.parse import urlparse
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Request
-from slowapi import Limiter  # type: ignore[import-untyped]
-from slowapi.util import get_remote_address  # type: ignore[import-untyped]
 
 from core.config import (
     GLOBAL_SAFE_DOMAINS,
@@ -40,8 +40,9 @@ from core.config import (
     VERDICT_BLOCK,
     VERDICT_SAFE,
 )
+from core.rate_limit import limiter
 from core.security import verify_api_key
-from schemas.payload import WebPayload
+from schemas.payload import MuleReportRequest, WebPayload
 from schemas.response import (
     AnalysisResponse,
     DataBlock,
@@ -54,8 +55,9 @@ from schemas.response import (
 from services.sanitizer import sanitize_dom
 from services.brand_profiler import profile_brand_impersonation
 from services.heuristic_engine import analyze_url_heuristics
-from core.config import BILINGUAL_SCAM_KEYWORDS
-from database.repository import log_threat_telemetry
+from services.nlp_engine import build_model_input
+from services.verdict_engine import decide
+from database.repository import create_mule_report, log_threat_telemetry
 
 logger: Final[logging.Logger] = logging.getLogger("phishguard.endpoints")
 
@@ -66,13 +68,6 @@ router: Final[APIRouter] = APIRouter(
     prefix="/api/v1",
     tags=["Live Analysis & Ingestion"],
     dependencies=[Depends(verify_api_key)],  # All routes require auth.
-)
-
-# ── Rate limiter instance (mirrors the one in main.py) ──
-limiter: Final[Limiter] = Limiter(
-    key_func=get_remote_address,
-    default_limits=[RATE_LIMIT],
-    storage_uri="memory://",
 )
 
 # Maximum characters of sanitized text included in the response preview.
@@ -126,8 +121,9 @@ def _is_trusted_domain(url: str) -> bool:
     response_model=AnalysisResponse,
     summary="Analyse a web page for phishing threats",
     description=(
-        "Accepts a raw DOM payload, sanitises the HTML, runs BERT semantic "
-        "analysis and mule-account scanning **in parallel**, and returns a "
+        "Accepts a raw DOM payload, sanitises the HTML, runs BERT URL "
+        "classification and mule-account scanning **in parallel**, corroborates "
+        "them with brand, heuristic and credential-form signals, and returns a "
         "unified threat-assessment response with an orchestration directive."
     ),
     response_description="Unified analysis envelope with orchestration verdict.",
@@ -178,8 +174,6 @@ async def analyse_semantics(
         Nested JSON envelope with ``meta``, ``data``, and
         ``orchestration`` sections.
     """
-    # asyncio imported at module level
-
     # ── 1. Transaction ID ──
     transaction_id: str = str(uuid.uuid4())
     logger.info(
@@ -243,7 +237,7 @@ async def analyse_semantics(
         # Still run mule scan (defence-in-depth)
         mule_result = await mule_scanner.scan_and_verify(sanitized_text, db)
     else:
-        # ── Non-whitelisted: inject URL context into model input ──
+        # ── Non-whitelisted: classify the URL with BERT ──
         if semantic_engine is None:
             logger.warning(
                 "[%s] Semantic engine is disabled — returning neutral "
@@ -258,7 +252,9 @@ async def analyse_semantics(
             }
             mule_result = await mule_scanner.scan_and_verify(sanitized_text, db)
         else:
-            model_input: str = f"URL: {url_str} | {sanitized_text}"
+            # The model is a URL classifier: feed it the URL in the same
+            # form as its training corpus (see ``build_model_input``).
+            model_input: str = build_model_input(url_str)
             cache_key = cache.hash_key(model_input) if cache else None
             cached_bert = cache.get(cache_key) if cache and cache_key else None
 
@@ -287,85 +283,50 @@ async def analyse_semantics(
         is_trusted,
     )
 
-    # ── 5. Smart Multi-Modal Correlated Orchestration Verdict ──
+    # ── 5. Corroborated Multi-Signal Orchestration Verdict ──
+    #
+    #   No probabilistic signal blocks a page on its own.  The verdict engine
+    #   combines the BERT URL verdict, mule-registry lookup, brand profiling,
+    #   URL heuristics, credential-form detection and the scam lexicon, and
+    #   blocks only when independent signals corroborate one another.
     brand_result = profile_brand_impersonation(url_str, sanitized_text)
     heur_result = analyze_url_heuristics(url_str)
-    combined_corpus = f"{url_str.lower()} {sanitized_text.lower()}"
-    has_scam_keywords = any(kw.lower() in combined_corpus for kw in BILINGUAL_SCAM_KEYWORDS)
-    has_login_or_creds = any(
-        w in combined_corpus
-        for w in (
-            "login", "log in", "sign in", "signin", "password", "kata laluan",
-            "tac", "otp", "pin", "credential", "security code", "masuk akaun"
-        )
+    decision = decide(
+        is_trusted=is_trusted,
+        bert_result=bert_result,
+        mule_result=mule_result,
+        brand_result=brand_result,
+        heuristic_result=heur_result,
+        sanitized_text=sanitized_text,
+        raw_content=raw_content,
     )
-
-    # A genuine threat exhibits concrete corroborating fraud indicators:
-    # 1. Registered or newly detected money-mule account / DuitNow proxy
-    # 2. Brand impersonation targeting financial/tech brands on an unverified domain
-    # 3. High-confidence BERT semantic threat probability (>= MALICIOUS_THRESHOLD)
-    # 4. Severe deceptive domain heuristics (IP hostname, punycode, deceptive subdomains) + phishing/login cues
-    # 5. Explicit social engineering / financial coercion phrasing
-    # 6. Phishing semantic label WITH login/credential input on an unverified domain
-    is_corroborated_threat = (
-        mule_result["mule_detected"]
-        or bool(mule_result.get("flagged_accounts"))
-        or brand_result["is_impersonation"]
-        or (bert_result["is_malicious"] and bert_result["confidence"] >= MALICIOUS_THRESHOLD)
-        or (heur_result["is_suspicious"] and (bert_result["is_malicious"] or has_scam_keywords))
-        or (has_scam_keywords and bert_result["is_malicious"])
-        or (bert_result["is_malicious"] and (has_login_or_creds or heur_result["is_suspicious"]))
-    )
-
-    is_threat: bool = not is_trusted and is_corroborated_threat
-    verdict: str = VERDICT_BLOCK if is_threat else VERDICT_SAFE
+    is_threat: bool = decision.is_threat
+    verdict: str = decision.verdict
 
     # ── 6. Live Telemetry & Mule Registry Ingestion ──
     if is_threat:
         try:
-            log_id = await log_threat_telemetry(
+            # ``log_threat_telemetry`` also broadcasts the SSE event (once).
+            await log_threat_telemetry(
                 url=str(payload.url),
-                score=bert_result["confidence"],
+                score=decision.risk_score,
                 db=db,
             )
-            # Register / increment flagged accounts in mule registry
-            flagged = mule_result.get("flagged_accounts", [])
-            for acc in flagged:
+            # Increment the report counter of accounts that are ALREADY in the
+            # registry.  Accounts that are merely extracted from a blocked page
+            # are deliberately NOT inserted: doing so would let a single
+            # false positive poison the registry with an innocent account.
+            for acc in mule_result.get("flagged_accounts", []):
                 acc_num = str(acc.get("account_number", "")).strip()
-                bank_name = acc.get("bank_name", "Malaysian Banking Entity")
                 if acc_num:
                     await db.execute(
-                        """
-                        INSERT INTO mule_registry (account_number, bank_name, platform_flagged, report_count)
-                        VALUES (?, ?, 'Browser Extension Live Intercept', 1)
-                        ON CONFLICT(account_number) DO UPDATE SET report_count = report_count + 1;
-                        """,
-                        (acc_num, bank_name),
+                        "UPDATE mule_registry SET report_count = report_count + 1 "
+                        "WHERE account_number = ?;",
+                        (acc_num,),
                     )
-            # If scam page had extracted bank accounts, register them as suspected mules
-            if bert_result["is_malicious"] and not flagged:
-                for acc_num in mule_result.get("accounts_extracted", []):
-                    clean_acc = str(acc_num).strip()
-                    if clean_acc:
-                        await db.execute(
-                            """
-                            INSERT INTO mule_registry (account_number, bank_name, platform_flagged, report_count)
-                            VALUES (?, 'Maybank / Interbank', 'AI Browser Extension Live Threat Detection', 1)
-                            ON CONFLICT(account_number) DO UPDATE SET report_count = report_count + 1;
-                            """,
-                            (clean_acc,),
-                        )
             await db.commit()
-
-            from api.dashboard_endpoints import broadcast_threat_event
-            broadcast_threat_event("new_threat", {
-                "log_id": log_id,
-                "malicious_url": str(payload.url),
-                "bert_score": round(bert_result["confidence"], 4),
-                "timestamp": "Just now",
-            })
-        except Exception as e:
-            logger.warning("[%s] Real-time telemetry ingestion error: %s", transaction_id, e)
+        except Exception:
+            logger.exception("[%s] Real-time telemetry ingestion failed.", transaction_id)
 
     # ── 7. Assemble Response ──
     response = AnalysisResponse(
@@ -389,19 +350,23 @@ async def analyse_semantics(
         orchestration=verdict,
         status="success",
         verdict=verdict,
-        risk_score=round(float(bert_result["confidence"]) if not is_trusted else 0.0, 4),
+        risk_score=round(decision.risk_score, 4),
         bert_score=round(float(bert_result["confidence"]), 6),
         is_whitelisted=is_trusted,
         brand_impersonation=brand_result,
+        threat_indicators=decision.indicators,
+        decision_rule=decision.rule,
+        signals=decision.signals,
         mule_accounts_flagged=mule_result.get("flagged_accounts", []),
         execution_time_ms=elapsed_ms,
         timestamp=time.strftime("%Y-%m-%dT%H:%M:%S+08:00"),
     )
 
     logger.info(
-        "[%s] Response assembled — verdict=%s",
+        "[%s] Response assembled — verdict=%s rule=%s",
         transaction_id,
         verdict,
+        decision.rule,
     )
 
     return response
@@ -451,6 +416,39 @@ async def analyze_quishing_endpoint(
         extracted_destination_urls=scan_res.get("extracted_destination_urls", []),
         extracted_mule_accounts=scan_res.get("extracted_mule_accounts", []),
     )
+
+
+# ==============================================================================
+# POST /api/v1/mule-reports
+# ==============================================================================
+
+@router.post(
+    "/mule-reports",
+    summary="Submit a suspected mule account for analyst review",
+    description=(
+        "Queues a user report with status PENDING. The account is NOT added to "
+        "the blocking registry until an analyst approves the report from the "
+        "SOC dashboard; this prevents registry poisoning by a single client."
+    ),
+    status_code=201,
+)
+@limiter.limit(RATE_LIMIT)
+async def submit_mule_report(
+    payload: MuleReportRequest,
+    request: Request,
+    _api_key: str = Depends(verify_api_key),
+) -> dict[str, Any]:
+    """Record a mule-account report from the browser extension."""
+    account = "".join(ch for ch in payload.account_number if ch.isdigit() or ch == "+")
+    result = await create_mule_report(
+        account_number=account,
+        bank_name=payload.bank_name.strip() or "Unknown",
+        source="extension",
+        page_url=str(payload.page_url) if payload.page_url else None,
+        db=request.app.state.db,
+    )
+    logger.info("Mule report %s queued (already_registered=%s).", result["report_id"], result["already_registered"])
+    return result
 
 
 # ==============================================================================

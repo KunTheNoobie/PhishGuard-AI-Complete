@@ -53,11 +53,11 @@ class SemanticResult(BaseModel):
     )
     is_malicious: bool = Field(
         ...,
-        description="True if confidence exceeds the malicious threshold.",
+        description="True if the label is PHISHING with confidence at or above the configured threshold.",
     )
     sanitized_text_preview: str = Field(
         ...,
-        description="Truncated preview of the sanitized text fed to BERT.",
+        description="Truncated preview of the sanitised page text analysed by the rule layer.",
     )
 
 
@@ -114,9 +114,12 @@ class AnalysisResponse(BaseModel):
     # Top-level unified fields for thesis and OpenAPI compatibility (§4.3.2)
     status: str = Field(default="success", description="API execution status.")
     verdict: Optional[str] = Field(default=None, description="Final orchestration directive ('BLOCK_RENDER' or 'SAFE').")
-    risk_score: Optional[float] = Field(default=None, description="Calibrated multi-vector risk probability.")
-    bert_score: Optional[float] = Field(default=None, description="Raw semantic threat probability from BERT.")
-    is_whitelisted: Optional[bool] = Field(default=None, description="True if domain matched 28-Bank Trusted Whitelist.")
+    risk_score: Optional[float] = Field(default=None, description="Severity of the triggered corroboration rule (0.90–0.99) or a low advisory score (< 0.50) when the page is SAFE.")
+    threat_indicators: Optional[list[str]] = Field(default=None, description="Human-readable reasons behind the verdict (explainability).")
+    decision_rule: Optional[str] = Field(default=None, description="Identifier of the corroboration rule that fired (R1…R6), or null when SAFE.")
+    signals: Optional[dict[str, bool]] = Field(default=None, description="Boolean signal vector evaluated by the verdict engine.")
+    bert_score: Optional[float] = Field(default=None, description="Softmax confidence of the label predicted by the BERT URL classifier.")
+    is_whitelisted: Optional[bool] = Field(default=None, description="True if the domain matched the trusted-domain whitelist.")
     brand_impersonation: Optional[dict[str, Any]] = Field(default=None, description="Brand impersonation profile.")
     mule_accounts_flagged: Optional[list[dict[str, Any]]] = Field(default=None, description="List of matched mule accounts.")
     execution_time_ms: Optional[float] = Field(default=None, description="Total server-side processing latency in ms.")

@@ -2,12 +2,12 @@
 
 <div align="center">
   <img src="chrome_extension/icons/icon128.png" alt="PhishGuard Logo" width="105"/>
-  <h3>Sovereign Multi-Modal AI Threat Intelligence & Autonomous SOC Cyber Defense Platform</h3>
-  <p>Real-time financial scam detection, quishing defense, money-mule syndicate tracking, and automated SOC incident mitigation powered by fine-tuned BERT NLP, YOLOv8 Computer Vision, PayNet EMVCo QR decoding, Brand Impersonation Profiling, and STIX 2.1 Threat Sharing.</p>
+  <h3>Multi-Modal Financial Scam Detection for Malaysian Online Banking</h3>
+  <p>Real-time phishing, quishing and mule-account detection combining a fine-tuned BERT URL classifier, YOLOv8 logo detection, DuitNow QR decoding, brand-impersonation profiling and a corroborated verdict engine.</p>
 
   [![CI/CD Test Pipeline](https://github.com/KunTheNoobie/PhishGuard-AI-Complete/actions/workflows/test.yml/badge.svg)](https://github.com/KunTheNoobie/PhishGuard-AI-Complete/actions)
-  [![Tests: 122 Passed](https://img.shields.io/badge/Tests-122%20Passed%20(100%25)-brightgreen)](https://github.com/KunTheNoobie/PhishGuard-AI-Complete)
-  [![PhishGuard-AI](https://img.shields.io/badge/Version-v3.2.0%20Enterprise-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+  [![Tests: 198 Passed](https://img.shields.io/badge/Tests-198%20Passed-brightgreen)](https://github.com/KunTheNoobie/PhishGuard-AI-Complete)
+  [![PhishGuard-AI](https://img.shields.io/badge/Version-v3.2.0-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
   [![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B%20%2F%203.14-blue.svg?logo=python&logoColor=white)](https://python.org)
   [![Manifest V3](https://img.shields.io/badge/Chrome%20Extension-Manifest%20V3-4285F4?logo=googlechrome&logoColor=white)](https://developer.chrome.com/docs/extensions/mv3/intro/)
 </div>
@@ -16,21 +16,41 @@
 
 ## 📖 System Overview & Abstract
 
-**PhishGuard-AI** is a state-of-the-art cybersecurity and autonomous SOC defense suite purpose-built to shield digital citizens and financial institutions from sophisticated financial phishing, quishing (QR code fraud), brand impersonation, and money-mule account networks.
+**PhishGuard-AI** is a final-year project (BMCS3404 / BMCS3414, TAR UMT) that protects Malaysian online-banking users from financial phishing, quishing (QR-code fraud), brand impersonation and money-mule accounts. A Manifest V3 Chrome extension sends each page to a FastAPI backend, which combines several independent detectors and returns a `BLOCK_RENDER` or `SAFE` verdict.
 
-Unlike traditional static URL blacklist lookups, PhishGuard-AI integrates **multi-modal AI inference with real-time heuristic validation**:
+No single probabilistic signal blocks a page. The backend's **corroborated verdict engine** blocks only when independent signals agree (for example a bank name in a foreign hostname *and* a password field), with one exception: a match against the mule-account registry.
+
+| | |
+|---|---|
+| **Supervisor** | Dr. Ng Yen Phing |
+| **Module 1 — Backend, BERT engine, mule scanner, SOC dashboard** | Liew Yi Ler |
+| **Module 2 — Chrome extension, YOLOv8 logo detection** | Cheon Jie Han |
+
+### Measured results (v3.2.0)
+
+| Measurement | Result | Evidence |
+|---|---|---|
+| BERT URL classifier, Kaggle hold-out (109,870 URLs) | accuracy 98.76 %, precision 98.77 %, recall 96.85 %, F1 97.80 % | `evaluation/results/kaggle_holdout/` |
+| End-to-end pipeline, Malaysian benchmark (120 hand-curated pages) | accuracy 97.50 %, precision 100 %, recall 95.00 %, false-positive rate 0 % | `evaluation/results/final_v3.2.0/` |
+| Same benchmark before the v3.2.0 fixes | accuracy 57.50 %, false-positive rate 78.33 % | `evaluation/results/baseline_v3.0.0/` |
+| Load test, 50 concurrent users, 60 s (CPU inference) | 22.4 req/s, 0 errors, p50 13 ms, p95 370 ms, p99 490 ms | `evaluation/results/locust/` |
+| Automated tests | 198 passed, 77 % statement + branch coverage | `evaluation/results/pytest/` |
+
+The benchmark is small and its page text was written for this project; see [`evaluation/README.md`](evaluation/README.md) for the method, caveats, ablation and limitations before quoting these figures.
+
+Detection layers:
 
 ```
 +----------------------------------------------------------------------------------------------------+
 |                                    PHISHGUARD MULTI-MODAL PIPELINE                                 |
 +----------------------------------------------------------------------------------------------------+
-|  1. Semantic BERT NLP Engine     --> Analyzes raw DOM semantics (English / Bahasa Melayu / Manglish)|
-|  2. Visual Brand Classifier      --> YOLOv8 neural detection of official bank emblems & logos       |
-|  3. Mule & DuitNow Registry      --> Regex + SQLite 3NF indexed cross-referencing of fraud accounts|
+|  1. BERT URL Classifier          --> bert-base-uncased fine-tuned on 439,476 labelled URLs          |
+|  2. Visual Brand Classifier      --> YOLOv8n detection of 5 Malaysian bank logos in screenshots    |
+|  3. Mule & DuitNow Registry      --> Regex extraction + indexed SQLite lookup (simulated registry) |
 |  4. EMVCo PayNet QR Decoder      --> Unmasks hidden payment beneficiary proxies in QR code images   |
-|  5. Brand Impersonation Index    --> Quantifies spoofing probability across 10 major Malaysian banks|
-|  6. Network & Domain Heuristics  --> Zero-latency Punycode IDN homoglyphs & high-risk TLD analysis  |
-|  7. Autonomous SOC Orchestrator  --> Instant DNS RPZ sinkholing, YARA/Suricata rules & NFP freeze   |
+|  5. Brand Impersonation Profiler --> Brand-in-hostname, look-alike domain and text-mention tiers   |
+|  6. Network & Domain Heuristics  --> Raw-IP hosts, punycode, high-risk TLDs, deep subdomain chains  |
+|  7. Corroborated Verdict Engine  --> Rules R1-R6 combine the signals; exports for SOC tooling      |
 +----------------------------------------------------------------------------------------------------+
 ```
 
@@ -39,14 +59,14 @@ Unlike traditional static URL blacklist lookups, PhishGuard-AI integrates **mult
 ## 🚀 Core Capabilities & Features
 
 ### 1. 🛡️ Chrome Extension (Manifest V3)
-* **⚡ Autonomous Real-Time Interception:** Continuous background analysis on page navigation with 0ms pre-scanned verdict lookup.
+* **⚡ Real-Time Interception:** Background analysis on page navigation with cached verdict lookup; backend calls time out after 8 s (semantic) / 12 s (visual) and fall back to offline heuristics.
 * **🌍 Universal Web & SPA Support:** Deep recursive extraction across Shadow DOM roots (`node.shadowRoot`), same-origin iframes, form placeholders, and accessibility labels.
 * **Full-Screen Block Overlay (`BLOCK_RENDER`):** Replaces dangerous phishing portals with a high-impact red defense shield detailing exact threat vectors and giving an immediate escape path.
 * **Explainable AI (XAI) Multi-Lingual Highlighter:** Highlights psychological coercion cues in English, Bahasa Melayu, Chinese (Simplified/Traditional), and Bahasa Indonesia.
 * **🛡️ Trusted Sites & Whitelist Manager:** Dedicated "Trusted Sites" tab inside the popup allowing users to inspect active domain exemptions, view remaining expiration times, and revoke whitelists instantly.
 * **📡 Real-Time SOC Ping & Latency Meter:** Displays live backend connection status and round-trip latency in milliseconds (`● SOC (18ms)`) with automatic fallback to autonomous offline protection.
 * **📋 1-Click Scan Verdict Exporter:** Formats and copies full cryptographic threat verdict summaries to clipboard for incident ticketing.
-* **🚨 1-Click Mule Flagging to NSRC:** Instant reporting action directly from the popup to escalate newly discovered scam accounts to the backend registry.
+* **🚨 Mule Account Reporting:** Reports a suspicious account from the popup to the backend review queue (`POST /api/v1/mule-reports`); an analyst approves it before it joins the blocking registry.
 * **Dynamic Action Badges:** Toolbar badge updates in real time (`OK` in Green `#10b981`, `?` in Amber `#f59e0b`, `!` in Red `#ef4444`).
 
 ---
@@ -110,7 +130,7 @@ Unlike traditional static URL blacklist lookups, PhishGuard-AI integrates **mult
 
 ### 5. 🏦 10-Bank Malaysian Impersonation & Global Whitelist Matrix
 
-Continuous live tracking and zero false-positive protection across leading financial entities and global platforms:
+Brand profiles and trusted-domain whitelisting for leading financial entities and global platforms (the YOLOv8 logo detector covers the first five banks):
 1. **Maybank (Malayan Banking Berhad)**
 2. **CIMB Bank Berhad**
 3. **Public Bank Berhad**
@@ -130,12 +150,12 @@ Continuous live tracking and zero false-positive protection across leading finan
 | Layer | Technologies |
 | :--- | :--- |
 | **Backend Framework** | Python 3.11+ / 3.14, FastAPI, Uvicorn, AsyncIO |
-| **AI / Machine Learning** | PyTorch, Hugging Face Transformers (BERT), Ultralytics (YOLOv8) |
-| **Database & Persistence** | SQLite3 in WAL Mode (3NF Schema), `aiosqlite` async connection pool |
+| **AI / Machine Learning** | PyTorch, Hugging Face Transformers (`bert-base-uncased`, 1 epoch on 439,476 URLs), Ultralytics (YOLOv8n) |
+| **Database & Persistence** | SQLite 3 in WAL mode (3 tables, 1 foreign key, 5 indexes), `aiosqlite` |
 | **Real-Time Streaming** | Server-Sent Events (SSE) via `asyncio.Queue` broadcast |
 | **Frontend Dashboard** | HTML5, Vanilla JavaScript (ES6+), High-Contrast Glassmorphism CSS, SVG Canvas |
 | **Threat Sharing Formats** | OASIS STIX 2.1 JSON, ArcSight/Splunk CEF, RFC 5424 Syslog, CSV |
-| **Testing & CI/CD** | Pytest, Asyncio Test Suite (122 test cases, 100% pass), GitHub Actions |
+| **Testing & CI/CD** | Pytest + pytest-asyncio + pytest-cov (198 tests, 77 % coverage), Locust, GitHub Actions |
 
 ---
 
@@ -156,7 +176,15 @@ python -m venv venv
 pip install -r requirements.txt
 ```
 
-### 3. Launch Backend Server & Dashboard
+### 3. Configure (optional for a local demo)
+```bash
+copy .env.example .env      # Linux/macOS: cp .env.example .env
+```
+`core/config.py` loads `.env` automatically. For anything beyond a local demonstration set
+`PHISHGUARD_API_KEY` and a separate `PHISHGUARD_ADMIN_KEY`; the server logs a warning while
+the public development key is in use.
+
+### 4. Launch Backend Server & Dashboard
 ```bash
 # Option A: Double click run_server.bat
 run_server.bat
@@ -165,50 +193,70 @@ run_server.bat
 python -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-### 4. Access Interactive Interfaces
-* **Live SOC Threat Dashboard:** [http://127.0.0.1:8000/dashboard/](http://127.0.0.1:8000/dashboard/)
+### 5. Access Interactive Interfaces
+* **Live SOC Threat Dashboard:** [http://127.0.0.1:8000/dashboard/](http://127.0.0.1:8000/dashboard/) — sign in with the admin key (`PHISHGUARD_ADMIN_KEY`, or `PHISHGUARD_API_KEY` if no admin key is set)
 * **Threat Simulation Sandbox:** [http://127.0.0.1:8000/dashboard/sandbox.html](http://127.0.0.1:8000/dashboard/sandbox.html)
 * **Simulated Scam Target:** [http://127.0.0.1:8000/dashboard/test_scam.html](http://127.0.0.1:8000/dashboard/test_scam.html)
 * **OpenAPI / Swagger Documentation:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
 ---
 
-## 🧪 Automated Testing Suite
-
-PhishGuard-AI includes a comprehensive unit and integration test suite with **122 tests passing with 100% code coverage across all modules**:
+## 🧪 Automated Testing & Evaluation
 
 ```powershell
-.\venv\Scripts\python.exe -m pytest
+.\venv\Scripts\python.exe -m pytest --cov --cov-report=term
 ```
 
 ```
-============================= test session starts =============================
-platform win32 -- Python 3.14.3, pytest-9.1.1, pluggy-1.6.0
-rootdir: C:\Users\yiler\Downloads\PhishGuard-AI-Complete
-plugins: anyio-4.14.0, locust-2.44.4, asyncio-1.4.0
-collected 122 items
+collected 198 items
 
-tests\test_endpoints.py ........................                         [ 19%]
-tests\test_enhancements.py .............................................. [ 57%]
-tests\test_mule_scanner.py ..............                                [ 68%]
-tests\test_nlp_engine.py .........                                       [ 75%]
-tests\test_repository.py ........                                        [ 82%]
-tests\test_sanitizer.py .............                                    [ 93%]
-tests\test_visual.py ........                                            [100%]
+tests\test_endpoints.py .........................                        [ 12%]
+tests\test_enhancements.py ..............................................  [ 35%]
+tests\test_mule_reports.py ............                                   [ 41%]
+tests\test_mule_scanner.py ..............                                 [ 48%]
+tests\test_nlp_engine.py .........                                        [ 53%]
+tests\test_repository.py ........                                         [ 57%]
+tests\test_sanitizer.py .............                                     [ 64%]
+tests\test_security.py ....................                               [ 74%]
+tests\test_verdict_engine.py ...........................................  [ 95%]
+tests\test_visual.py ........                                             [100%]
 
-======================= 122 passed in 9.20s ====================================
+TOTAL                              2788    542    668    105    77%
+====================== 198 passed, 3 warnings in 12.76s =======================
 ```
+
+Unit tests mock the BERT engine and use an in-memory database. The real model is exercised by
+the evaluation harness:
+
+```powershell
+.\venv\Scripts\python.exe -m evaluation.evaluate_pipeline --tag final_v3.2.0   # 120-page Malaysian benchmark
+.\venv\Scripts\python.exe -m evaluation.kaggle_holdout_metrics                 # hold-out confusion matrix
+.\venv\Scripts\python.exe -m locust -f tests/locustfile.py --host http://127.0.0.1:8000 --headless -u 50 -r 5 -t 60s
+```
+
+Results, method and limitations: [`evaluation/README.md`](evaluation/README.md). Release notes: [`CHANGELOG.md`](CHANGELOG.md).
 
 ---
 
-## 🔒 Security & Anti-Fraud Compliance
+## 🔒 Security Model
 
-* **Data Privacy:** Sensitive customer account numbers and payload strings are sanitized and parameterized to prevent SQL injection.
-* **RFC Compliance:** Forensic abuse desk takedown notices adhere to RFC 2142; syslog logs follow RFC 5424.
-* **Sovereign Alignment:** Integrates with Bank Negara Malaysia (BNM) National Fraud Portal (NFP) and Royal Malaysia Police (PDRM) CCID Semak Mule standards.
+| Control | Implementation |
+|---|---|
+| Extension API authentication | `Authorization: Bearer <PHISHGUARD_API_KEY>`, constant-time comparison (`core/security.py`) |
+| Dashboard authentication | Every `/api/v1/dashboard/*` route requires the admin key (bearer) or a server-side session cookie (`HttpOnly`, `SameSite=Strict`); login limited to 5 attempts/minute per IP |
+| Rate limiting | SlowAPI, per client IP, default `60/minute` on analysis and report endpoints (HTTP 429 beyond that) |
+| CORS | Explicit origin list + `chrome-extension://` origins; no wildcard, no credentialed cross-origin requests |
+| Input validation | Pydantic v2 schemas (URL format, 5 MB DOM cap, account-number pattern); HTTP 422 on violation |
+| SQL injection | Parameterised queries only; `CHECK` constraints and a foreign key in the schema |
+| Registry integrity | User reports enter a `PENDING` queue; nothing is auto-inserted into the blocking registry |
+| Response headers | `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, `Cache-Control: no-store` on API responses |
+| Extension | Manifest V3 with explicit CSP; backend calls bounded by `AbortController` timeouts with offline fallback |
+
+**Known limitations.** The mule registry is seeded with simulated accounts, not live PDRM Semak Mule data. The "live threat simulator" on the dashboard injects synthetic telemetry for demonstrations and is off by default. The geo/ASN view assigns illustrative infrastructure nodes; it does not resolve real network origins. The BERT model was trained on English-language URL strings only and is used as a supporting signal. The logo detector was trained on a synthetic dataset. The NSRC 997 / National Fraud Portal features format case data for hand-off; they do not call any government system.
 
 ---
 
 ## 📄 License & Attribution
-Developed for Enterprise Cybersecurity & Financial Fraud Prevention.  
-Faculty of Computing and Information Technology, TAR UMT.
+Final Year Project (BMCS3404 Project I / BMCS3414 Project II), Bachelor of Information Technology (Honours) in Information Security.  
+Faculty of Computing and Information Technology, Tunku Abdul Rahman University of Management and Technology (TAR UMT).  
+Supervisor: Dr. Ng Yen Phing.

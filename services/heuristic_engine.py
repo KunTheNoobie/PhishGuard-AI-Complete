@@ -20,6 +20,8 @@ import re
 from typing import Any, Final
 from urllib.parse import urlparse
 
+from services.domain_utils import registrable_domain, subdomain_labels
+
 # High-risk TLDs disproportionately observed in disposable phishing campaigns
 HIGH_RISK_TLDS: Final[set[str]] = {
     "top", "xyz", "tk", "buzz", "club", "work", "click", "gq", "cf", "ml", "ga", "fit", "rest", "surf"
@@ -74,19 +76,27 @@ def analyze_url_heuristics(raw_url: str) -> dict[str, Any]:
 
     # 3. Check for High-Risk TLDs
     parts = hostname.split(".")
-    if len(parts) >= 2:
+    is_ip_host = any("raw numeric IP" in i for i in indicators)
+    high_risk_tld = False
+    if len(parts) >= 2 and not is_ip_host:
         tld = parts[-1]
         if tld in HIGH_RISK_TLDS:
             indicators.append(f"High-risk disposable TLD detected (.{tld})")
             heuristic_penalty += 0.35
+            high_risk_tld = True
 
-    # 4. Check for Excessive Subdomain Depth
-    if len(parts) >= 4:
-        indicators.append(f"Excessive subdomain nesting ({len(parts)} levels)")
+    # 4. Check for Excessive Subdomain Depth.
+    #    Depth is measured relative to the registrable domain so that ordinary
+    #    ccTLD hosts such as ``www.maybank2u.com.my`` are not penalised.
+    sub_labels = [] if is_ip_host else [lbl for lbl in subdomain_labels(hostname) if lbl != "www"]
+    if len(sub_labels) >= 3:
+        indicators.append(
+            f"Excessive subdomain nesting ({len(sub_labels)} levels below {registrable_domain(hostname)})"
+        )
         heuristic_penalty += 0.20
 
     # 5. Check for Deceptive Keyword Subdomains
-    for sub in parts[:-2]:
+    for sub in sub_labels:
         if sub in DECEPTIVE_SUBDOMAINS:
             indicators.append(f"Deceptive keyword subdomain detected: '{sub}'")
             heuristic_penalty += 0.25
@@ -104,4 +114,12 @@ def analyze_url_heuristics(raw_url: str) -> dict[str, Any]:
         "indicators": indicators,
         "heuristic_score": min(1.0, round(heuristic_penalty, 2)),
         "is_suspicious": len(indicators) > 0,
+        # Strong indicators are structural evasion techniques that a legitimate
+        # consumer-facing site has no reason to use.
+        "is_strong": bool(
+            any("raw numeric IP" in i for i in indicators)
+            or any("Punycode" in i for i in indicators)
+            or high_risk_tld
+        ),
+        "registrable_domain": registrable_domain(hostname),
     }

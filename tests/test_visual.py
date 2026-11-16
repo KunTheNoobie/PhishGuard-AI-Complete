@@ -60,8 +60,8 @@ class TestLogoDomainEvaluation:
 
 class TestVisualEndpoint:
     @pytest.mark.asyncio
-    async def test_authentication_is_required(self, test_client: AsyncClient) -> None:
-        response = await test_client.post(
+    async def test_authentication_is_required(self, anon_client: AsyncClient) -> None:
+        response = await anon_client.post(
             "/api/visual/analyze",
             json={
                 "current_url": "https://example.com",

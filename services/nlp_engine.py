@@ -3,7 +3,7 @@ PhishGuard-AI — NLP Semantic Engine Service.
 ==============================================
 
 Encapsulates the Hugging Face ``transformers`` pipeline wrapping a
-custom fine-tuned BERT model (trained on 500K phishing URLs).
+custom fine-tuned BERT URL classifier (bert-base-uncased, 439,476 training URLs).
 The class follows the **Singleton** pattern: a single instance is
 created during the FastAPI ``lifespan`` cold-start and shared across
 all concurrent requests via ``app.state``.
@@ -43,7 +43,7 @@ logger: Final[logging.Logger] = logging.getLogger("phishguard.nlp_engine")
 # ==============================================================================
 # Label Mapping
 # ==============================================================================
-# The PhishGuard custom BERT model (trained on 500K URLs) emits:
+# The PhishGuard custom BERT URL classifier emits:
 #   label 0 → "LEGITIMATE"  (benign URL)
 #   label 1 → "PHISHING"    (malicious URL)
 _LABEL_MAP: Final[dict[int, str]] = {
@@ -198,16 +198,40 @@ class SemanticEngine:
             torch.cuda.empty_cache()
 
 
+def build_model_input(url: str) -> str:
+    """Return the BERT input for ``url``.
+
+    The classifier was fine-tuned on bare URL strings (no scheme, usually no
+    ``www.``).  Feeding it page text, or a URL that still carries its scheme,
+    is out of distribution and was measured to push the false-positive rate
+    on the Malaysian benchmark from 43 % to 87–100 %.  Inference input is
+    therefore normalised to the training distribution.
+    """
+    from services.domain_utils import strip_scheme
+
+    return strip_scheme(url)
+
+
 def predict_phishing_probability(text: str) -> tuple[float, str]:
-    """Lightweight sync helper returning (probability, label) based on heuristic indicators and semantic features."""
+    """Model-free fallback estimate ``(probability, label)`` for a URL or text.
+
+    Used by the batch inspector and diagnostics when the BERT engine is not
+    injected.  Combines the structural URL heuristic score with the
+    multilingual scam lexicon and explicit credential-request detection; all
+    matching is word-boundary based.
+    """
     from services.heuristic_engine import analyze_url_heuristics
-    heur = analyze_url_heuristics(text)
-    prob = round(heur.get("composite_risk", heur.get("risk_score", 0.0) / 100.0 if "risk_score" in heur else heur.get("heuristic_penalty", 0.15)), 4)
-    # Check for strong scam keywords
-    lower_t = text.lower()
-    if any(k in lower_t for k in ["tac", "urgent", "suspend", "verify", "password", "duitnow", "otp", "login", "auth"]):
-        prob = max(prob, 0.85)
-    prob = min(0.99, max(0.08, prob))
+    from services.verdict_engine import has_credential_text, has_scam_language
+
+    first_token = text.strip().split()[0] if text.strip() else ""
+    looks_like_url = "." in first_token and " " not in text.strip()
+    heuristic_score = float(analyze_url_heuristics(text.strip())["heuristic_score"]) if looks_like_url else 0.0
+
+    prob = 0.08 + 0.80 * heuristic_score
+    if has_scam_language(text):
+        prob += 0.45
+    if has_credential_text(text):
+        prob += 0.35
+    prob = round(min(0.99, max(0.08, prob)), 4)
     label = "PHISHING" if prob >= 0.60 else "LEGITIMATE"
     return prob, label
-

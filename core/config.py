@@ -13,7 +13,18 @@ Thesis Reference : §3.1 — System Configuration & Operational Parameters
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from typing import Final
+
+# Load a local ``.env`` file (if present) before any setting is read, so that
+# ``PHISHGUARD_*`` values documented in ``.env.example`` actually take effect.
+# Real environment variables always win over the file (override=False).
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv(Path(__file__).resolve().parent.parent / ".env", override=False)
+except ImportError:  # python-dotenv is optional at runtime
+    pass
 
 
 # ==============================================================================
@@ -21,12 +32,12 @@ from typing import Final
 # ==============================================================================
 APP_TITLE: Final[str] = "PhishGuard-AI"
 APP_DESCRIPTION: Final[str] = (
-    "Enterprise-grade SOC Cyber Defense & Multi-Vector Threat Intelligence Platform v3.0. "
+    "Enterprise-grade SOC Cyber Defense & Multi-Vector Threat Intelligence Platform v3.2. "
     "Performs real-time BERT semantic NLP classification, Brand Homoglyph profiling, Mule syndicate tracking, "
     "NSRC 997 & National Fraud Portal gateway orchestration, TAXII 2.1 STIX syndication, Quishing QR inspection, "
     "Pre-emptive Typosquatting radar, and Autonomous Incident Playbooks."
 )
-APP_VERSION: Final[str] = "3.0.0"
+APP_VERSION: Final[str] = "3.2.0"
 
 # ==============================================================================
 # 2. SECURITY CONSTANTS
@@ -34,16 +45,46 @@ APP_VERSION: Final[str] = "3.0.0"
 # The bearer token expected in the Authorization header.
 # In production this MUST be injected via a secrets manager (e.g., HashiCorp
 # Vault, AWS Secrets Manager) — **never** hard-coded.
-API_SECRET_TOKEN: Final[str] = os.getenv(
-    "PHISHGUARD_API_KEY",
-    "phishguard_secret_key_2026",
+DEFAULT_DEV_API_KEY: Final[str] = "phishguard_secret_key_2026"
+
+API_SECRET_TOKEN: Final[str] = os.getenv("PHISHGUARD_API_KEY", DEFAULT_DEV_API_KEY)
+
+# Administrative key protecting every ``/api/v1/dashboard`` route (registry
+# deletion, database backup, webhook configuration ...).  Falls back to the
+# client API key so that a single-key development setup keeps working; set a
+# distinct value in production so a leaked extension key cannot administer
+# the SOC console.
+ADMIN_API_TOKEN: Final[str] = os.getenv("PHISHGUARD_ADMIN_KEY", "") or API_SECRET_TOKEN
+
+# True while the publicly documented development key is still in use.
+USING_DEFAULT_API_KEY: Final[bool] = DEFAULT_DEV_API_KEY in (API_SECRET_TOKEN, ADMIN_API_TOKEN)
+
+# Lifetime of a dashboard browser session created by POST /auth/login.
+DASHBOARD_SESSION_TTL_SECONDS: Final[int] = int(
+    os.getenv("PHISHGUARD_SESSION_TTL", "28800")  # 8 hours
 )
+
+# ==============================================================================
+# 2b. CORS
+# ==============================================================================
+# Explicit browser origins allowed to call the API cross-origin.  The Chrome
+# extension's service worker is not subject to CORS (it holds host
+# permissions); extension *pages* are matched by CORS_ORIGIN_REGEX.
+CORS_ALLOWED_ORIGINS: Final[list[str]] = [
+    origin.strip()
+    for origin in os.getenv(
+        "PHISHGUARD_CORS_ORIGINS",
+        "http://127.0.0.1:8000,http://localhost:8000",
+    ).split(",")
+    if origin.strip()
+]
+CORS_ORIGIN_REGEX: Final[str] = r"^chrome-extension://[a-p]{32}$"
 
 # ==============================================================================
 # 3. RATE LIMITING
 # ==============================================================================
 # Maximum requests per minute per client IP.  Enforced by SlowAPI.
-RATE_LIMIT: Final[str] = os.getenv("PHISHGUARD_RATE_LIMIT", "10/minute")
+RATE_LIMIT: Final[str] = os.getenv("PHISHGUARD_RATE_LIMIT", "60/minute")
 
 # ==============================================================================
 # 4. DATABASE
@@ -58,8 +99,10 @@ DATABASE_PATH: Final[str] = os.getenv(
 # 5. ML / NLP ENGINE
 # ==============================================================================
 # Hugging Face model identifier — used during the lifespan cold-start.
-# Points to the PhishGuard custom fine-tuned BERT model trained on a
-# 500K phishing URL dataset for binary classification (LEGITIMATE / PHISHING).
+# Points to the PhishGuard custom model: bert-base-uncased fine-tuned for one
+# epoch on 439,476 labelled URLs (Kaggle "phishing_site_urls", 80/20 split)
+# for binary classification (LEGITIMATE / PHISHING).  The model is a *URL*
+# classifier; it is fed the scheme-stripped URL, never page text.
 BERT_MODEL_NAME: Final[str] = os.getenv(
     "PHISHGUARD_BERT_MODEL",
     "./phishguard_custom_model",
@@ -72,8 +115,9 @@ ENABLE_SEMANTIC_ENGINE: Final[bool] = os.getenv(
     "true",
 ).lower() not in {"0", "false", "no"}
 
-# Confidence threshold above which a DOM payload is flagged as malicious.
-# label 1 = "PHISHING" at or above this threshold triggers BLOCK_RENDER.
+# Confidence threshold at or above which the BERT "PHISHING" label is treated
+# as a positive signal.  A positive BERT signal never blocks on its own; the
+# verdict engine requires an independent corroborating signal.
 MALICIOUS_THRESHOLD: Final[float] = float(
     os.getenv("PHISHGUARD_MALICIOUS_THRESHOLD", "0.75")
 )
@@ -98,10 +142,15 @@ TRUSTED_DOMAINS: Final[frozenset[str]] = frozenset({
     "rhbbank.com.my",
     "ambankgroup.com",
     "ambank.com.my",
+    "amonline.com.my",
     "bankislam.com",
     "bankislam.com.my",
+    "bankislam.biz",
     "bankrakyat.com.my",
+    "irakyat.com.my",
     "bsn.com.my",
+    "mybsn.com.my",
+    "cimb.com",
     "affinbank.com.my",
     "affinonline.com",
     "alliancebank.com.my",
@@ -120,7 +169,12 @@ TRUSTED_DOMAIN_CONFIDENCE: Final[float] = float(
 # 5b. GLOBAL SAFE DOMAINS (well-known legitimate platforms worldwide)
 # ==============================================================================
 # Major global platforms and financial infrastructure that users browse daily.
-# These are checked alongside TRUSTED_DOMAINS to ensure 0 false positives on official sites.
+# These are checked alongside TRUSTED_DOMAINS so official sites are never blocked.
+#
+# SECURITY NOTE: suffixes under which *any member of the public* can publish a
+# page (web.app, firebaseapp.com, vercel.app, netlify.app, myshopify.com,
+# wordpress.com) must never appear here — a subdomain match would whitelist
+# attacker-controlled content.  See evaluation samples MY-113 … MY-115.
 GLOBAL_SAFE_DOMAINS: Final[frozenset[str]] = frozenset({
     # ── Search Engines & AI Platforms ──
     "google.com", "google.com.my", "googleapis.com", "accounts.google.com", "mail.google.com", "drive.google.com", "docs.google.com", "play.google.com",
@@ -144,19 +198,19 @@ GLOBAL_SAFE_DOMAINS: Final[frozenset[str]] = frozenset({
     "dbs.com", "dbs.com.sg", "posb.com.sg", "ocbc.com", "ocbc.com.sg", "uob.com", "uob.com.sg", "sc.com", "standardchartered.com", "boc.cn", "icbc.com.cn", "ccb.com", "mufg.jp", "smbc.co.jp", "mizuho-fg.co.jp", "hangseng.com", "hkbea.com",
 
     # ── Global Fintech, Payments & Wallets ──
-    "paypal.com", "paypal.me", "stripe.com", "wise.com", "revolut.com", "square.com", "squareup.com", "venmo.com", "zellepay.com", "klarna.com", "adyen.com", "shopify.com", "myshopify.com",
+    "paypal.com", "paypal.me", "stripe.com", "wise.com", "revolut.com", "square.com", "squareup.com", "venmo.com", "zellepay.com", "klarna.com", "adyen.com", "shopify.com",
     "touchngo.com.my", "tngdigital.com.my", "grab.com", "foodpanda.com", "foodpanda.my", "boost-my.com", "myboost.com.my", "bigpayme.com", "duitnow.my", "paynet.my",
 
     # ── Global Crypto & Web3 (Official) ──
     "binance.com", "coinbase.com", "kraken.com", "crypto.com", "kucoin.com", "okx.com", "bybit.com", "metamask.io", "trustwallet.com", "etherscan.io", "blockchain.com", "coinmarketcap.com", "coingecko.com",
 
     # ── Cloud, Hosting, CDN & Developer Ecosystem ──
-    "cloudflare.com", "fastly.com", "akamai.com", "digitalocean.com", "heroku.com", "vercel.com", "vercel.app", "netlify.com", "netlify.app", "render.com", "firebaseapp.com", "web.app", "supabase.com",
+    "cloudflare.com", "fastly.com", "akamai.com", "digitalocean.com", "heroku.com", "vercel.com", "netlify.com", "render.com", "supabase.com",
     "gitlab.com", "bitbucket.org", "stackoverflow.com", "npmjs.com", "pypi.org", "docker.com", "w3.org", "mozilla.org", "developer.mozilla.org",
 
     # ── Productivity, Design & Enterprise SaaS ──
     "canva.com", "figma.com", "adobe.com", "notion.so", "miro.com", "trello.com", "atlassian.com", "jira.com", "salesforce.com", "hubspot.com", "zendesk.com", "asana.com", "monday.com", "clickup.com",
-    "dropbox.com", "box.com", "wordpress.com", "medium.com", "substack.com", "patreon.com", "intuit.com", "turbotax.com", "quickbooks.com",
+    "dropbox.com", "box.com", "medium.com", "substack.com", "patreon.com", "intuit.com", "turbotax.com", "quickbooks.com",
 
     # ── E-Commerce & Marketplaces (Global & Regional) ──
     "shopee.com.my", "shopee.sg", "shopee.co.id", "shopee.tw", "shopee.vn", "lazada.com.my", "lazada.sg", "lazada.co.id",

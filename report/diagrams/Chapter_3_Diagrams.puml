@@ -31,12 +31,12 @@ partition "Agile Backend Architecture & Integration (Sprint 3)" {
     :Implement FastAPI ASGI Endpoints (Bearer Token Auth);
     :Engineer Pre-Compiled Regex Bytecode (8 Malaysian Banks);
     :Build Asynchronous aiosqlite Database Connection Pool;
-    :Construct 28-Bank In-Memory Whitelist (frozenset);
+    :Construct In-Memory Trusted Domain Whitelist (frozenset);
     :Implement asyncio.to_thread & asyncio.gather Orchestrator;
 }
 
 partition "System Testing, Hardening & CI/CD (Sprint 4)" {
-    :Execute Automated Pytest Suite (122/122 Unit & Integration Tests);
+    :Execute Automated Pytest Suite (198/198 Unit & Integration Tests);
     :Stress Testing & Concurrency Profiling on Uvicorn ASGI;
     :Deploy Live SOC Intelligence Dashboard & CTI Exporters;
 }
@@ -66,7 +66,7 @@ package "Adversarial Misuse Vectors (Attacker Goals)" {
 }
 
 package "PhishGuard-AI Architectural Mitigations" {
-    [Mitigation 1: Token-Bucket Rate Limiting\n• SlowAPI: 60 req/min per client IP\n• Asynchronous Thread Pool Offloading] as Mit1
+    [Mitigation 1: Fixed-Window Rate Limiting\n• SlowAPI: 60 req/min per client IP\n• Asynchronous Thread Pool Offloading] as Mit1
     [Mitigation 2: WordPiece Subword Tokenization\n• Decomposes lookalikes into subwords\n• Fine-tuned on localized multi-lingual corpus] as Mit2
     [Mitigation 3: Strict Sanitization & Parameterized Queries\n• BeautifulSoup DOM tag stripping\n• aiosqlite parameterized SQL bindings] as Mit3
     [Mitigation 4: Bearer Token Auth & Constant Latency\n• Authorization: Bearer <secret_token>\n• Pre-inference Whitelist caching] as Mit4
@@ -138,7 +138,7 @@ title Figure 3.4: Confusion Matrix Mathematical Model & ROC-AUC Decision Boundar
 
 package "Predicted Class: PHISHING (Positive)" {
     [True Positive (TP)\n• Actual: Phishing\n• Prediction: Phishing\n• ACTION: High-Impact Red Shield Rendered] as TP
-    [False Positive (FP)\n• Actual: Legitimate\n• Prediction: Phishing\n• MITIGATION: 28-Bank Whitelist Bypasses AI (0 FP)] as FP
+    [False Positive (FP)\n• Actual: Legitimate\n• Prediction: Phishing\n• MITIGATION: Trusted Domain Whitelist Bypasses AI (0 FP)] as FP
 }
 
 package "Predicted Class: LEGITIMATE (Negative)" {

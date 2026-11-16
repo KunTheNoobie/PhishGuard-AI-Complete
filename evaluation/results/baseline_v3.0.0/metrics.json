@@ -1,0 +1,534 @@
+{
+  "tag": "baseline_v3.0.0",
+  "app_version": "3.0.0",
+  "dataset": "malaysia_eval_v1.jsonl",
+  "n_samples": 120,
+  "n_malicious": 60,
+  "n_legitimate": 60,
+  "malicious_threshold": 0.75,
+  "device": "cpu",
+  "pipeline": {
+    "overall": {
+      "tp": 56,
+      "fp": 47,
+      "fn": 4,
+      "tn": 13,
+      "n": 120,
+      "accuracy": 0.575,
+      "precision": 0.5437,
+      "recall": 0.9333,
+      "f1": 0.6871,
+      "false_positive_rate": 0.7833,
+      "false_negative_rate": 0.0667
+    },
+    "dev": {
+      "tp": 28,
+      "fp": 23,
+      "fn": 2,
+      "tn": 7,
+      "n": 60,
+      "accuracy": 0.5833,
+      "precision": 0.549,
+      "recall": 0.9333,
+      "f1": 0.6914,
+      "false_positive_rate": 0.7667,
+      "false_negative_rate": 0.0667
+    },
+    "holdout": {
+      "tp": 28,
+      "fp": 24,
+      "fn": 2,
+      "tn": 6,
+      "n": 60,
+      "accuracy": 0.5667,
+      "precision": 0.5385,
+      "recall": 0.9333,
+      "f1": 0.6829,
+      "false_positive_rate": 0.8,
+      "false_negative_rate": 0.0667
+    },
+    "per_category": {
+      "L1_official_portal": {
+        "n": 14,
+        "correct": 10,
+        "blocked": 4,
+        "accuracy": 0.7143
+      },
+      "L2_benign_brand_mention": {
+        "n": 20,
+        "correct": 0,
+        "blocked": 20,
+        "accuracy": 0.0
+      },
+      "L3_general_benign": {
+        "n": 14,
+        "correct": 1,
+        "blocked": 13,
+        "accuracy": 0.0714
+      },
+      "L4_benign_with_accounts": {
+        "n": 12,
+        "correct": 2,
+        "blocked": 10,
+        "accuracy": 0.1667
+      },
+      "P1_bank_lookalike": {
+        "n": 14,
+        "correct": 14,
+        "blocked": 14,
+        "accuracy": 1.0
+      },
+      "P2_bm_manglish_lure": {
+        "n": 14,
+        "correct": 14,
+        "blocked": 14,
+        "accuracy": 1.0
+      },
+      "P3_mule_account": {
+        "n": 12,
+        "correct": 12,
+        "blocked": 12,
+        "accuracy": 1.0
+      },
+      "P4_ewallet_brand": {
+        "n": 10,
+        "correct": 10,
+        "blocked": 10,
+        "accuracy": 1.0
+      },
+      "P5_evasive": {
+        "n": 10,
+        "correct": 6,
+        "blocked": 6,
+        "accuracy": 0.6
+      }
+    }
+  },
+  "bert_only": {
+    "composite": {
+      "tp": 60,
+      "fp": 60,
+      "fn": 0,
+      "tn": 0,
+      "n": 120,
+      "accuracy": 0.5,
+      "precision": 0.5,
+      "recall": 1.0,
+      "f1": 0.6667,
+      "false_positive_rate": 1.0,
+      "false_negative_rate": 0.0,
+      "threshold": 0.75,
+      "roc_auc": 0.7037
+    },
+    "url_raw": {
+      "tp": 56,
+      "fp": 52,
+      "fn": 4,
+      "tn": 8,
+      "n": 120,
+      "accuracy": 0.5333,
+      "precision": 0.5185,
+      "recall": 0.9333,
+      "f1": 0.6667,
+      "false_positive_rate": 0.8667,
+      "false_negative_rate": 0.0667,
+      "threshold": 0.75,
+      "roc_auc": 0.7596
+    },
+    "url_stripped": {
+      "tp": 53,
+      "fp": 26,
+      "fn": 7,
+      "tn": 34,
+      "n": 120,
+      "accuracy": 0.725,
+      "precision": 0.6709,
+      "recall": 0.8833,
+      "f1": 0.7626,
+      "false_positive_rate": 0.4333,
+      "false_negative_rate": 0.1167,
+      "threshold": 0.75,
+      "roc_auc": 0.8599
+    }
+  },
+  "latency_ms": {
+    "note": "In-process ASGI call, single client, CPU inference; excludes network.",
+    "all_requests": {
+      "n": 120,
+      "mean": 138.77,
+      "p50": 145.48,
+      "p95": 244.53,
+      "max": 408.77
+    },
+    "bert_path": {
+      "n": 103,
+      "mean": 161.59,
+      "p50": 149.4,
+      "p95": 275.33
+    },
+    "whitelist_bypass": {
+      "n": 17,
+      "mean": 0.47,
+      "p50": 0.32
+    }
+  },
+  "misclassified": [
+    {
+      "id": "MY-006",
+      "category": "L1_official_portal",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://ambank.amonline.com.my/web"
+    },
+    {
+      "id": "MY-007",
+      "category": "L1_official_portal",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://www.bankislam.biz/"
+    },
+    {
+      "id": "MY-008",
+      "category": "L1_official_portal",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://www.irakyat.com.my/"
+    },
+    {
+      "id": "MY-009",
+      "category": "L1_official_portal",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://www.mybsn.com.my/mybsn/login/login.do"
+    },
+    {
+      "id": "MY-015",
+      "category": "L2_benign_brand_mention",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://ringgitplus.com/en/blog/bank-news/maybank-revises-fixed-deposit-rates.html"
+    },
+    {
+      "id": "MY-016",
+      "category": "L2_benign_brand_mention",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://www.imoney.my/articles/best-savings-accounts-malaysia"
+    },
+    {
+      "id": "MY-017",
+      "category": "L2_benign_brand_mention",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://forum.lowyat.net/topic/5312345"
+    },
+    {
+      "id": "MY-018",
+      "category": "L2_benign_brand_mention",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://soyacincau.com/2026/03/14/touch-n-go-ewallet-new-security-feature/"
+    },
+    {
+      "id": "MY-019",
+      "category": "L2_benign_brand_mention",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://says.com/my/tech/how-to-spot-fake-bank-sms"
+    },
+    {
+      "id": "MY-020",
+      "category": "L2_benign_brand_mention",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://vulcanpost.com/865432/duitnow-qr-adoption-malaysia-sme/"
+    },
+    {
+      "id": "MY-021",
+      "category": "L2_benign_brand_mention",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://amanz.my/2026402112/"
+    },
+    {
+      "id": "MY-022",
+      "category": "L2_benign_brand_mention",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://www.malaymail.com/news/money/2026/02/11/rhb-posts-higher-quarterly-profit/165432"
+    },
+    {
+      "id": "MY-023",
+      "category": "L2_benign_brand_mention",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://theedgemalaysia.com/node/745123"
+    },
+    {
+      "id": "MY-024",
+      "category": "L2_benign_brand_mention",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://www.bernama.com/en/crime_courts/news.php?id=2345678"
+    },
+    {
+      "id": "MY-025",
+      "category": "L2_benign_brand_mention",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://www.comparehero.my/credit-card/cimb"
+    },
+    {
+      "id": "MY-026",
+      "category": "L2_benign_brand_mention",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://loanstreet.com.my/learning-centre/how-to-reset-maybank2u-password"
+    },
+    {
+      "id": "MY-027",
+      "category": "L2_benign_brand_mention",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://technave.com/gadget/PayPal-to-end-support-for-older-Android-versions-34521.html"
+    },
+    {
+      "id": "MY-028",
+      "category": "L2_benign_brand_mention",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://mypf.my/2026/01/20/epf-account-3-withdrawal-guide/"
+    },
+    {
+      "id": "MY-029",
+      "category": "L2_benign_brand_mention",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://cilisos.my/why-do-malaysian-banks-keep-warning-about-apk-scams/"
+    },
+    {
+      "id": "MY-030",
+      "category": "L2_benign_brand_mention",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://www.hmetro.com.my/mutakhir/2026/04/1123456/warga-emas-rugi-rm120000"
+    },
+    {
+      "id": "MY-031",
+      "category": "L2_benign_brand_mention",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://www.sinarharian.com.my/article/712345/berita/semasa/lhdn-nafi-hantar-emel-bayaran-balik"
+    },
+    {
+      "id": "MY-032",
+      "category": "L2_benign_brand_mention",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://www.astroawani.com/berita-bisnes/bank-islam-lancar-akaun-digital-baharu-456789"
+    },
+    {
+      "id": "MY-033",
+      "category": "L2_benign_brand_mention",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://paultan.org/2026/05/02/car-loan-interest-rates-malaysia-compared/"
+    },
+    {
+      "id": "MY-034",
+      "category": "L2_benign_brand_mention",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://www.nbc.com.my/blog/panduan-bayar-zakat-online-melalui-fpx/"
+    },
+    {
+      "id": "MY-035",
+      "category": "L3_general_benign",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://www.secretrecipe.com.my/menu/cakes"
+    },
+    {
+      "id": "MY-036",
+      "category": "L3_general_benign",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://www.popular.com.my/eshop/account/login"
+    },
+    {
+      "id": "MY-037",
+      "category": "L3_general_benign",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://www.airasia.com/en/gb"
+    },
+    {
+      "id": "MY-038",
+      "category": "L3_general_benign",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://www.maxis.com.my/en/personal/"
+    },
+    {
+      "id": "MY-039",
+      "category": "L3_general_benign",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://unifi.com.my/personal/home/broadband"
+    },
+    {
+      "id": "MY-040",
+      "category": "L3_general_benign",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://www.senheng.com.my/computers-laptops.html"
+    },
+    {
+      "id": "MY-041",
+      "category": "L3_general_benign",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://www.zalora.com.my/women/clothing/"
+    },
+    {
+      "id": "MY-042",
+      "category": "L3_general_benign",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://www.jobstreet.com.my/information-security-jobs"
+    },
+    {
+      "id": "MY-043",
+      "category": "L3_general_benign",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://www.tgv.com.my/movies"
+    },
+    {
+      "id": "MY-044",
+      "category": "L3_general_benign",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://www.watsons.com.my/health/c/2"
+    },
+    {
+      "id": "MY-045",
+      "category": "L3_general_benign",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://www.pos.com.my/send/track-trace"
+    },
+    {
+      "id": "MY-046",
+      "category": "L3_general_benign",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://www.klook.com/en-MY/city/49-kuala-lumpur-things-to-do/"
+    },
+    {
+      "id": "MY-048",
+      "category": "L3_general_benign",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://rasamalaysia.com/nasi-lemak-recipe/"
+    },
+    {
+      "id": "MY-049",
+      "category": "L4_benign_with_accounts",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://www.mercy.org.my/donate/"
+    },
+    {
+      "id": "MY-050",
+      "category": "L4_benign_with_accounts",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://www.spca.org.my/how-to-help/donate"
+    },
+    {
+      "id": "MY-053",
+      "category": "L4_benign_with_accounts",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://www.klrunners.my/events/charity-run-2026/register"
+    },
+    {
+      "id": "MY-054",
+      "category": "L4_benign_with_accounts",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://www.tanbrothershardware.com.my/contact"
+    },
+    {
+      "id": "MY-055",
+      "category": "L4_benign_with_accounts",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://www.homestaycameron.my/tempahan"
+    },
+    {
+      "id": "MY-056",
+      "category": "L4_benign_with_accounts",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://www.akademitenis.com.my/fees"
+    },
+    {
+      "id": "MY-057",
+      "category": "L4_benign_with_accounts",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://www.printcepat.my/invoice/INV-20260418"
+    },
+    {
+      "id": "MY-058",
+      "category": "L4_benign_with_accounts",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://www.persatuanpenduduktamanmelati.org/yuran-keselamatan"
+    },
+    {
+      "id": "MY-059",
+      "category": "L4_benign_with_accounts",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://www.dewanserbaguna-pj.my/booking"
+    },
+    {
+      "id": "MY-060",
+      "category": "L4_benign_with_accounts",
+      "label": 0,
+      "verdict": "BLOCK_RENDER",
+      "url": "https://www.kedaibukuilmu.my/checkout/manual-transfer"
+    },
+    {
+      "id": "MY-113",
+      "category": "P5_evasive",
+      "label": 1,
+      "verdict": "SAFE",
+      "url": "https://maybank2u-login.web.app/"
+    },
+    {
+      "id": "MY-114",
+      "category": "P5_evasive",
+      "label": 1,
+      "verdict": "SAFE",
+      "url": "https://cimb-clicks-verify.vercel.app/"
+    },
+    {
+      "id": "MY-115",
+      "category": "P5_evasive",
+      "label": 1,
+      "verdict": "SAFE",
+      "url": "https://pbe-secure-update.netlify.app/"
+    },
+    {
+      "id": "MY-116",
+      "category": "P5_evasive",
+      "label": 1,
+      "verdict": "SAFE",
+      "url": "https://docs.google.com/forms/d/e/1FAIpQLSfakeformid/viewform"
+    }
+  ]
+}

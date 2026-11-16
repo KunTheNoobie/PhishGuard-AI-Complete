@@ -40,7 +40,7 @@ package "PhishGuard-AI Edge-Adjacent Microservice (ADOPTED)" #1e2d3b {
       • 100% Data Sovereignty: Zero DOM data leaves local host
       • Zero Cloud Metering Costs: Predictable $0 OpEx
       • Sub-400ms SLA: Intercepts zero-day threats in real-time
-      • High Concurrency: 1,500+ requests/sec via ASGI event loops
+      • Measured: 22.4 req/s, 0 errors at 50 concurrent users (CPU)
     end note
 }
 
@@ -67,7 +67,7 @@ package "Identified Engineering Challenges" {
 package "Engineered Architectural Resolutions" {
     [Resolution 1: Async Thread-Offloading\n• Wrapped inference in asyncio.to_thread()\n• Parallelized database queries via asyncio.gather()] as R1
     [Resolution 2: Single-Epoch MLOps Checkpointing\n• Scaled dataset to 549k for rapid Epoch 1.0 convergence\n• Direct Safetensors serialization to persistent storage] as R2
-    [Resolution 3: In-Memory Whitelist & Context Injection\n• 28-Bank frozenset constant-time bypass (<1ms)\n• Prepend 'URL: {url} | {text}' for domain awareness] as R3
+    [Resolution 3: In-Memory Whitelist & Context Injection\n• frozenset constant-time bypass (<1ms)\n• Prepend 'URL: {url} | {text}' for domain awareness] as R3
 }
 
 C1 -down-> R1 : Resolved By

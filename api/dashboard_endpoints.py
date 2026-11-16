@@ -2,13 +2,14 @@
 PhishGuard-AI — Dashboard API Endpoints.
 ==========================================
 
-Exposes read-only endpoints consumed by the monitoring dashboard to
-visualise threat telemetry, mule-registry contents, and aggregate
-statistics.
+Exposes the endpoints consumed by the SOC monitoring dashboard: threat
+telemetry, mule-registry administration, exports, database maintenance and
+the live SSE stream.
 
-These routes are **unauthenticated** by design — the dashboard is an
-internal monitoring tool intended for system administrators operating
-within a trusted network boundary.
+Every route on this router requires administrative authentication
+(``core.security.verify_dashboard_access``): either the admin bearer token
+or a browser session established through ``POST /auth/login``.  Only the
+``/auth/*`` routes are reachable without credentials.
 
 Architecture Layer : Presentation / Internal Monitoring
 Thesis Reference   : §5.3 — Operational Monitoring & Telemetry Visualisation
@@ -19,7 +20,21 @@ from __future__ import annotations
 import logging
 from typing import Any, Final, Optional, Dict, List
 
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, Depends, Request, HTTPException, Response
+from pydantic import BaseModel, Field
+
+from schemas.payload import MuleReportReview
+
+from core.config import DASHBOARD_SESSION_TTL_SECONDS
+from core.rate_limit import LOGIN_RATE_LIMIT, limiter
+from core.security import (
+    SESSION_COOKIE_NAME,
+    create_dashboard_session,
+    destroy_dashboard_session,
+    is_valid_admin_key,
+    is_valid_dashboard_session,
+    verify_dashboard_access,
+)
 
 import asyncio
 import json
@@ -28,12 +43,60 @@ from fastapi.responses import StreamingResponse
 logger: Final[logging.Logger] = logging.getLogger("phishguard.dashboard")
 
 # ==============================================================================
-# Router Configuration (no auth dependency — internal use only)
+# Router Configuration (administrative authentication on every route)
 # ==============================================================================
 router: Final[APIRouter] = APIRouter(
     prefix="/api/v1/dashboard",
     tags=["Dashboard & Telemetry"],
+    dependencies=[Depends(verify_dashboard_access)],
 )
+
+
+# ==============================================================================
+# Dashboard Session Authentication
+# ==============================================================================
+
+class DashboardLoginRequest(BaseModel):
+    """Body of ``POST /auth/login``."""
+
+    api_key: str = Field(..., min_length=1, max_length=256, description="Administrative API key.")
+
+
+@router.post("/auth/login", summary="Exchange the admin key for a browser session cookie")
+@limiter.limit(LOGIN_RATE_LIMIT)
+async def dashboard_login(request: Request, payload: DashboardLoginRequest, response: Response) -> dict[str, Any]:
+    """Validate the admin key and set an HttpOnly, SameSite=Strict session cookie."""
+    if not is_valid_admin_key(payload.api_key):
+        logger.warning("Rejected dashboard login attempt from %s", request.client.host if request.client else "unknown")
+        raise HTTPException(
+            status_code=401,
+            detail={"error": "INVALID_ADMIN_KEY", "message": "The administrative key is incorrect."},
+        )
+    session_id = create_dashboard_session()
+    response.set_cookie(
+        key=SESSION_COOKIE_NAME,
+        value=session_id,
+        max_age=DASHBOARD_SESSION_TTL_SECONDS,
+        httponly=True,
+        samesite="strict",
+        secure=request.url.scheme == "https",
+        path="/",
+    )
+    return {"authenticated": True, "expires_in": DASHBOARD_SESSION_TTL_SECONDS}
+
+
+@router.get("/auth/session", summary="Report whether the caller holds a valid dashboard session")
+async def dashboard_session_status(request: Request) -> dict[str, Any]:
+    """Unauthenticated probe used by the dashboard to decide whether to show the sign-in dialog."""
+    return {"authenticated": is_valid_dashboard_session(request.cookies.get(SESSION_COOKIE_NAME))}
+
+
+@router.post("/auth/logout", summary="Destroy the current dashboard session")
+async def dashboard_logout(request: Request, response: Response) -> dict[str, Any]:
+    destroy_dashboard_session(request.cookies.get(SESSION_COOKIE_NAME))
+    response.delete_cookie(SESSION_COOKIE_NAME, path="/")
+    return {"authenticated": False}
+
 
 # ── Live Real-Time SSE Stream Subscribers Channel ──
 _SSE_CLIENTS: Final[set[asyncio.Queue]] = set()
@@ -178,6 +241,37 @@ async def get_system_health(request: Request) -> dict[str, Any]:
 
 from pydantic import BaseModel
 
+# ==============================================================================
+# Mule Report Review Queue
+# ==============================================================================
+
+@router.get("/mule-reports", summary="List user-submitted mule reports awaiting review")
+async def get_mule_reports(request: Request, status: Optional[str] = "PENDING", limit: int = 100) -> dict[str, Any]:
+    """Return queued reports. ``status`` may be PENDING, APPROVED, REJECTED or ``all``."""
+    from database.repository import list_mule_reports
+
+    wanted = (status or "").upper()
+    if wanted not in {"PENDING", "APPROVED", "REJECTED", "ALL", ""}:
+        raise HTTPException(status_code=422, detail="status must be PENDING, APPROVED, REJECTED or all")
+    reports = await list_mule_reports(
+        None if wanted in {"ALL", ""} else wanted, max(1, min(limit, 500)), request.app.state.db
+    )
+    return {"count": len(reports), "reports": reports}
+
+
+@router.post("/mule-reports/{report_id}/review", summary="Approve or reject a queued mule report")
+async def post_mule_report_review(request: Request, report_id: int, payload: MuleReportReview) -> dict[str, Any]:
+    """Approving promotes the account into the blocking registry; rejecting only closes the report."""
+    from database.repository import review_mule_report
+
+    outcome = await review_mule_report(report_id, payload.decision == "APPROVE", request.app.state.db)
+    if outcome is None:
+        raise HTTPException(status_code=404, detail="Report not found")
+    if not outcome["changed"]:
+        raise HTTPException(status_code=409, detail=f"Report already {outcome['status']}")
+    return outcome
+
+
 class QuickScanRequest(BaseModel):
     url: str
     text_content: str = ""
@@ -193,7 +287,6 @@ async def quick_scan_url(request: Request, payload: QuickScanRequest) -> dict[st
     from urllib.parse import urlparse
     from services.brand_profiler import profile_brand_impersonation
     from services.heuristic_engine import analyze_url_heuristics
-    from core.config import BILINGUAL_SCAM_KEYWORDS, GLOBAL_SAFE_DOMAINS, TRUSTED_DOMAINS
     from api.endpoints import _is_trusted_domain
 
     db = request.app.state.db
@@ -222,84 +315,50 @@ async def quick_scan_url(request: Request, payload: QuickScanRequest) -> dict[st
             except Exception:
                 pass
 
-    combined_text = f"{target_url} {fetched_content}"
+    from services.nlp_engine import build_model_input
+    from services.sanitizer import sanitize_dom
+    from services.verdict_engine import decide
 
-    # 1. Run Mule & DuitNow Scanner
+    visible_text = sanitize_dom(fetched_content) if fetched_content.strip() else ""
+    combined_text = f"{target_url} {visible_text}"
+
+    # 1. Mule & DuitNow scanner over the visible text and the URL itself
     mule_result = await mule_scanner.scan_and_verify(combined_text, db)
 
-    # 2. Run Brand Impersonation Profiler
-    brand_result = profile_brand_impersonation(target_url, combined_text)
-
-    # 3. Run Domain & Network Heuristics
+    # 2. Brand profiling and URL heuristics
+    brand_result = profile_brand_impersonation(target_url, visible_text)
     heur_result = analyze_url_heuristics(target_url)
 
-    # 4. Check for Social Engineering Phrasing
-    lower_text = combined_text.lower()
-    has_scam_keywords = any(kw.lower() in lower_text for kw in BILINGUAL_SCAM_KEYWORDS)
-
-    # 5. Run BERT Semantic Engine if available
-    bert_score = 0.05
-    is_phishing_semantic = False
-    if semantic_engine and len(combined_text.strip()) > 15:
+    # 3. BERT URL classification (same input formulation as the extension path)
+    bert_result: dict[str, Any] = {"label": "LEGITIMATE", "confidence": 0.0, "is_malicious": False}
+    is_url = "." in target_url and " " not in target_url
+    if semantic_engine and is_url:
         try:
-            sem_result = await semantic_engine.predict(combined_text)
-            if sem_result.get("label") == "PHISHING":
-                bert_score = float(sem_result.get("confidence", 0.95))
-                is_phishing_semantic = True
-            else:
-                bert_score = round(1.0 - float(sem_result.get("confidence", 0.95)), 4)
+            bert_result = await semantic_engine.predict(build_model_input(target_url))
         except Exception:
-            pass
+            logger.exception("Quick-scan BERT inference failed for %s", target_url)
 
-    # 6. Synthesize Multi-Modal Correlated Verdict
+    # 4. Shared corroborated verdict
     is_official = brand_result["is_official_domain"] or _is_trusted_domain(target_url)
-    lower_comb = combined_text.lower()
-    has_login_or_creds = any(
-        w in lower_comb
-        for w in (
-            "login", "log in", "sign in", "signin", "password", "kata laluan",
-            "tac", "otp", "pin", "credential", "security code", "masuk akaun"
-        )
+    decision = decide(
+        is_trusted=is_official,
+        bert_result=bert_result,
+        mule_result=mule_result,
+        brand_result=brand_result,
+        heuristic_result=heur_result,
+        sanitized_text=visible_text or target_url,
+        raw_content=fetched_content,
     )
+    verdict = decision.verdict
+    score = 0.02 if is_official else decision.risk_score
 
-    is_threat = (
-        not is_official
-        and (
-            mule_result["mule_detected"]
-            or bool(mule_result.get("flagged_accounts"))
-            or brand_result["is_impersonation"]
-            or (has_scam_keywords and heur_result["is_suspicious"])
-            or (has_scam_keywords and is_phishing_semantic)
-            or (is_phishing_semantic and (has_login_or_creds or heur_result["is_suspicious"]))
-        )
-    )
-
-    if is_official:
-        score = 0.02
-        verdict = "SAFE"
-    elif mule_result["mule_detected"] or bool(mule_result.get("flagged_accounts")):
-        score = max(0.99, bert_score)
-        verdict = "BLOCK_RENDER"
-    elif is_threat:
-        score = max(0.95, bert_score, brand_result["impersonation_index"])
-        verdict = "BLOCK_RENDER"
-    else:
-        score = bert_score if bert_score < 0.40 else 0.05
-        verdict = "SAFE"
-
-    # Broadcast event if threat detected so dashboard counters immediately update
-    if verdict == "BLOCK_RENDER":
+    # Persist + broadcast (log_threat_telemetry broadcasts the SSE event once)
+    if decision.is_threat:
         try:
             from database.repository import log_threat_telemetry
-            log_id = await log_threat_telemetry(target_url, score, db)
-            broadcast_threat_event("new_threat", {
-                "log_id": log_id,
-                "malicious_url": target_url,
-                "bert_score": round(score, 4),
-                "timestamp": "Just now",
-            })
+            await log_threat_telemetry(target_url, score, db)
         except Exception:
-            pass
+            logger.exception("Quick-scan telemetry logging failed for %s", target_url)
 
     return {
         "url": target_url,
@@ -311,6 +370,8 @@ async def quick_scan_url(request: Request, payload: QuickScanRequest) -> dict[st
         "is_impersonation": brand_result["is_impersonation"],
         "impersonation_index": brand_result["impersonation_index"],
         "domain_indicators": heur_result["indicators"],
+        "threat_indicators": decision.indicators,
+        "decision_rule": decision.rule,
         "scanned_at": "Just now",
     }
 

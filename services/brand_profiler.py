@@ -3,8 +3,24 @@ PhishGuard-AI — Brand Impersonation Index (BII) & Profiler.
 ============================================================
 
 Calculates a deterministic Brand Impersonation Index (BII) by cross-referencing
-detected financial brand keywords, logo identities, and domain origin against
-whitelisted authoritative Malaysian banking infrastructures.
+brand cues against the authoritative domains of each institution.
+
+Three evidence tiers are distinguished, because they carry very different
+false-positive risk:
+
+``brand_in_hostname``
+    A protected brand string is embedded in a hostname that the brand does
+    not own (``maybank2u-secure-login.top``).  Strong evidence.
+``lookalike_domain``
+    A hostname token is a homoglyph or near-miss edit of a protected brand
+    string (``rnaybank2u.com``, ``maybznk2u.com.my``).  Strong evidence.
+``brand_mentioned``
+    The brand is merely named in the page text (a news article about
+    Maybank).  Weak evidence: never sufficient on its own.
+
+``is_impersonation`` is true only for the two strong tiers.  The verdict
+engine still requires at least one independent corroborating signal before
+a page is blocked.
 
 Architecture Layer: Services / Threat Attribution
 Thesis Reference : §4.7 — Brand Impersonation Profiling & Attribution Metrics
@@ -14,17 +30,18 @@ from __future__ import annotations
 
 import re
 from typing import Any, Final
-from urllib.parse import urlparse
+
+from services.domain_utils import extract_hostname, host_tokens, levenshtein
 
 # Canonical Global and Regional financial and tech institutions and their official domain registries
 GLOBAL_FINANCIAL_AND_TECH_BRANDS: Final[dict[str, dict[str, Any]]] = {
     # ── Malaysian Financial Infrastructure ──
     "Maybank": {
-        "official_domains": {"maybank2u.com.my", "maybank.com", "maybank.com.my"},
+        "official_domains": {"maybank2u.com.my", "maybank.com", "maybank.com.my", "maybank2e.com", "maybank2u.com"},
         "keywords": ["maybank", "maybank2u", "mae", "malayan banking"],
     },
     "CIMB Bank": {
-        "official_domains": {"cimbclicks.com.my", "cimb.com.my", "cimbbank.com.my"},
+        "official_domains": {"cimbclicks.com.my", "cimb.com.my", "cimbbank.com.my", "cimb.com", "cimbocto.com.my"},
         "keywords": ["cimb", "cimbclicks", "cimb bank", "octo"],
     },
     "Public Bank": {
@@ -40,11 +57,11 @@ GLOBAL_FINANCIAL_AND_TECH_BRANDS: Final[dict[str, dict[str, Any]]] = {
         "keywords": ["hong leong", "hlb", "hlb connect", "hong leong bank"],
     },
     "AmBank": {
-        "official_domains": {"ambank.com.my", "ambankgroup.com"},
+        "official_domains": {"ambank.com.my", "ambankgroup.com", "amonline.com.my"},
         "keywords": ["ambank", "ambank online", "amonline"],
     },
     "Bank Islam": {
-        "official_domains": {"bankislam.com.my", "bankislam.biz"},
+        "official_domains": {"bankislam.com.my", "bankislam.biz", "bankislam.com"},
         "keywords": ["bank islam", "transact bank islam"],
     },
     "Bank Rakyat": {
@@ -57,7 +74,52 @@ GLOBAL_FINANCIAL_AND_TECH_BRANDS: Final[dict[str, dict[str, Any]]] = {
     },
     "Touch 'n Go eWallet": {
         "official_domains": {"touchngo.com.my", "tngdigital.com.my"},
-        "keywords": ["touch n go", "tng ewallet", "touch 'n go"],
+        "keywords": ["touch n go", "tng ewallet", "touch 'n go", "tng"],
+    },
+    "BSN": {
+        "official_domains": {"bsn.com.my", "mybsn.com.my"},
+        "keywords": ["bank simpanan nasional", "mybsn"],
+    },
+    "GrabPay": {
+        "official_domains": {"grab.com", "grab.com.my"},
+        "keywords": ["grabpay", "grab pay"],
+    },
+    "ShopeePay": {
+        "official_domains": {"shopee.com.my", "shopeepay.com.my"},
+        "keywords": ["shopeepay", "shopee pay"],
+    },
+    "Boost": {
+        "official_domains": {"myboost.com.my", "boost-my.com", "myboost.co"},
+        "keywords": ["boost e-wallet", "boost ewallet"],
+    },
+    # ── Malaysian Government Agencies & Utilities (frequently impersonated) ──
+    "LHDN": {
+        "official_domains": {"hasil.gov.my"},
+        "keywords": ["lhdn", "lembaga hasil dalam negeri"],
+    },
+    "KWSP / EPF": {
+        "official_domains": {"kwsp.gov.my"},
+        "keywords": ["kwsp", "i-akaun", "epf"],
+    },
+    "PDRM": {
+        "official_domains": {"rmp.gov.my"},
+        "keywords": ["pdrm", "polis diraja malaysia"],
+    },
+    "JPJ": {
+        "official_domains": {"jpj.gov.my"},
+        "keywords": ["jpj", "jabatan pengangkutan jalan"],
+    },
+    "Bank Negara Malaysia": {
+        "official_domains": {"bnm.gov.my"},
+        "keywords": ["bank negara malaysia", "bnm"],
+    },
+    "TNB": {
+        "official_domains": {"tnb.com.my", "mytnb.com.my"},
+        "keywords": ["tnb", "tenaga nasional"],
+    },
+    "Pos Malaysia": {
+        "official_domains": {"pos.com.my"},
+        "keywords": ["pos malaysia", "poslaju"],
     },
 
     # ── Global Tech & Cloud Giants ──
@@ -110,7 +172,7 @@ GLOBAL_FINANCIAL_AND_TECH_BRANDS: Final[dict[str, dict[str, Any]]] = {
         "keywords": ["dbs ibanking", "posb digibank", "ocbc internet banking", "uob personal internet banking"],
     },
     "Global Logistics (DHL/FedEx)": {
-        "official_domains": {"dhl.com", "fedex.com", "ups.com", "pos.com.my"},
+        "official_domains": {"dhl.com", "fedex.com", "ups.com"},
         "keywords": ["dhl parcel", "fedex tracking", "customs fee unpaid", "package delivery held"],
     },
 }
@@ -118,50 +180,164 @@ GLOBAL_FINANCIAL_AND_TECH_BRANDS: Final[dict[str, dict[str, Any]]] = {
 # Backward compatibility alias
 MALAYSIAN_FINANCIAL_BRANDS = GLOBAL_FINANCIAL_AND_TECH_BRANDS
 
+# ------------------------------------------------------------------------------
+# Hostname evidence tables
+# ------------------------------------------------------------------------------
+# Distinctive brand strings searched as substrings of the hostname, and short
+# brand tokens that must match a whole hostname token.  Generic words
+# ("apple", "boost", "grab", "mae", "octo") are deliberately excluded because
+# they occur in unrelated legitimate hostnames.
+_HOST_SUBSTRINGS: Final[dict[str, tuple[str, ...]]] = {
+    "Maybank": ("maybank", "malayanbanking"),
+    "CIMB Bank": ("cimbclicks", "cimbbank", "cimb-clicks", "cimbocto"),
+    "Public Bank": ("pbebank", "publicbank", "public-bank"),
+    "RHB Bank": ("rhbgroup", "rhbnow", "rhbbank"),
+    "Hong Leong Bank": ("hongleong", "hong-leong", "hlbconnect"),
+    "AmBank": ("ambank", "amonline"),
+    "Bank Islam": ("bankislam", "bank-islam"),
+    "Bank Rakyat": ("bankrakyat", "bank-rakyat", "irakyat"),
+    "BSN": ("mybsn",),
+    "DuitNow / PayNet": ("duitnow", "paynet"),
+    "Touch 'n Go eWallet": ("touchngo", "touch-n-go", "tngdigital", "tngewallet"),
+    "GrabPay": ("grabpay", "grab-pay"),
+    "ShopeePay": ("shopeepay", "shopee-pay"),
+    "Boost": ("boost-ewallet", "boostewallet", "myboost"),
+    "Bank Negara Malaysia": ("banknegara", "bank-negara"),
+    "TNB": ("mytnb",),
+    "Pos Malaysia": ("pos-malaysia", "posmalaysia", "poslaju"),
+    "Microsoft": ("microsoft", "office365"),
+    "Apple": ("apple-id", "appleid", "icloud"),
+    "PayPal": ("paypal",),
+    "Netflix": ("netflix",),
+    "Crypto / Web3": ("binance", "coinbase", "metamask", "trustwallet"),
+}
+
+_HOST_TOKENS: Final[dict[str, frozenset[str]]] = {
+    "CIMB Bank": frozenset({"cimb"}),
+    "Public Bank": frozenset({"pbe", "pbb"}),
+    "RHB Bank": frozenset({"rhb"}),
+    "Hong Leong Bank": frozenset({"hlb", "hlbb"}),
+    "Touch 'n Go eWallet": frozenset({"tng"}),
+    "LHDN": frozenset({"lhdn"}),
+    "KWSP / EPF": frozenset({"kwsp"}),
+    "PDRM": frozenset({"pdrm"}),
+    "JPJ": frozenset({"jpj"}),
+    "Bank Negara Malaysia": frozenset({"bnm"}),
+    "TNB": frozenset({"tnb"}),
+}
+
+# Canonical strings a typosquatter imitates (>= 6 characters).
+_LOOKALIKE_TARGETS: Final[dict[str, str]] = {
+    "maybank2u": "Maybank", "maybank": "Maybank",
+    "cimbclicks": "CIMB Bank", "pbebank": "Public Bank", "publicbank": "Public Bank",
+    "rhbgroup": "RHB Bank", "hongleong": "Hong Leong Bank", "hongleongconnect": "Hong Leong Bank",
+    "ambank": "AmBank", "amonline": "AmBank", "bankislam": "Bank Islam",
+    "bankrakyat": "Bank Rakyat", "irakyat": "Bank Rakyat",
+    "touchngo": "Touch 'n Go eWallet", "duitnow": "DuitNow / PayNet",
+    "grabpay": "GrabPay", "shopeepay": "ShopeePay",
+    "paypal": "PayPal", "netflix": "Netflix", "binance": "Crypto / Web3",
+}
+
+# Visual homoglyph substitutions commonly used in typosquatted Latin domains.
+_HOMOGLYPHS: Final[tuple[tuple[str, str], ...]] = (
+    ("rn", "m"), ("vv", "w"), ("0", "o"), ("1", "l"), ("5", "s"), ("3", "e"),
+)
+
+
+def _normalise_homoglyphs(token: str) -> str:
+    for fake, real in _HOMOGLYPHS:
+        token = token.replace(fake, real)
+    return token
+
+
+def _is_official(hostname: str, official_domains: set[str]) -> bool:
+    return any(hostname == d or hostname.endswith("." + d) for d in official_domains)
+
+
+def _find_lookalike(hostname: str) -> tuple[str, str] | None:
+    """Return ``(brand, target)`` if a hostname token imitates a brand string."""
+    candidates = set(host_tokens(hostname))
+    for label in hostname.split("."):
+        candidates.add(label.replace("-", ""))
+    for token in sorted(candidates):
+        if len(token) < 6:
+            continue
+        normalised = _normalise_homoglyphs(token)
+        for target, brand in _LOOKALIKE_TARGETS.items():
+            if token == target:
+                continue  # exact brand string: handled by the substring tier
+            if normalised == target:
+                return brand, target
+            allowed = 1 if len(target) <= 8 else 2
+            if abs(len(token) - len(target)) <= allowed and levenshtein(token, target, allowed) <= allowed:
+                return brand, target
+    return None
+
 
 def profile_brand_impersonation(raw_url: str, text_content: str = "") -> dict[str, Any]:
-    """Calculate the Brand Impersonation Index (BII) for a given page context."""
-    clean_url = raw_url.strip()
-    if "://" not in clean_url:
-        clean_url = f"http://{clean_url}"
+    """Calculate the Brand Impersonation Index (BII) for a given page context.
 
-    parsed = urlparse(clean_url)
-    hostname = (parsed.hostname or "").lower()
-    combined_corpus = f"{hostname} {text_content}".lower()
+    Returns
+    -------
+    dict
+        ``target_brand``, ``is_official_domain``, ``is_impersonation`` (strong
+        hostname evidence only), ``brand_in_hostname``, ``lookalike_domain``,
+        ``brand_mentioned`` (weak, text only), ``impersonation_index`` in
+        [0, 1], ``matched_brand_cues`` and ``hostname``.
+    """
+    hostname = extract_hostname(raw_url)
+    text_lower = (text_content or "").lower()
 
-    detected_brand: str | None = None
-    is_official_domain: bool = False
-    impersonation_score: float = 0.0
-    matched_cues: list[str] = []
-
-    # Iterate through known financial and tech brand profiles
-    for brand_name, brand_info in GLOBAL_FINANCIAL_AND_TECH_BRANDS.items():
-        official_domains = brand_info["official_domains"]
-        keywords = brand_info["keywords"]
-
-        # Check if current hostname is official
-        if any(hostname == d or hostname.endswith("." + d) for d in official_domains):
-            is_official_domain = True
-            detected_brand = brand_name
-            impersonation_score = 0.0
-            break
-
-        # Check if page contains brand keywords
-        brand_matches = [kw for kw in keywords if re.search(r"\b" + re.escape(kw) + r"\b", combined_corpus)]
-        if brand_matches:
-            detected_brand = brand_name
-            matched_cues.extend(brand_matches)
-            # High-confidence impersonation because brand cues are present on an unauthorized domain
-            impersonation_score = 0.92
-            if any(kw in hostname for kw in keywords):
-                impersonation_score = 0.98  # Brand name inside deceptive domain
-            break
-
-    return {
-        "target_brand": detected_brand or "None / Unaffiliated",
-        "is_impersonation": (detected_brand is not None and not is_official_domain),
-        "is_official_domain": is_official_domain,
-        "impersonation_index": round(impersonation_score, 3),
-        "matched_brand_cues": list(set(matched_cues)),
+    result: dict[str, Any] = {
+        "target_brand": "None / Unaffiliated",
+        "is_impersonation": False,
+        "is_official_domain": False,
+        "brand_in_hostname": False,
+        "lookalike_domain": False,
+        "brand_mentioned": False,
+        "impersonation_index": 0.0,
+        "matched_brand_cues": [],
         "hostname": hostname,
     }
+
+    # 1. Official domain of any protected brand: authoritative, never impersonation.
+    for brand_name, brand_info in GLOBAL_FINANCIAL_AND_TECH_BRANDS.items():
+        if _is_official(hostname, brand_info["official_domains"]):
+            result.update(target_brand=brand_name, is_official_domain=True)
+            return result
+
+    # 2. Strong tier: protected brand string embedded in a foreign hostname.
+    tokens = set(host_tokens(hostname))
+    brand_names = list(dict.fromkeys([*_HOST_SUBSTRINGS, *_HOST_TOKENS]))
+    for brand_name in brand_names:
+        hits = [n for n in _HOST_SUBSTRINGS.get(brand_name, ()) if n in hostname]
+        hits += sorted(tokens & _HOST_TOKENS.get(brand_name, frozenset()))
+        if hits:
+            result.update(
+                target_brand=brand_name, is_impersonation=True, brand_in_hostname=True,
+                impersonation_index=0.98, matched_brand_cues=sorted(set(hits)),
+            )
+            return result
+
+    # 3. Strong tier: homoglyph / near-miss look-alike of a protected brand string.
+    lookalike = _find_lookalike(hostname)
+    if lookalike is not None:
+        brand_name, target = lookalike
+        result.update(
+            target_brand=brand_name, is_impersonation=True, lookalike_domain=True,
+            impersonation_index=0.95, matched_brand_cues=[f"look-alike of '{target}'"],
+        )
+        return result
+
+    # 4. Weak tier: the brand is only named in the page text.
+    for brand_name, brand_info in GLOBAL_FINANCIAL_AND_TECH_BRANDS.items():
+        mentions = [kw for kw in brand_info["keywords"]
+                    if re.search(r"\b" + re.escape(kw) + r"\b", text_lower)]
+        if mentions:
+            result.update(
+                target_brand=brand_name, brand_mentioned=True,
+                impersonation_index=0.35, matched_brand_cues=sorted(set(mentions)),
+            )
+            return result
+
+    return result

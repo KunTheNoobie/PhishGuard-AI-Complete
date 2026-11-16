@@ -39,8 +39,11 @@ def compute_multi_vector_risk(
 
     # 5. Brand Spoofing (10%)
     brand_data = profile_brand_impersonation(url, text_content or url)
-    brand_risk = 1.0 if brand_data.get("impersonation_detected") else 0.1
-    w_brand = brand_risk * 10.0
+    # ``impersonation_index`` is 0.98 for a brand string in a foreign hostname,
+    # 0.95 for a look-alike domain, 0.35 for a text-only mention and 0.0 for an
+    # official or unaffiliated domain.
+    brand_risk = float(brand_data.get("impersonation_index", 0.0))
+    w_brand = min(max(brand_risk, 0.0), 1.0) * 10.0
 
     # Composite Score (0 - 100)
     composite_score = round(w_bert + w_heuristics + w_mule + w_ssl + w_brand, 1)
@@ -74,7 +77,7 @@ def compute_multi_vector_risk(
             "ssl_tls_provenance_score": round(w_ssl, 1),
             "brand_impersonation_score": round(w_brand, 1)
         },
-        "target_brand": brand_data.get("matched_brand") or "Generic Target",
+        "target_brand": brand_data.get("target_brand") or "Generic Target",
         "heuristics_summary": heuristics.get("indicators", []),
         "ssl_summary": ssl_data.get("verdict", "Unknown")
     }

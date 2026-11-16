@@ -16,11 +16,11 @@ package "Tier 1: Client Edge & API Gateway Tier" {
     interface "POST /api/v1/analyze/semantics\n(Bearer Auth / Port 8000)" as GatewayAPI
     [FastAPI / Uvicorn ASGI Server\n(Non-Blocking Event Loop)] as ASGIServer
     [Pydantic v2 Request Validator\n(Strict Type & Sanitization Schema)] as PydanticValidator
-    [SlowAPI Token-Bucket Limiter\n(60 req/min Anti-DoS)] as RateLimiter
+    [SlowAPI Fixed-Window Limiter\n(60 req/min Anti-DoS)] as RateLimiter
 }
 
 package "Tier 2: Threat Intelligence & Inference Tier (Backend Brain)" {
-    [28-Bank Trusted Whitelist\n(frozenset In-Memory Cache)] as WhitelistFilter
+    [Trusted Domain Whitelist\n(frozenset In-Memory Cache)] as WhitelistFilter
     
     package "Asynchronous Worker Thread Pool (asyncio.to_thread)" {
         [Semantic Threat Engine\n(BERT Base Uncased Singleton / PyTorch)] as BERTEngine
@@ -138,7 +138,7 @@ else (no)
     stop
 endif
 
-:Extract Domain and Query In-Memory 28-Bank Whitelist (frozenset);
+:Extract Domain and Query In-Memory Trusted Domain Whitelist (frozenset);
 
 if (Domain in Trusted Whitelist?) then (yes)
     #lightgreen:Generate Immediate SAFE Verdict (0ms AI Overhead);

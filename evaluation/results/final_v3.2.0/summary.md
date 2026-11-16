@@ -1,0 +1,56 @@
+# Malaysian benchmark results — `final_v3.2.0` (v3.2.0)
+
+Samples: 120 (60 malicious, 60 legitimate). Device: cpu. BERT threshold: 0.75. BERT signal in pipeline: enabled.
+
+## Pipeline verdict (BLOCK_RENDER vs SAFE)
+
+| Split | n | TP | FP | FN | TN | Accuracy | Precision | Recall | F1 | FPR |
+|---|---|---|---|---|---|---|---|---|---|---|
+| overall | 120 | 57 | 0 | 3 | 60 | 0.9750 | 1.0000 | 0.9500 | 0.9744 | 0.0000 |
+| dev | 60 | 28 | 0 | 2 | 30 | 0.9667 | 1.0000 | 0.9333 | 0.9655 | 0.0000 |
+| holdout | 60 | 29 | 0 | 1 | 30 | 0.9833 | 1.0000 | 0.9667 | 0.9831 | 0.0000 |
+
+## Pipeline accuracy per category
+
+| Category | n | Correct | Blocked | Accuracy |
+|---|---|---|---|---|
+| L1_official_portal | 14 | 14 | 0 | 1.0000 |
+| L2_benign_brand_mention | 20 | 20 | 0 | 1.0000 |
+| L3_general_benign | 14 | 14 | 0 | 1.0000 |
+| L4_benign_with_accounts | 12 | 12 | 0 | 1.0000 |
+| P1_bank_lookalike | 14 | 14 | 14 | 1.0000 |
+| P2_bm_manglish_lure | 14 | 14 | 14 | 1.0000 |
+| P3_mule_account | 12 | 12 | 12 | 1.0000 |
+| P4_ewallet_brand | 10 | 10 | 10 | 1.0000 |
+| P5_evasive | 10 | 7 | 7 | 0.7000 |
+
+## Rule that produced each BLOCK_RENDER
+
+| Rule | Pages blocked |
+|---|---|
+| R1_MULE_REGISTRY | 12 |
+| R2_BRAND_IN_HOSTNAME | 29 |
+| R3_LOOKALIKE_DOMAIN | 5 |
+| R4_BRAND_CLONE | 7 |
+| R5_COERCIVE_CREDENTIAL_REQUEST | 2 |
+| R6_EVASIVE_INFRASTRUCTURE | 2 |
+
+## BERT-only (no rule layer)
+
+| Input formulation | Accuracy | Precision | Recall | F1 | FPR | ROC-AUC |
+|---|---|---|---|---|---|---|
+| composite | 0.5000 | 0.5000 | 1.0000 | 0.6667 | 1.0000 | 0.7037 |
+| url_raw | 0.5333 | 0.5185 | 0.9333 | 0.6667 | 0.8667 | 0.7596 |
+| url_stripped | 0.7250 | 0.6709 | 0.8833 | 0.7626 | 0.4333 | 0.8599 |
+
+## In-process latency (ms)
+
+- All requests: mean 91.8, p50 104.4, p95 114.12, max 177.64
+- BERT path (n=102): mean 107.95, p50 104.99, p95 115.01
+- Whitelist bypass (n=18): mean 0.28
+
+## Misclassified samples (3)
+
+- MY-116 (P5_evasive, false negative): https://docs.google.com/forms/d/e/1FAIpQLSfakeformid/viewform
+- MY-117 (P5_evasive, false negative): http://form-submit-online.site/m2u
+- MY-119 (P5_evasive, false negative): https://smart-invest-daily.com/join

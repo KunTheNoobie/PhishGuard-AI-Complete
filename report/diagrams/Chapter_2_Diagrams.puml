@@ -161,7 +161,7 @@ package "Zero-Day Attack Ingestion" {
 
 package "Multi-Modal Intelligence Backend (Liew Yi Ler)" {
     package "Deterministic Whitelist Layer" {
-        [28-Bank Trusted Whitelist (frozenset)] as Whitelist
+        [Trusted Domain Whitelist (frozenset)] as Whitelist
     }
     
     package "Probabilistic NLP Layer" {

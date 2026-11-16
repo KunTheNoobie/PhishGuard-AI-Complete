@@ -7,15 +7,18 @@ to the ``/api/v1/analyze/semantics`` endpoint.
 
 Usage
 -----
-    locust -f tests/locustfile.py --host http://localhost:8000
+Interactive:
+    locust -f tests/locustfile.py --host http://127.0.0.1:8000
 
-Then open http://localhost:8089 to configure users and spawn rate.
+Headless (the form used for the dissertation benchmark; see
+``evaluation/README.md`` for the exact commands and server settings):
+    locust -f tests/locustfile.py --host http://127.0.0.1:8000 --headless \
+           -u 50 -r 5 -t 60s --csv evaluation/results/locust/run_50u
 
-Recommended test parameters for thesis validation:
-    - Users: 50
-    - Spawn rate: 5/s
-    - Duration: 60s
-    - Target: p95 latency < 300ms
+All simulated users share one source IP, so the server's per-IP rate limit
+(``PHISHGUARD_RATE_LIMIT``, default 60/minute) must be raised for a
+throughput test; otherwise almost every request is correctly rejected with
+HTTP 429.  A second run at the default limit is used to verify exactly that.
 
 Architecture Layer : Testing / Performance
 Thesis Reference   : §5.4 — API Stress Testing & Latency Validation
@@ -24,6 +27,7 @@ Thesis Reference   : §5.4 — API Stress Testing & Latency Validation
 from __future__ import annotations
 
 import os
+import random
 from typing import Final
 
 from locust import HttpUser, between, task
@@ -32,6 +36,17 @@ from locust import HttpUser, between, task
 API_KEY: Final[str] = os.getenv("PHISHGUARD_API_KEY", "phishguard_secret_key_2026")
 
 # ── Realistic DOM payloads ──
+
+BENIGN_UNLISTED_PAYLOAD: Final[dict] = {
+    "url": "https://ringgitplus.com/en/blog/bank-news/maybank-revises-fixed-deposit-rates.html",
+    "dom_content": """
+    <html><head><title>Maybank revises fixed deposit rates</title></head>
+    <body><article><h1>Maybank revises fixed deposit rates</h1>
+    <p>Maybank has revised its fixed deposit rates this month. Here is how the new
+    rates compare with CIMB, Public Bank and RHB for a 12-month tenure.</p>
+    </article></body></html>
+    """,
+}
 
 LEGITIMATE_PAYLOAD: Final[dict] = {
     "url": "https://www.maybank2u.com.my/home",
@@ -108,14 +123,34 @@ class PhishGuardUser(HttpUser):
         "Content-Type": "application/json",
     }
 
-    @task(3)
+    @task(2)
     def analyse_legitimate_page(self) -> None:
-        """Simulate analysing a legitimate banking page (most common)."""
+        """A whitelisted banking page: exercises the whitelist bypass path."""
         self.client.post(
             "/api/v1/analyze/semantics",
             json=LEGITIMATE_PAYLOAD,
             headers=self.headers,
-            name="/analyze/semantics [LEGITIMATE]",
+            name="/analyze/semantics [WHITELISTED]",
+        )
+
+    @task(3)
+    def analyse_benign_unlisted_page(self) -> None:
+        """A non-whitelisted benign page with a unique URL per request.
+
+        The backend caches BERT results per URL for 10 minutes, so a constant
+        URL would only measure the cache.  A unique article path forces a
+        real BERT forward pass (cache miss) on every request.
+        """
+        payload = dict(BENIGN_UNLISTED_PAYLOAD)
+        payload["url"] = (
+            "https://ringgitplus.com/en/blog/bank-news/"
+            f"article-{random.randint(1, 10**9)}.html"
+        )
+        self.client.post(
+            "/api/v1/analyze/semantics",
+            json=payload,
+            headers=self.headers,
+            name="/analyze/semantics [BERT cache-miss]",
         )
 
     @task(1)
@@ -125,7 +160,7 @@ class PhishGuardUser(HttpUser):
             "/api/v1/analyze/semantics",
             json=PHISHING_PAYLOAD,
             headers=self.headers,
-            name="/analyze/semantics [PHISHING]",
+            name="/analyze/semantics [PHISHING, cached]",
         )
 
     @task(1)
@@ -135,7 +170,7 @@ class PhishGuardUser(HttpUser):
             "/api/v1/analyze/semantics",
             json=MULE_PAYLOAD,
             headers=self.headers,
-            name="/analyze/semantics [MULE]",
+            name="/analyze/semantics [MULE, trusted host]",
         )
 
     @task(2)
@@ -148,5 +183,6 @@ class PhishGuardUser(HttpUser):
         """Simulate admin checking dashboard stats."""
         self.client.get(
             "/api/v1/dashboard/stats",
+            headers=self.headers,  # dashboard routes require the admin key since v3.2.0
             name="/dashboard/stats",
         )

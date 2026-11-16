@@ -16,8 +16,12 @@ Tables
     Malaysian financial institutions.
 
 ``threat_telemetry``
-    Append-only log of every malicious URL detected by the BERT pipeline,
-    used for post-incident forensics and threat-intelligence dashboards.
+    Append-only log of every URL blocked by the verdict engine, used for
+    post-incident forensics and threat-intelligence dashboards.
+
+``mule_reports``
+    Review queue of user-submitted account reports.  Linked to
+    ``mule_registry`` through the nullable foreign key ``registry_id``.
 """
 
 from __future__ import annotations
@@ -55,6 +59,26 @@ CREATE TABLE IF NOT EXISTS threat_telemetry (
 );
 """
 
+# User-submitted mule reports awaiting analyst review.  A report never blocks
+# anything by itself: only an APPROVED report is promoted into
+# ``mule_registry``.  ``registry_id`` is a nullable foreign key to the registry
+# row the report refers to (set when the account is already registered, or
+# when the report is approved).
+_DDL_MULE_REPORTS: Final[str] = """
+CREATE TABLE IF NOT EXISTS mule_reports (
+    report_id      INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_number TEXT    NOT NULL CHECK (length(account_number) BETWEEN 6 AND 34),
+    bank_name      TEXT    NOT NULL DEFAULT 'Unknown',
+    source         TEXT    NOT NULL DEFAULT 'extension',
+    page_url       TEXT,
+    status         TEXT    NOT NULL DEFAULT 'PENDING'
+                           CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED')),
+    registry_id    INTEGER REFERENCES mule_registry (id) ON DELETE SET NULL,
+    created_at     TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+    reviewed_at    TEXT
+);
+"""
+
 # ── Explicit B-Tree Indexes (§4.4) ──
 # SQLite's UNIQUE constraint on account_number creates an implicit index,
 # but we declare it explicitly for clarity and to align with the thesis.
@@ -68,6 +92,34 @@ _IDX_TELEMETRY_URL: Final[str] = """
 CREATE INDEX IF NOT EXISTS idx_telemetry_malicious_url
     ON threat_telemetry (malicious_url);
 """
+
+_IDX_TELEMETRY_TIME: Final[str] = """
+CREATE INDEX IF NOT EXISTS idx_telemetry_timestamp
+    ON threat_telemetry (timestamp);
+"""
+
+_IDX_REPORTS_STATUS: Final[str] = """
+CREATE INDEX IF NOT EXISTS idx_mule_reports_status
+    ON mule_reports (status, created_at);
+"""
+
+_IDX_REPORTS_REGISTRY: Final[str] = """
+CREATE INDEX IF NOT EXISTS idx_mule_reports_registry_id
+    ON mule_reports (registry_id);
+"""
+
+# Ordered DDL executed at start-up, by the test fixtures and by the evaluation
+# harness, so every environment builds an identical schema.
+SCHEMA_STATEMENTS: Final[tuple[str, ...]] = (
+    _DDL_MULE_REGISTRY,
+    _DDL_THREAT_TELEMETRY,
+    _DDL_MULE_REPORTS,
+    _IDX_MULE_ACCOUNT,
+    _IDX_TELEMETRY_URL,
+    _IDX_TELEMETRY_TIME,
+    _IDX_REPORTS_STATUS,
+    _IDX_REPORTS_REGISTRY,
+)
 
 # ==============================================================================
 # Seed Data — Initial Threat Intel Feed
@@ -197,13 +249,9 @@ async def initialize_database() -> aiosqlite.Connection:
     await db.execute("PRAGMA journal_mode=WAL;")
     await db.execute("PRAGMA foreign_keys=ON;")
 
-    # ── DDL: Create tables idempotently ──
-    await db.execute(_DDL_MULE_REGISTRY)
-    await db.execute(_DDL_THREAT_TELEMETRY)
-
-    # ── Create B-Tree indexes for O(log N) lookups (§4.4) ──
-    await db.execute(_IDX_MULE_ACCOUNT)
-    await db.execute(_IDX_TELEMETRY_URL)
+    # ── DDL: Create tables and B-Tree indexes idempotently ──
+    for statement in SCHEMA_STATEMENTS:
+        await db.execute(statement)
 
     # ── Seed: Insert initial threat intel (ignored on conflict) ──
     for account in _SEED_MULE_ACCOUNTS:

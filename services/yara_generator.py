@@ -28,7 +28,7 @@ def generate_phishguard_yara_rules(active_domains: list[str] | None = None) -> s
                 domain_strings += f'        $ioc_domain_{idx + 1} = "{clean_d}" nocase\n'
 
     yara_code = f"""/*
- * PhishGuard-AI Auto-Generated YARA Ruleset v3.0
+ * PhishGuard-AI Auto-Generated YARA Ruleset v3.2
  * Generated: {timestamp}
  * Reference: Enterprise Threat Intelligence & Financial Phishing Kit Detection
  */
@@ -100,7 +100,7 @@ def generate_suricata_snort_rules(active_domains: list[str] | None = None) -> st
                 dynamic_rules += f'alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"PHISHGUARD ACTIVE IOC - Intercepted Request to Flagged Domain {clean_d}"; flow:established,to_server; http.host; content:"{clean_d}"; nocase; classtype:trojan-activity; sid:{sid}; rev:1;)\n'
 
     suricata_rules = f"""# ═════════════════════════════════════════════════════════════════════
-# PhishGuard-AI Auto-Generated Suricata / Snort IDS Ruleset v3.0
+# PhishGuard-AI Auto-Generated Suricata / Snort IDS Ruleset v3.2
 # Ingested: {timestamp}
 # ═════════════════════════════════════════════════════════════════════
 

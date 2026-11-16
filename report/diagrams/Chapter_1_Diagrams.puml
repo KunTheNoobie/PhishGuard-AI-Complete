@@ -23,7 +23,7 @@ package "Client-Side Frontend Architecture\n[Scope: Cheon Jie Han - Module 2]" {
 package "Backend Intelligence & Microservice Gateway\n[Scope: Liew Yi Ler - Module 1 (Author)]" {
     interface "FastAPI REST API Gateway\n(Bearer Token Auth / Port 8000)" as APIGateway
     [Asynchronous Request Orchestrator\n(asyncio.gather / Uvicorn ASGI)] as Orchestrator
-    [28-Bank Trusted Domain Whitelist\n(frozenset Zero-Latency Filter)] as WhitelistEngine
+    [Trusted Domain Whitelist\n(frozenset Zero-Latency Filter)] as WhitelistEngine
     
     package "Core Intelligence Engines" {
         [Semantic Threat Intelligence Engine\n(Fine-Tuned BERT NLP / PyTorch)] as BERTEngine
@@ -98,7 +98,7 @@ SW -> SW : Check Client-Side Trusted Sites Cache
 SW -> API : POST /api/v1/analyze/semantics (Bearer Auth)
 activate API
 
-API -> API : Check 28-Bank In-Memory Whitelist (frozenset)
+API -> API : Check In-Memory Trusted Domain Whitelist (frozenset)
 alt Domain is Whitelisted Legitimate Bank
     API --> SW : Return HTTP 200 { verdict: "SAFE", confidence: 0.00 }
 else Domain Requires Semantic & Mule Inspection
@@ -167,9 +167,9 @@ partition "MLOps Pipeline (Data & Model Engineering)" {
 partition "Agile Development (Microservice & API Architecture)" {
     :6. Develop FastAPI Microservice & Async Endpoints;
     :7. Engineer Regex Bytecode & SQLite 3NF Mule Registry;
-    :8. Implement In-Memory 28-Bank Trusted Whitelist;
+    :8. Implement In-Memory Trusted Domain Whitelist;
     :9. Build Live SOC Telemetry Dashboard & Geo Radar;
-    :10. Unit & Integration Testing (Pytest Suite - 122/122 Tests);
+    :10. Unit & Integration Testing (Pytest Suite - 198/198 Tests);
 }
 
 partition "System Deployment & Continuous Verification" {

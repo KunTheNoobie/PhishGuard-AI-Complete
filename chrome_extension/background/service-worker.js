@@ -3,6 +3,32 @@ const DEFAULT_API_TOKEN = "phishguard_secret_key_2026";
 const TEXT_LIMIT = 30000;
 const DOM_LIMIT = 3000000;
 
+// Upper bounds for backend calls. A stalled backend must never leave a tab
+// waiting on a verdict: on timeout the caller falls back to the offline
+// heuristics (fail-safe), exactly as it does when the backend is unreachable.
+const SEMANTIC_TIMEOUT_MS = 8000;
+const VISUAL_TIMEOUT_MS = 12000;
+
+/**
+ * fetch() with a hard timeout enforced through AbortController.
+ * Rejects with an Error whose message names the timeout so it is surfaced
+ * in the popup's diagnostics list.
+ */
+async function fetchWithTimeout(url, options, timeoutMs) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } catch (error) {
+    if (error && error.name === "AbortError") {
+      throw new Error(`Backend request timed out after ${timeoutMs} ms`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 const memoryResults = new Map();
 const OFFICIAL_BANK_DOMAINS = {
   // Malaysian Financial Infrastructure
@@ -11,8 +37,9 @@ const OFFICIAL_BANK_DOMAINS = {
   "Public Bank": ["pbebank.com", "pbebank.com.my", "publicbank.com.my"],
   "RHB": ["rhbgroup.com", "rhbnow.com", "rhbbank.com.my"],
   "Hong Leong Bank": ["hlb.com.my", "hongleongconnect.my"],
-  "AmBank": ["ambank.com.my", "ambankgroup.com"],
-  "Bank Islam": ["bankislam.com.my", "bankislam.biz"],
+  "AmBank": ["ambank.com.my", "ambankgroup.com", "amonline.com.my"],
+  "Bank Islam": ["bankislam.com.my", "bankislam.biz", "bankislam.com"],
+  "BSN": ["bsn.com.my", "mybsn.com.my"],
   "Bank Rakyat": ["bankrakyat.com.my", "irakyat.com.my"],
   "DuitNow / PayNet": ["duitnow.my", "paynet.my"],
   "Touch 'n Go": ["touchngo.com.my", "tngdigital.com.my"],
@@ -196,15 +223,15 @@ function sendWarningToTab(tabId, result) {
   } catch (_e) {}
 }
 
-async function postJson(settings, path, body) {
-  const response = await fetch(`${settings.apiBaseUrl}${path}`, {
+async function postJson(settings, path, body, timeoutMs = SEMANTIC_TIMEOUT_MS) {
+  const response = await fetchWithTimeout(`${settings.apiBaseUrl}${path}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${settings.apiToken}`
     },
     body: JSON.stringify(body)
-  });
+  }, timeoutMs);
 
   if (!response.ok) {
     throw new Error(await backendErrorMessage(response, path));
@@ -239,7 +266,7 @@ async function callVisualBackend(settings, payload, screenshot) {
     page_title: payload.title || "",
     visible_text: String(payload.visibleText || "").slice(0, TEXT_LIMIT),
     screenshot
-  });
+  }, VISUAL_TIMEOUT_MS);
 }
 
 async function callSemanticBackend(settings, payload) {
@@ -247,7 +274,7 @@ async function callSemanticBackend(settings, payload) {
     payload.domContent || payload.visibleText || "<html><body>empty page content</body></html>"
   ).slice(0, DOM_LIMIT);
 
-  const response = await fetch(`${settings.apiBaseUrl}/api/v1/analyse/semantics`, {
+  const response = await fetchWithTimeout(`${settings.apiBaseUrl}/api/v1/analyse/semantics`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -257,7 +284,7 @@ async function callSemanticBackend(settings, payload) {
       url: payload.url,
       dom_content: domContent
     })
-  });
+  }, SEMANTIC_TIMEOUT_MS);
 
   if (!response.ok) {
     throw new Error(await backendErrorMessage(response, "/api/v1/analyse/semantics"));
@@ -554,7 +581,14 @@ function combineResults(visualResult, semanticResult, errors, pageUrl, pageText)
     if (visualThreat && visualResult.reason) {
       reasons.push(visualResult.reason);
     }
-    if (semanticAnalysis && semanticAnalysis.is_malicious) {
+    // Prefer the backend's own explanation (v3.2 verdict engine) over a bare
+    // model score: it names the corroborating signals that caused the block.
+    const backendIndicators = semanticResult && Array.isArray(semanticResult.threat_indicators)
+      ? semanticResult.threat_indicators
+      : [];
+    if (semanticBlock && backendIndicators.length) {
+      reasons.push(backendIndicators.slice(0, 3).join(". ") + ".");
+    } else if (semanticAnalysis && semanticAnalysis.is_malicious) {
       reasons.push(
         `BERT classified page as ${semanticAnalysis.label} with ${Math.round(semanticAnalysis.confidence * 100)}% confidence.`
       );

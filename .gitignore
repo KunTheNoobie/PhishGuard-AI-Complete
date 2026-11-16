@@ -50,6 +50,11 @@ visual_identity/.ultralytics/
 *Record*
 *record*
 
+# Coverage data (the summary is committed under evaluation/results/coverage/)
+.coverage
+.coverage.*
+htmlcov/
+
 # Convenience batch scripts (user-local)
 SETUP_WINDOWS.bat
 START_BACKEND.bat

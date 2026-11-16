@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "PhishGuard-AI",
-  "version": "3.0.0",
-  "description": "Enterprise-grade real-time Anti-Phishing Browser Security Suite v3.0 with BERT semantic analysis, visual logo detection, Quishing QR audits, and mule-account scanning.",
+  "version": "3.2.0",
+  "description": "Real-time anti-phishing browser protection v3.2: BERT URL classification, visual logo detection, Quishing QR audits and mule-account scanning for Malaysian online banking.",
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",
@@ -24,8 +24,14 @@
   },
   "content_scripts": [
     {
-      "matches": ["http://*/*", "https://*/*", "file://*/*"],
-      "js": ["content/content.js"],
+      "matches": [
+        "http://*/*",
+        "https://*/*",
+        "file://*/*"
+      ],
+      "js": [
+        "content/content.js"
+      ],
       "run_at": "document_idle"
     }
   ],
@@ -38,5 +44,8 @@
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     }
+  },
+  "content_security_policy": {
+    "extension_pages": "default-src 'self'; script-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:* http://localhost:* https:"
   }
 }

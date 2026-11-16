@@ -1,0 +1,5 @@
+Method,Name,Error,Occurrences,First Seen,Last Seen
+POST,"/analyze/semantics [PHISHING, cached]","HTTPError('429 Client Error: Too Many Requests for url: /analyze/semantics [PHISHING, cached]')",105,2026-11-15T17:16:54Z,2026-11-15T17:17:31Z
+POST,/analyze/semantics [BERT cache-miss],HTTPError('429 Client Error: Too Many Requests for url: /analyze/semantics [BERT cache-miss]'),262,2026-11-15T17:16:54Z,2026-11-15T17:17:31Z
+POST,"/analyze/semantics [MULE, trusted host]","HTTPError('429 Client Error: Too Many Requests for url: /analyze/semantics [MULE, trusted host]')",86,2026-11-15T17:16:54Z,2026-11-15T17:17:31Z
+POST,/analyze/semantics [WHITELISTED],HTTPError('429 Client Error: Too Many Requests for url: /analyze/semantics [WHITELISTED]'),193,2026-11-15T17:16:54Z,2026-11-15T17:17:31Z

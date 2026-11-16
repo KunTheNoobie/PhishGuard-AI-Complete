@@ -4225,27 +4225,10 @@ async function openRedTeamModal() {
 if ($openRedTeamBtn) $openRedTeamBtn.addEventListener("click", openRedTeamModal);
 if ($closeRedTeamModalBtn) $closeRedTeamModalBtn.addEventListener("click", () => $redTeamModal?.classList.add("hidden"));
 
-function initSseStream() {
-    try {
-        if (!window.EventSource) return;
-        const source = new EventSource(`${API_BASE}/telemetry/stream`);
-        source.onmessage = (event) => {
-            if (isStreamPaused) return;
-            try {
-                const item = JSON.parse(event.data);
-                if (item && item.log_id) {
-                    telemetryData.unshift(item);
-                    if (telemetryData.length > 500) telemetryData.pop();
-                    renderTelemetry();
-                    refreshStats();
-                }
-            } catch (_e) {}
-        };
-        source.onerror = () => {
-            source.close();
-        };
-    } catch (_e) {}
-}
+// NOTE (v3.2.0): a second initSseStream() used to be declared here. Being a later
+// function declaration it silently replaced the real implementation above and
+// subscribed to a non-existent /telemetry/stream endpoint, so the live feed never
+// connected. It has been removed; the call below now reaches GET /stream.
 
 // ═══════════════════════════════════════════════════════════════════
 // MASTER DEMO SUITE & INTERACTIVE SAMPLE INSERTERS

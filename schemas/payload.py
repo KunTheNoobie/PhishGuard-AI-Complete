@@ -100,3 +100,24 @@ class WebPayload(BaseModel):
             ]
         }
     }
+
+
+class MuleReportRequest(BaseModel):
+    """Body of ``POST /api/v1/mule-reports`` (extension "report account" action)."""
+
+    account_number: str = Field(
+        ...,
+        min_length=6,
+        max_length=34,
+        pattern=r"^\+?[0-9][0-9\- ]{4,32}[0-9]$",
+        description="Bank account number, DuitNow phone number or NRIC (digits, spaces and dashes only).",
+        examples=["112233445566"],
+    )
+    bank_name: str = Field("Unknown", max_length=60, description="Issuing bank if known.")
+    page_url: Optional[HttpUrl] = Field(None, description="Page on which the account was displayed.")
+
+
+class MuleReportReview(BaseModel):
+    """Body of ``POST /api/v1/dashboard/mule-reports/{report_id}/review``."""
+
+    decision: str = Field(..., pattern=r"^(APPROVE|REJECT)$", description="'APPROVE' or 'REJECT'.")

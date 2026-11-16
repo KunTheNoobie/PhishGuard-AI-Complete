@@ -15,7 +15,9 @@ pydantic[email]>=2.7.0,<3.0.0
 
 # --- ML / NLP Pipeline ---
 torch>=2.3.0
-transformers>=4.41.0,<5.0.0
+# The shipped weights were saved with transformers 5.9 (Colab) and load unchanged
+# on 4.57 (local inference); both major lines are therefore allowed.
+transformers>=4.41.0,<6.0.0
 
 # --- Visual Identity / YOLOv8 Logo Detection ---
 ultralytics>=8.2.0,<9.0.0
@@ -33,11 +35,16 @@ slowapi>=0.1.9,<1.0.0
 # --- Utilities ---
 python-multipart>=0.0.9
 psutil>=5.9.0
+python-dotenv>=1.0.0
 
 # --- Testing ---
 pytest>=8.0.0
 pytest-asyncio>=0.23.0
+pytest-cov>=5.0.0
 httpx>=0.27.0
+
+# --- Evaluation artefacts (confusion matrix / ROC plots) ---
+matplotlib>=3.8.0
 
 # --- Load / Stress Testing ---
 locust>=2.29.0

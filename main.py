@@ -11,7 +11,7 @@ Bootstraps the FastAPI application with:
        On shutdown, resources are explicitly released.
 
     2. **Rate Limiting** — enforced globally via ``SlowAPI`` using the
-       client's IP address as the rate-limit key.
+       client's IP address as the rate-limit key (default 60/minute).
 
     3. **Router Inclusion** — mounts the ``/api/v1`` analysis router.
 
@@ -33,27 +33,29 @@ import random
 import sys
 import time
 from contextlib import asynccontextmanager
-from typing import AsyncIterator, Final
+from typing import Any, AsyncIterator, Final
 
 import torch
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from slowapi import Limiter, _rate_limit_exceeded_handler  # type: ignore[import-untyped]
+from slowapi import _rate_limit_exceeded_handler  # type: ignore[import-untyped]
 from slowapi.errors import RateLimitExceeded  # type: ignore[import-untyped]
-from slowapi.util import get_remote_address  # type: ignore[import-untyped]
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from api.endpoints import router as analysis_router
 from api.dashboard_endpoints import router as dashboard_router
 from api.visual import router as visual_router
+from core.rate_limit import limiter
 from core.config import (
     APP_DESCRIPTION,
     APP_TITLE,
     APP_VERSION,
+    CORS_ALLOWED_ORIGINS,
+    CORS_ORIGIN_REGEX,
     ENABLE_SEMANTIC_ENGINE,
-    RATE_LIMIT,
+    USING_DEFAULT_API_KEY,
 )
 from database.init_db import initialize_database
 from services.cache_service import SemanticResultCache
@@ -76,16 +78,6 @@ logging.basicConfig(
 )
 
 logger: Final[logging.Logger] = logging.getLogger("phishguard.main")
-
-# ==============================================================================
-# Rate Limiter (SlowAPI)
-# ==============================================================================
-limiter: Final[Limiter] = Limiter(
-    key_func=get_remote_address,
-    default_limits=[RATE_LIMIT],
-    storage_uri="memory://",
-)
-
 
 # ==============================================================================
 # Live Threat Simulator
@@ -195,6 +187,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.info("=" * 60)
     logger.info("  PhishGuard-AI Backend — Starting Up")
     logger.info("=" * 60)
+
+    if USING_DEFAULT_API_KEY:
+        logger.warning(
+            "SECURITY: the documented development API key is in use. Set "
+            "PHISHGUARD_API_KEY and PHISHGUARD_ADMIN_KEY in .env before any "
+            "deployment outside a local demonstration."
+        )
 
     # 1. Database
     logger.info("[1/5] Initialising database …")
@@ -342,14 +341,39 @@ async def pytorch_runtime_error_handler(
     raise exc
 
 
-# ── CORS Middleware (restrict in production) ──
+# ── CORS Middleware ──
+# Explicit origins only.  The API authenticates with a bearer token (or, for
+# the same-origin dashboard, a SameSite=Strict cookie), so cross-origin
+# credentialed requests are never needed: ``allow_credentials`` stays False
+# and no wildcard origin is used.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # TODO: Restrict to extension origin in prod.
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=CORS_ALLOWED_ORIGINS,
+    allow_origin_regex=CORS_ORIGIN_REGEX,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
+    max_age=600,
 )
+
+
+# ── Security Response Headers ──
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Attach baseline hardening headers to every response."""
+
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        response.headers.setdefault("Permissions-Policy", "geolocation=(), microphone=(), camera=(self)")
+        if request.url.path.startswith("/api/"):
+            # API responses may contain threat intelligence and account numbers.
+            response.headers.setdefault("Cache-Control", "no-store")
+        return response
+
+
+app.add_middleware(SecurityHeadersMiddleware)
 
 
 # ── Request Logging Middleware ──
@@ -469,14 +493,14 @@ _SWAGGER_CYBER_DARK_HTML: Final[str] = """<!DOCTYPE html>
 
         <div class="header__status">
             <span class="status-dot live"></span>
-            <span class="status-text">OAS 3.1 &bull; v3.0.0</span>
+            <span class="status-text">OAS 3.1 &bull; v3.2.0</span>
         </div>
     </header>
 
     <div id="swagger-ui"></div>
 
     <footer class="footer" style="margin-top: 3rem;">
-        <p>&copy; 2026 PhishGuard-AI &mdash; Semantic Threat Intelligence Engine v3.0<br/>
+        <p>&copy; 2026 PhishGuard-AI &mdash; Semantic Threat Intelligence Engine v3.2<br/>
         <small>Faculty of Computing & Information Technology, TAR UMT</small></p>
     </footer>
 

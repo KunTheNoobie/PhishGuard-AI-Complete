@@ -37,8 +37,8 @@ class TestHealthEndpoint:
 class TestAuthentication:
 
     @pytest.mark.asyncio
-    async def test_missing_auth_returns_401(self, test_client: AsyncClient) -> None:
-        resp = await test_client.post(
+    async def test_missing_auth_returns_401(self, anon_client: AsyncClient) -> None:
+        resp = await anon_client.post(
             "/api/v1/analyze/semantics",
             json={
                 "url": "https://example.com",
@@ -303,7 +303,8 @@ class TestWhitelistedDomains:
 
     @pytest.mark.asyncio
     async def test_non_whitelisted_domain_uses_bert(self, phishing_client: AsyncClient) -> None:
-        """An unknown domain should go through normal BERT inference."""
+        """An unknown domain goes through BERT, but an uncorroborated BERT
+        verdict is advisory only and must not block the page."""
         resp = await phishing_client.post(
             "/api/v1/analyze/semantics",
             json={
@@ -317,7 +318,30 @@ class TestWhitelistedDomains:
 
         # phishing_client uses mock that returns PHISHING
         assert data["data"]["semantic_analysis"]["label"] == "PHISHING"
+        assert data["signals"]["bert"] is True
+        assert data["orchestration"] == "SAFE"
+        assert data["decision_rule"] is None
+        assert 0.0 < data["risk_score"] < 0.5
+
+    @pytest.mark.asyncio
+    async def test_bert_corroborated_by_brand_clone_blocks(self, phishing_client: AsyncClient) -> None:
+        """BERT + brand named in text + a real password field => BLOCK_RENDER (R4)."""
+        resp = await phishing_client.post(
+            "/api/v1/analyze/semantics",
+            json={
+                "url": "https://secure-portal-update.com/my/auth",
+                "dom_content": (
+                    "<html><body><h1>Maybank2u</h1><form><input type='text' name='username'>"
+                    "<input type='password' name='password'><button>Log in</button></form></body></html>"
+                ),
+            },
+            headers=AUTH_HEADERS,
+        )
+        assert resp.status_code == 200
+        data = resp.json()
         assert data["orchestration"] == "BLOCK_RENDER"
+        assert data["decision_rule"] == "R4_BRAND_CLONE"
+        assert data["threat_indicators"]
 
 
 # ==============================================================================

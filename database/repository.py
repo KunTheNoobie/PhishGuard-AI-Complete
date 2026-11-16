@@ -94,12 +94,17 @@ async def log_threat_telemetry(
     score: float,
     db: aiosqlite.Connection,
 ) -> int:
-    """Persist a malicious-URL detection event to the telemetry table and broadcast in real time.
+    """Persist a malicious-URL detection event and notify dashboard subscribers.
 
-    This method is invoked during scans (manual, automated extension scans, or simulated)
-    to guarantee every threat is captured and instantly visible on the SOC dashboard.
+    The event is broadcast to connected SSE clients exactly once, here, so
+    callers must not broadcast it again.  A broadcast failure is logged and
+    never prevents the telemetry row from being committed.
+
+    Returns
+    -------
+    int
+        The ``log_id`` of the inserted telemetry row.
     """
-    import asyncio
     from datetime import datetime, timezone
 
     now_iso: str = datetime.now(timezone.utc).isoformat()
@@ -120,19 +125,22 @@ async def log_threat_telemetry(
         log_id,
     )
 
+    # ``broadcast_threat_event`` is a plain synchronous function that enqueues
+    # the event on each subscriber queue; it must not be awaited or wrapped in
+    # ``asyncio.create_task``.  Imported lazily to avoid a circular import.
     try:
         from api.dashboard_endpoints import broadcast_threat_event
-        asyncio.create_task(broadcast_threat_event("new_threat", {
+
+        broadcast_threat_event("new_threat", {
             "log_id": log_id,
             "malicious_url": url,
             "bert_score": round(score, 4),
             "timestamp": "Just now",
-        }))
-    except Exception as e:
-        logger.debug("Telemetry broadcast note: %s", e)
+        })
+    except Exception:  # pragma: no cover — defensive: telemetry must survive
+        logger.exception("Telemetry broadcast failed for log_id=%d.", log_id)
 
     return log_id
-
 
 
 # ==============================================================================
@@ -189,3 +197,101 @@ async def delete_mule_account(
     await db.commit()
     return cursor.rowcount > 0
 
+
+
+# ==============================================================================
+# 4. User Mule Reports (review queue)
+# ==============================================================================
+
+async def create_mule_report(
+    account_number: str,
+    bank_name: str,
+    source: str,
+    page_url: str | None,
+    db: aiosqlite.Connection,
+) -> dict[str, Any]:
+    """Queue a user-submitted mule report for analyst review.
+
+    The report is stored as ``PENDING``.  If the account is already in the
+    registry, the report is linked to that row and its ``report_count`` is
+    incremented; otherwise nothing is added to the registry until an analyst
+    approves the report.
+    """
+    cursor = await db.execute(
+        "SELECT id FROM mule_registry WHERE account_number = ?;", (account_number,)
+    )
+    row = await cursor.fetchone()
+    registry_id = row[0] if row else None
+
+    cursor = await db.execute(
+        "INSERT INTO mule_reports (account_number, bank_name, source, page_url, registry_id) "
+        "VALUES (?, ?, ?, ?, ?);",
+        (account_number, bank_name, source, page_url, registry_id),
+    )
+    if registry_id is not None:
+        await db.execute(
+            "UPDATE mule_registry SET report_count = report_count + 1 WHERE id = ?;",
+            (registry_id,),
+        )
+    await db.commit()
+    return {
+        "report_id": cursor.lastrowid,
+        "status": "PENDING",
+        "already_registered": registry_id is not None,
+    }
+
+
+async def list_mule_reports(
+    status_filter: str | None,
+    limit: int,
+    db: aiosqlite.Connection,
+) -> list[dict[str, Any]]:
+    """Return queued reports (newest first), optionally filtered by status."""
+    columns = "report_id, account_number, bank_name, source, page_url, status, registry_id, created_at, reviewed_at"
+    if status_filter:
+        cursor = await db.execute(
+            f"SELECT {columns} FROM mule_reports WHERE status = ? ORDER BY created_at DESC, report_id DESC LIMIT ?;",
+            (status_filter, limit),
+        )
+    else:
+        cursor = await db.execute(
+            f"SELECT {columns} FROM mule_reports ORDER BY created_at DESC, report_id DESC LIMIT ?;",
+            (limit,),
+        )
+    keys = [c.strip() for c in columns.split(",")]
+    return [dict(zip(keys, row)) for row in await cursor.fetchall()]
+
+
+async def review_mule_report(
+    report_id: int,
+    approve: bool,
+    db: aiosqlite.Connection,
+) -> dict[str, Any] | None:
+    """Approve or reject a pending report.
+
+    Approval promotes the account into ``mule_registry`` (or increments the
+    existing row) and links the report to it.  Returns ``None`` if the report
+    does not exist, or the report unchanged if it was already reviewed.
+    """
+    cursor = await db.execute(
+        "SELECT account_number, bank_name, status, registry_id FROM mule_reports WHERE report_id = ?;",
+        (report_id,),
+    )
+    row = await cursor.fetchone()
+    if row is None:
+        return None
+    account_number, bank_name, status, registry_id = row
+    if status != "PENDING":
+        return {"report_id": report_id, "status": status, "registry_id": registry_id, "changed": False}
+
+    new_status = "APPROVED" if approve else "REJECTED"
+    if approve and registry_id is None:
+        record = await add_mule_account(account_number, bank_name, "User report (analyst approved)", 1, db)
+        registry_id = record["id"]
+    await db.execute(
+        "UPDATE mule_reports SET status = ?, registry_id = ?, "
+        "reviewed_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now') WHERE report_id = ?;",
+        (new_status, registry_id, report_id),
+    )
+    await db.commit()
+    return {"report_id": report_id, "status": new_status, "registry_id": registry_id, "changed": True}
