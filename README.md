@@ -6,8 +6,8 @@
   <p>A Manifest V3 browser extension and a FastAPI backend that combine a fine-tuned BERT URL classifier, URL canonicalisation, brand-impersonation profiling, page analysis, the connection's HTTPS status, DuitNow QR decoding and a Malaysian mule-account registry — and explain every verdict in plain language.</p>
 
   [![CI/CD Test Pipeline](https://github.com/KunTheNoobie/PhishGuard-AI-Complete/actions/workflows/test.yml/badge.svg)](https://github.com/KunTheNoobie/PhishGuard-AI-Complete/actions)
-  [![Tests: 136 Passed](https://img.shields.io/badge/Tests-136%20Passed-brightgreen)](https://github.com/KunTheNoobie/PhishGuard-AI-Complete)
-  [![Version](https://img.shields.io/badge/Version-v4.0.0-009688.svg?logo=fastapi&logoColor=white)](CHANGELOG.md)
+  [![Tests: 138 Passed](https://img.shields.io/badge/Tests-138%20Passed-brightgreen)](https://github.com/KunTheNoobie/PhishGuard-AI-Complete)
+  [![Version](https://img.shields.io/badge/Version-v4.1.0-009688.svg?logo=fastapi&logoColor=white)](CHANGELOG.md)
   [![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue.svg?logo=python&logoColor=white)](https://python.org)
   [![Manifest V3](https://img.shields.io/badge/Chrome%20Extension-Manifest%20V3-4285F4?logo=googlechrome&logoColor=white)](https://developer.chrome.com/docs/extensions/mv3/intro/)
 </div>
@@ -36,7 +36,7 @@ plain-language explanation and the list of reasons.
 | **Module 1 — Backend, BERT engine, mule scanner, SOC dashboard** | Liew Yi Ler (25WMR09747) |
 | **Module 2 — Chrome extension, YOLOv8n logo detection** | Cheon Jie Han (25WMR09703) |
 
-### Measured results (v4.0.0)
+### Measured results (v4.1.0)
 
 ```
 Malaysian benchmark (120 pages)   57/60 scams blocked, 0/60 legitimate pages blocked
@@ -45,7 +45,7 @@ Baselines (F1 / false-positive)    padlock 0.775 / 0%   lexical 0.581 / 1.7%   B
 HTTPS scam pages (22)              PhishGuard 91% caught   padlock 0%
 Public URL suite (30 cases)        28 passed (2 hosts unreachable from the test network)
 Latency (CPU)                      BERT path p50 116 ms, p95 139 ms; trusted sites about 1 ms
-Automated tests                    136 passed, 81% statement + branch coverage
+Automated tests                    138 passed, 81% statement + branch coverage
 BERT hold-out (109,870 URLs)       accuracy 98.76%, F1 97.80%
 ```
 
@@ -124,6 +124,10 @@ returns `"verdict": "BLOCK_RENDER"`, `"rule": "R7_USERINFO_SPOOF"` and an explan
 
 ## Quick start (local)
 
+**One click (Windows):** double-click **`setup.bat`**. It runs `git lfs install` and `git lfs pull` (model weights), creates `venv`, installs `requirements.txt` (about 4 GB the first time) and copies `.env.example` to `.env` (admin key `12345678`). Then double-click `run_server.bat`.
+
+Manual steps:
+
 ```bash
 python -m venv venv
 venv\Scripts\activate            # macOS / Linux: source venv/bin/activate
@@ -138,8 +142,7 @@ Or double-click `run_server.bat`. Then open:
 - API docs: <http://127.0.0.1:8000/docs>
 - Extension: `chrome://extensions` → Developer mode → **Load unpacked** → `chrome_extension/`
 
-The model folders `phishguard_custom_model/` and `visual_identity/models/` are not in GitHub (too large) and must be
-copied in. Without them the service still runs, with the BERT and logo signals switched off.
+The model weights (`phishguard_custom_model/`, `visual_identity/models/`) are stored with **Git LFS**: run `git lfs install && git lfs pull` after cloning (`setup.bat` does this). Without them the service still runs, with the BERT and logo signals switched off.
 
 **Demonstration keys.** `PHISHGUARD_API_KEY` and `PHISHGUARD_ADMIN_KEY` both default to `12345678`. Replace them
 with long random values for any real deployment:
@@ -147,25 +150,20 @@ with long random values for any real deployment:
 
 ---
 
-## Online deployment (Hugging Face Spaces, HTTPS)
+## Online deployment (Hugging Face Space, HTTPS)
 
-The `Dockerfile` builds a CPU image for a Docker Space (port 7860, non-root user).
+Live: `https://kunthenoobie-phishguard-backend.hf.space` (`/health`, `/dashboard/`, `/docs`, status card at `/hf`).
 
-1. Sign in at huggingface.co and create a Space named `phishguard-backend` (SDK **Docker**, hardware **CPU basic**).
-2. Create a **write** access token at huggingface.co/settings/tokens.
-3. From this folder run
+The Space uses the **Gradio SDK** (`app.py` mounts the FastAPI app and a status card; `packages.txt` installs `libzbar0` and `libgl1`; the Space card is `deploy/hf_space_README.txt`). To publish an update:
 
-   ```bash
-   powershell -ExecutionPolicy Bypass -File deploy\deploy_hf_space.ps1
-   ```
+```powershell
+$env:HF_TOKEN = "hf_..."     # a WRITE token; it is sent as an HTTP header and never saved to a file
+powershell -ExecutionPolicy Bypass -File deploy\deploy_hf_space.ps1
+```
 
-   and paste the token when git asks for a password.
-4. After the build, check `https://kunthenoobie-phishguard-backend.hf.space/health`.
-5. Optionally set `PHISHGUARD_API_KEY` and `PHISHGUARD_ADMIN_KEY` as Space secrets (then enter the same API key in
-   the extension popup's settings).
+The free tier sleeps when idle (the first request wakes it) and resets its SQLite file on restart; the demonstration dataset is reloaded automatically on every start. `docker compose up` runs the same service locally.
 
-The free tier sleeps when idle (the first request wakes it, which takes about a minute) and resets its SQLite file
-on restart. `docker compose up` runs the same image locally.
+**Demonstration dataset.** An empty database is filled at start-up from `database/demo_threat_intel.json`: 45 curated mule-account records, 30 recent scan-log rows (real pipeline verdicts for URLs from the OpenPhish community feed, public test sites, a mule page and a QR code) and four pending reports. Set `PHISHGUARD_SEED_DEMO=false` to disable it; `python -m evaluation.build_demo_seed` rebuilds it.
 
 ---
 
@@ -173,16 +171,16 @@ on restart. `docker compose up` runs the same image locally.
 
 ```bash
 pip install -r requirements-dev.txt
-python -m pytest --cov --cov-branch                        # 136 tests
-python -m evaluation.evaluate_pipeline --tag final_v4.0.0  # 120-page Malaysian benchmark (real BERT)
-python -m evaluation.compare_baselines --tag final_v4.0.0  # padlock, lexical, BERT-alone baselines and ROC
+python -m pytest --cov --cov-branch                        # 138 tests
+python -m evaluation.evaluate_pipeline --tag final_v4.1.0  # 120-page Malaysian benchmark (real BERT)
+python -m evaluation.compare_baselines --tag final_v4.1.0  # padlock, lexical, BERT-alone baselines and ROC
 python -m evaluation.run_public_suite                      # 30 public URLs and scam patterns (live)
 python -m evaluation.run_public_suite --base-url https://kunthenoobie-phishguard-backend.hf.space
 python -m evaluation.make_report_figures                   # charts in report/figures/
 python report/diagrams_drawio/update_v4.py                 # draw.io diagrams
 ```
 
-Results are written to `evaluation/results/` (`final_v4.0.0`, `ablation_no_bert_v4.0.0`, `public_suite_v4.0.0`,
+Results are written to `evaluation/results/` (`final_v4.1.0`, `ablation_no_bert_v4.1.0`, `public_suite_v4.1.0`,
 `pytest`, `coverage`, `locust`).
 
 ---
@@ -201,7 +199,7 @@ Results are written to `evaluation/results/` (`final_v4.0.0`, `ablation_no_bert_
 | Registry integrity | User reports wait in a `PENDING` queue; nothing is added to the registry without an analyst |
 | Privacy | The scan log stores scheme, host and path only — never query strings or page content |
 | CSV export | Cells starting with `=`, `+`, `-` or `@` are neutralised |
-| Response headers | `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, HSTS over HTTPS |
+| Response headers | `X-Content-Type-Options`, CSP `frame-ancestors`, `Referrer-Policy`, `Permissions-Policy`, HSTS over HTTPS |
 
 **Known limitations.** The mule registry holds demonstration accounts (Semakmule has no public API). The BERT model
 was trained on English-language URLs and over-scores some well-known domains; corroboration keeps those pages

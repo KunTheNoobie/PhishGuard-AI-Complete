@@ -146,7 +146,7 @@ class TestHardening:
     async def test_security_headers(self, test_client):
         r = await test_client.get("/health")
         assert r.headers["x-content-type-options"] == "nosniff"
-        assert r.headers["x-frame-options"] == "SAMEORIGIN"
+        assert "frame-ancestors" in r.headers["content-security-policy"]
         assert "strict-transport-security" in r.headers
 
     async def test_api_responses_not_cached(self, test_client):
@@ -162,6 +162,6 @@ class TestHardening:
 
     async def test_docs_and_dashboard_served(self, test_client):
         assert "swagger-ui" in (await test_client.get("/docs")).text
-        assert (await test_client.get("/openapi.json")).json()["info"]["version"] == "4.0.0"
+        assert (await test_client.get("/openapi.json")).json()["info"]["version"] == "4.1.0"
         assert (await test_client.get("/dashboard/")).status_code == 200
         assert (await test_client.get("/dashboard/sandbox.html")).status_code == 404

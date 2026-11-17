@@ -1,39 +1,40 @@
-<#
-  Deploy the PhishGuard-AI backend to a Hugging Face Space (Docker, free CPU).
+﻿<#
+  Deploy the PhishGuard-AI backend to the Hugging Face Space KunTheNoobie/phishguard-backend
+  (SDK gradio, free CPU Basic). The access token is read from the HF_TOKEN environment
+  variable and is sent only as an HTTP header: it is never written to any file.
 
-  One-time preparation (in a browser):
-    1. Sign in at https://huggingface.co and open https://huggingface.co/new-space
-    2. Owner: your account, Space name: phishguard-backend, SDK: Docker (Blank),
-       Hardware: CPU basic (free), Visibility: Public.  Create the Space.
-    3. Create a WRITE access token at https://huggingface.co/settings/tokens
-
-  Then, from the PhishGuard-AI-Complete folder:
+    $env:HF_TOKEN = "hf_..."          # a WRITE token from https://huggingface.co/settings/tokens
     powershell -ExecutionPolicy Bypass -File deploy\deploy_hf_space.ps1
-  When git asks for a password, paste the access token (user name = your HF user name).
 
-  The Space builds for 5-10 minutes, then answers at
-    https://<user>-phishguard-backend.hf.space/health
+  After the build (5-10 minutes) the app answers at https://kunthenoobie-phishguard-backend.hf.space
 #>
 param(
-  [string]$Space = "KunTheNoobie/phishguard-backend"
+  [string]$Space = "KunTheNoobie/phishguard-backend",
+  [string]$User  = "KunTheNoobie"
 )
 $ErrorActionPreference = "Stop"
+if (-not $env:HF_TOKEN) { throw "Set `$env:HF_TOKEN to a Hugging Face write token first." }
 $repo = Split-Path -Parent $PSScriptRoot
 $work = Join-Path $env:TEMP "phishguard-space"
 
-Write-Host "Preparing a clean copy of the Space in $work"
-if (Test-Path $work) { Remove-Item -Recurse -Force $work }
-git clone "https://huggingface.co/spaces/$Space" $work
-if ($LASTEXITCODE -ne 0) { throw "Could not clone the Space. Create it first (see the notes at the top of this script)." }
+# Send the token as a header for git and git-lfs (nothing is stored in a remote URL or config file).
+$basic = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${User}:$($env:HF_TOKEN)"))
+$env:GIT_CONFIG_COUNT = "1"
+$env:GIT_CONFIG_KEY_0 = "http.https://huggingface.co/.extraHeader"
+$env:GIT_CONFIG_VALUE_0 = "Authorization: Basic $basic"
+$env:GIT_TERMINAL_PROMPT = "0"
 
-# The model weights are not in GitHub (too large); they must exist in this folder.
 $weights = Join-Path $repo "phishguard_custom_model\model.safetensors"
 if (-not (Test-Path $weights) -or (Get-Item $weights).Length -lt 100MB) {
-  throw "phishguard_custom_model\model.safetensors is missing. Copy the trained model folder here first."
+  throw "phishguard_custom_model\model.safetensors is missing or a Git LFS pointer. Run setup.bat (git lfs pull) first."
 }
 
-$items = @("main.py", "requirements.txt", "Dockerfile", "api", "core", "database", "schemas", "services",
-           "dashboard", "phishguard_custom_model\config.json", "phishguard_custom_model\model.safetensors",
+if (Test-Path $work) { Remove-Item -Recurse -Force $work }
+git clone "https://huggingface.co/spaces/$Space" $work
+if ($LASTEXITCODE -ne 0) { throw "Could not clone the Space. Check that it exists and that the token has write access." }
+
+$items = @("main.py", "app.py", "requirements.txt", "packages.txt", "api", "core", "database", "schemas", "services", "dashboard",
+           "phishguard_custom_model\config.json", "phishguard_custom_model\model.safetensors",
            "phishguard_custom_model\tokenizer.json", "phishguard_custom_model\tokenizer_config.json",
            "visual_identity\models", "visual_identity\classes.txt")
 foreach ($item in $items) {
@@ -43,13 +44,16 @@ foreach ($item in $items) {
   Copy-Item -Recurse -Force $source $target
 }
 Get-ChildItem -Path $work -Recurse -Directory -Filter "__pycache__" | Remove-Item -Recurse -Force
-Copy-Item -Force (Join-Path $PSScriptRoot "space_readme.txt") (Join-Path $work "README.md")
+Copy-Item -Force (Join-Path $PSScriptRoot "hf_space_README.txt") (Join-Path $work "README.md")
 
 Push-Location $work
-git lfs install
+git lfs install --local
 git lfs track "*.safetensors" "*.pt" "phishguard_custom_model/tokenizer.json"
 git add -A
-git commit -m "Deploy PhishGuard-AI backend"
+git -c user.name="$User" -c user.email="$User@users.noreply.huggingface.co" commit -m "Deploy PhishGuard-AI backend"
 git push
 Pop-Location
-Write-Host "Pushed. Watch the build log on https://huggingface.co/spaces/$Space"
+Remove-Item Env:GIT_CONFIG_COUNT, Env:GIT_CONFIG_KEY_0, Env:GIT_CONFIG_VALUE_0
+Write-Host "Pushed. Build log: https://huggingface.co/spaces/$Space"
+Write-Host "Live URL:  https://kunthenoobie-phishguard-backend.hf.space/health"
+

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "PhishGuard-AI",
-  "version": "4.0.0",
+  "version": "4.1.0",
   "description": "Real-time phishing and scam protection for every website: AI URL model, logo detection, Malaysian mule-account checks and HTTPS warnings, explained in plain language.",
   "icons": {
     "16": "icons/icon16.png",

@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import base64
 import os
+os.environ.setdefault("PHISHGUARD_SEED_DEMO", "false")  # tests count rows: keep the demonstration dataset out
 import sys
 from typing import Any, AsyncGenerator, Callable, Final
 

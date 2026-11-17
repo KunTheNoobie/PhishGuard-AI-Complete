@@ -58,13 +58,8 @@ function render(r) {
 
   const list = $("reasons");
   list.replaceChildren();
-  const items = r && r.reasons && r.reasons.length ? r.reasons.slice(0, 6) : [];
-  if (!items.length) {
-    const li = document.createElement("li");
-    li.className = "muted";
-    li.textContent = r && r.offline ? "The PhishGuard server could not be reached." : "No reasons yet.";
-    list.append(li);
-  }
+  const items = r && r.reasons && r.reasons.length ? r.reasons.slice(0, 3) : [];
+  $("reasonsBox").hidden = !items.length;
   items.forEach((x) => {
     const li = document.createElement("li");
     li.className = x.severity;
@@ -89,6 +84,7 @@ async function loadSettings() {
   $("onlineUrl").value = settings.onlineUrl;
   $("localUrl").value = settings.localUrl;
   $("apiKey").value = settings.apiKey;
+  $("safeToast").checked = settings.showSafeToast !== false;
   showBackend(backend);
 }
 
@@ -124,6 +120,11 @@ $("report").addEventListener("click", async () => {
 });
 
 $("dashboard").addEventListener("click", () => { if (backendUrl) chrome.tabs.create({ url: `${backendUrl}/dashboard/` }); });
+
+$("safeToast").addEventListener("change", () => chrome.storage.local.set({ showSafeToast: $("safeToast").checked }));
+function showView(settings) { $("mainView").hidden = settings; $("settingsView").hidden = !settings; }
+$("openSettings").addEventListener("click", () => showView(true));
+$("closeSettings").addEventListener("click", () => showView(false));
 
 $("save").addEventListener("click", async () => {
   $("saveMsg").textContent = "Testing…";

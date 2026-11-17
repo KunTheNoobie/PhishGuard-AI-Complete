@@ -205,7 +205,7 @@ edit("security_layers", {
                                "HTTPS backend with local fallback; 8 s / 12 s timeouts; offline: HTTP never shown as safe",
                                size=10, bold_first=True),
     "security_layers-6": lines("L2  Edge policy", "HTTPS at the platform edge + HSTS; CORS allow-list (no wildcard); "
-                               "nosniff · X-Frame-Options · Referrer / Permissions-Policy · no-store", size=10, bold_first=True),
+                               "nosniff · frame-ancestors · Referrer / Permissions-Policy · no-store", size=10, bold_first=True),
     "security_layers-9": lines("L3  Authentication", "Analysis API: Bearer key, constant-time comparison; 13 dashboard "
                                "operations: admin key or HttpOnly, Secure, SameSite=Strict session (8 h)", size=10, bold_first=True),
     "security_layers-15": lines("L5  Input validation", "Pydantic v2: http(s) only, size caps, account pattern; "

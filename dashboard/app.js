@@ -131,10 +131,12 @@ function renderScans(rows) {
   )));
 }
 
+const scans = { offset: 0, limit: 10, live: true };
+
 async function loadOverview() {
   try {
     const filter = $("scanFilter").value;
-    const data = await api("/overview?recent=25");
+    const data = await api("/overview?recent=1");
     const s = data.stats;
     $("statTotal").textContent = s.total_scans.toLocaleString();
     $("stat24h").textContent = `${s.last_24h.toLocaleString()} in the last 24 hours`;
@@ -144,18 +146,29 @@ async function loadOverview() {
     $("statSafe").textContent = s.safe.toLocaleString();
     $("statRegistry").textContent = s.registry_accounts;
     $("statPending").textContent = s.pending_reports;
-    const rows = filter ? (await api(`/scans?limit=25&verdict=${encodeURIComponent(filter)}`)).items : data.recent_scans;
-    renderScans(rows);
-    $("scanCount").textContent = `Showing the latest ${rows.length} scan(s)`;
+    const q = filter ? `&verdict=${encodeURIComponent(filter)}` : "";
+    const rows = (await api(`/scans?limit=${scans.limit + 1}&offset=${scans.offset}${q}`)).items;
+    const more = rows.length > scans.limit;
+    renderScans(rows.slice(0, scans.limit));
+    $("scanCount").textContent = rows.length ? `Scans ${scans.offset + 1}–${scans.offset + Math.min(rows.length, scans.limit)}` : "";
+    $("scanPrev").disabled = scans.offset === 0;
+    $("scanNext").disabled = !more;
     $("updated").textContent = "Updated " + new Date().toLocaleTimeString();
   } catch (err) { if (err.message !== "Please sign in.") toast(err.message, true); }
 }
-$("refresh").addEventListener("click", loadOverview);
+$("scanPrev").addEventListener("click", () => { scans.offset = Math.max(0, scans.offset - scans.limit); loadOverview(); });
+$("scanNext").addEventListener("click", () => { scans.offset += scans.limit; loadOverview(); });
+$("live").addEventListener("click", () => {
+  scans.live = !scans.live;
+  $("live").classList.toggle("off", !scans.live);
+  $("liveText").textContent = scans.live ? "Live • Auto-Refresh" : "Paused";
+});
 $("scanFilter").addEventListener("change", () => {
   const v = $("scanFilter").value;
   const q = v ? `&verdict=${encodeURIComponent(v)}` : "";
   $("exportCsv").href = `${API}/scans/export?format=csv${q}`;
   $("exportJson").href = `${API}/scans/export?format=json${q}`;
+  scans.offset = 0;
   loadOverview();
 });
 
@@ -239,7 +252,7 @@ $("addMule").addEventListener("submit", async (e) => {
   try {
     const rec = await api("/mules", { method: "POST", body: JSON.stringify({
       account_number: $("muleAccount").value.trim(), bank_name: $("muleBank").value.trim(),
-      platform_flagged: $("mulePlatform").value.trim() || "PDRM Semakmule" }) });
+      platform_flagged: $("mulePlatform").value.trim() || "Manual entry" }) });
     toast(`Added ${rec.account_number} to the registry.`);
     $("muleAccount").value = "";
     registry.offset = 0; loadRegistry();
@@ -262,6 +275,26 @@ function renderResult(r) {
       el("div", {}, el("div", { className: "nm" }, s.name + (s.ms != null ? `  · ${s.ms} ms` : "")),
         el("div", { className: "dt" }, s.detail)))));
 
+  const bert = r.bert || {};
+  const brand = r.brand || {};
+  const mule = r.mule || {};
+  const sensitive = (r.page && r.page.sensitive_fields) || [];
+  const layers = [
+    ["AI URL model (BERT)", bert.skipped ? 0 : bert.phishing_probability, bert.skipped ? "skipped (trusted site)" : Math.round((bert.phishing_probability || 0) * 100) + "% phishing"],
+    ["Brand impersonation", brand.is_impersonation ? 0.85 : 0, brand.is_impersonation ? "imitates " + brand.target_brand : brand.is_official_domain ? "official " + brand.target_brand : "none found"],
+    ["Mule-account registry", (mule.flagged_accounts || []).length ? 1 : 0, (mule.flagged_accounts || []).length ? "registry match" : (mule.accounts_extracted || []).length + " checked, clear"],
+    ["Connection", r.scheme === "https" ? 0 : 0.55, r.scheme === "https" ? "HTTPS (encrypted)" : "HTTP (not encrypted)"],
+    ["Password / card fields", sensitive.length ? (r.scheme === "https" ? 0.35 : 0.9) : 0, sensitive.length ? sensitive.join(", ") : "none"],
+    ["Overall risk", r.risk_score, Math.round(r.risk_score * 100) + "%"],
+  ];
+  const tone = (v) => (v >= 0.7 ? "var(--danger)" : v >= 0.35 ? "var(--warn)" : "var(--safe)");
+  const layerBox = el("div", { className: "layers" }, layers.map(([name, v, text]) => {
+    const bar = el("div", { className: "bar" }, el("span", {}));
+    bar.firstChild.style.width = Math.round((v || 0) * 100) + "%";
+    bar.firstChild.style.background = tone(v || 0);
+    return el("div", { className: "layer" }, el("div", { className: "top" }, el("b", {}, name), el("span", {}, text)), bar);
+  }));
+
   return el("div", { className: "result" },
     el("div", { className: "result-head " + level },
       el("div", { className: "titles" },
@@ -274,7 +307,7 @@ function renderResult(r) {
         el("div", { className: "cap" }, `risk score · ${r.processing_time_ms} ms`), meter)),
     el("div", { className: "result-body" },
       el("section", {}, el("h4", {}, "Why"), reasons),
-      el("section", {}, el("h4", {}, "Step-by-step pipeline"), steps)),
+      el("section", {}, el("h4", {}, "Confidence by layer"), layerBox, el("h4", { style: "margin-top:18px" }, "Step-by-step pipeline"), steps)),
     el("details", { className: "raw" }, el("summary", {}, "Raw API response (JSON)"), el("pre", {}, JSON.stringify(r, null, 2))));
 }
 
@@ -302,6 +335,13 @@ $("qrClear").addEventListener("click", () => {
   $("qrResult").replaceChildren();
   $("qrSummary").replaceChildren(el("h2", {}, "Decoded content"), el("p", { className: "sub" }, "The result appears here after a scan."));
 });
+$("qrSample").addEventListener("click", async () => {
+  try {
+    const blob = await (await fetch("sample_qr.png")).blob();
+    loadQrFile(new File([blob], "sample_qr.png", { type: "image/png" }));
+    toast("Sample QR loaded: it points to a look-alike banking address. Press Scan.");
+  } catch (_e) { toast("Sample QR unavailable.", true); }
+});
 $("qrScan").addEventListener("click", async () => {
   if (!qrData) return;
   $("qrScan").disabled = true; $("qrScan").textContent = "Scanning…";
@@ -309,8 +349,8 @@ $("qrScan").addEventListener("click", async () => {
     const r = await api("/qr-scan", { method: "POST", body: JSON.stringify({ image_base64: qrData }) });
     const rows = [["Verdict", pill(r.verdict)], ["Summary", r.headline]];
     if (r.decoded) {
-      rows.push(["Content type", { url: "Web link", payment: "DuitNow / payment code", text: "Plain text" }[r.payload_type]]);
-      rows.push(["Decoded payload", el("span", { className: "mono" }, r.payload)]);
+      rows.push(["Payload type", el("span", { className: "badge" }, { url: "URL", payment: "DuitNow / EMVCo Merchant QR", text: "Plain Text" }[r.payload_type])]);
+      rows.push(["Raw payload", el("div", { className: "payload" }, r.payload)]);
       if (r.accounts.length) rows.push(["Accounts in code", r.accounts.map((a) => a.account_number).join(", ")]);
       if (r.flagged_accounts.length) rows.push(["Registry match", r.flagged_accounts.map((a) => `${a.account_number} (${a.bank_name})`).join(", ")]);
     } else {
@@ -324,6 +364,18 @@ $("qrScan").addEventListener("click", async () => {
 });
 
 /* ══ Tab 4 — URL analyzer ══ */
+const PRESETS = [
+  ["Safe HTTPS (example.com)", { url: "https://example.com" }],
+  ["Insecure HTTP (neverssl.com)", { url: "http://neverssl.com" }],
+  ["@-Spoof Bank URL", { url: "https://maybank2u.com.my@evil-login.top/login", fetch: false }],
+  ["Mule Account Text", { url: "https://parcel-customs-pay.top/", fetch: false, account: "1122 3344 5566",
+    text: "Your parcel is held. Pay the RM2.50 customs fee now to account 1122 3344 5566 (Maybank) to release it." }],
+];
+PRESETS.forEach(([label, p]) => $("presets").append(el("button", { className: "chip", type: "button", onclick: () => {
+  $("anUrl").value = p.url; $("anText").value = p.text || ""; $("anAccount").value = p.account || "";
+  $("anFetch").checked = p.fetch !== false;
+  $("analyzeForm").requestSubmit();
+} }, label)));
 EXAMPLES.forEach((u) => $("examples").append(el("button", { className: "chip", type: "button", onclick: () => { $("anUrl").value = u; } }, u.replace(/^https?:\/\//, ""))));
 $("analyzeForm").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -344,16 +396,19 @@ $("analyzeForm").addEventListener("submit", async (e) => {
 /* ── Start-up ── */
 BANKS.forEach((b) => $("bankList").append(el("option", { value: b })));
 let refreshTimer;
+let started = false;
 async function start() {
+  if (started) { loadHealth(); switchTab("overview"); return; }
+  started = true;
   loadHealth();
   let tab = "overview";
   try { tab = localStorage.getItem("pg_tab") || "overview"; } catch (_e) { /* storage unavailable */ }
   switchTab(document.getElementById("tab-" + tab) ? tab : "overview");
   clearInterval(refreshTimer);
   refreshTimer = setInterval(() => {
-    if (!$("tab-overview").classList.contains("hidden") && $("gate").classList.contains("hidden")) loadOverview();
-    loadHealth();
-  }, 10000);
+    if (scans.live && scans.offset === 0 && !$("tab-overview").classList.contains("hidden") && $("gate").classList.contains("hidden")) loadOverview();
+  }, 5000);
+  setInterval(loadHealth, 30000);
 }
 
 (async () => {

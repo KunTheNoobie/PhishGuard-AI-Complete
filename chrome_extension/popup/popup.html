@@ -6,6 +6,7 @@
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
+  <div id="mainView">
   <header>
     <img src="../icons/icon48.png" alt="">
     <div class="brand"><strong>PhishGuard-AI</strong><span id="backend"><i class="dot"></i> Checking server…</span></div>
@@ -28,7 +29,7 @@
     <div class="row"><span>Password / card fields</span><b id="cForm">—</b></div>
   </section>
 
-  <section class="reasons-box">
+  <section class="reasons-box" id="reasonsBox">
     <h2>Why</h2>
     <ul id="reasons"><li class="muted">No reasons yet.</li></ul>
   </section>
@@ -37,10 +38,15 @@
     <button id="rescan" class="primary" type="button">Re-scan</button>
     <button id="report" type="button">Report account</button>
     <button id="dashboard" type="button">Dashboard</button>
+    <button id="openSettings" type="button" aria-label="Settings">&#9881;</button>
+  </div>
   </div>
 
-  <details id="settings">
-    <summary>Backend settings</summary>
+  <div id="settingsView" hidden>
+    <h2 class="sh">Settings</h2>
+    <label class="switch"><span>Show Safe Site Corner Notification</span>
+      <input type="checkbox" id="safeToast"><i></i></label>
+    <p class="hint">A small green "Verified Safe" note for 3.5 seconds. Warnings and blocks always stay on.</p>
     <label>Server <select id="mode">
       <option value="auto">Automatic (online, then local)</option>
       <option value="online">Online HTTPS server only</option>
@@ -49,8 +55,9 @@
     <label>Online URL <input id="onlineUrl" type="url"></label>
     <label>Local URL <input id="localUrl" type="url"></label>
     <label>API key <input id="apiKey" type="password" autocomplete="off"></label>
-    <div class="buttons"><button id="save" class="primary" type="button">Save and test</button><span id="saveMsg" class="muted"></span></div>
-  </details>
+    <div class="buttons"><button id="save" class="primary" type="button">Save and test</button><button id="closeSettings" type="button">Back</button></div>
+    <span id="saveMsg" class="muted"></span>
+  </div>
   <script src="popup.js"></script>
 </body>
 </html>

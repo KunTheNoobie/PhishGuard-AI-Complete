@@ -31,7 +31,7 @@
     <section id="tab-overview" role="tabpanel">
       <div class="page-title">
         <div><h1>Overview</h1><p>Every number comes from the scan log in SQLite. Nothing is simulated.</p></div>
-        <div class="actions"><span class="muted" id="updated"></span><button class="btn small" id="refresh" type="button">Refresh</button></div>
+        <div class="actions"><span class="muted" id="updated"></span><button class="live" id="live" type="button" title="Click to pause or resume"><i></i><span id="liveText">Live • Auto-Refresh</span></button></div>
       </div>
       <div class="grid stats">
         <div class="card stat"><span class="label">Total scans</span><span class="value" id="statTotal">–</span><span class="hint" id="stat24h">&nbsp;</span></div>
@@ -43,7 +43,7 @@
         <div class="card-head">
           <h2>Recent scans</h2>
           <div class="actions">
-            <select class="input" id="scanFilter" aria-label="Filter by verdict" style="width:auto">
+            <select class="input" id="scanFilter" aria-label="Filter by verdict" >
               <option value="">All verdicts</option>
               <option value="BLOCK_RENDER">Blocked</option>
               <option value="WARNING">Warning</option>
@@ -54,12 +54,13 @@
           </div>
         </div>
         <div class="table-wrap">
-          <table>
+          <table class="fixed">
+            <colgroup><col style="width:15%"><col style="width:12%"><col style="width:31%"><col style="width:17%"><col style="width:7%"><col style="width:8%"><col style="width:10%"></colgroup>
             <thead><tr><th>Time</th><th>Verdict</th><th>Website</th><th>Rule</th><th>Risk</th><th>BERT</th><th>Source</th></tr></thead>
             <tbody id="scanRows"></tbody>
           </table>
         </div>
-        <div class="pager"><span id="scanCount"></span><span class="mini-stats"><span><strong id="statRegistry">–</strong>registry accounts</span><span><strong id="statPending">–</strong>reports awaiting review</span></span></div>
+        <div class="pager"><span id="scanCount"></span><span class="actions"><button class="btn small" id="scanPrev" type="button">Previous</button><button class="btn small" id="scanNext" type="button">Next</button></span><span class="mini-stats"><span><strong id="statRegistry">–</strong>registry accounts</span><span><strong id="statPending">–</strong>reports awaiting review</span></span></div>
       </div>
     </section>
 
@@ -71,7 +72,7 @@
       <div class="card">
         <div class="card-head">
           <h2>Review queue</h2>
-          <select class="input" id="reportStatus" aria-label="Report status" style="width:auto">
+          <select class="input" id="reportStatus" aria-label="Report status" >
             <option value="PENDING">Pending</option><option value="APPROVED">Approved</option>
             <option value="REJECTED">Rejected</option><option value="ALL">All</option>
           </select>
@@ -89,7 +90,7 @@
         <form id="addMule" class="form-row" autocomplete="off">
           <div class="field"><label for="muleAccount">Account / DuitNow number</label><input class="input mono" id="muleAccount" required placeholder="5142 7610 3388" maxlength="34"></div>
           <div class="field"><label for="muleBank">Bank</label><input class="input" id="muleBank" required list="bankList" placeholder="Maybank" maxlength="60"></div>
-          <div class="field"><label for="mulePlatform">Reported via</label><input class="input" id="mulePlatform" value="PDRM Semakmule" maxlength="80"></div>
+          <div class="field"><label for="mulePlatform">Reported via</label><input class="input" id="mulePlatform" placeholder="e.g., PDRM Semakmule, NSRC 997, User Report" maxlength="80"></div>
           <button class="btn primary" type="submit">Add to registry</button>
         </form>
         <datalist id="bankList"></datalist>
@@ -122,7 +123,7 @@
             <span>PNG or JPG, up to 8 MB</span>
           </label>
           <input type="file" id="qrFile" accept="image/*" class="hidden">
-          <div class="actions" style="margin-top:14px"><button class="btn primary" id="qrScan" type="button" disabled>Scan QR code</button><button class="btn" id="qrClear" type="button">Clear</button></div>
+          <div class="actions" style="margin-top:14px"><button class="btn primary" id="qrScan" type="button" disabled>Scan QR code</button><button class="btn" id="qrSample" type="button">Try a sample QR</button><button class="btn" id="qrClear" type="button">Clear</button></div>
         </div>
         <div class="card" id="qrSummary">
           <h2>Decoded content</h2>
@@ -139,7 +140,8 @@
       </div>
       <div class="card">
         <form id="analyzeForm" autocomplete="off">
-          <div class="field"><label for="anUrl">Web address</label><input class="input mono" id="anUrl" required placeholder="https://example.com" maxlength="2048"></div>
+          <div class="field"><label for="anUrl">Web address <span class="muted">— or pick a Quick Demo Preset</span></label><input class="input mono" id="anUrl" required placeholder="https://example.com" maxlength="2048"></div>
+          <div class="chips presets" id="presets" aria-label="Quick demo presets"></div>
           <div class="chips" id="examples"></div>
           <div class="form-row" style="margin-top:14px">
             <div class="field"><label for="anAccount">Account number to check (optional)</label><input class="input mono" id="anAccount" placeholder="1122 3344 5566" maxlength="40"></div>
@@ -153,7 +155,7 @@
     </section>
   </main>
 
-  <footer>PhishGuard-AI v4.0 · BMCS3404 / BMCS3414 Final Year Project · TAR UMT</footer>
+  <footer>PhishGuard-AI v4.1 · BMCS3404 / BMCS3414 Final Year Project · TAR UMT</footer>
 
   <div class="gate hidden" id="gate">
     <form id="gateForm" autocomplete="off">

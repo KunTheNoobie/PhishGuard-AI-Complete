@@ -62,3 +62,25 @@ class TestLogoDomain:
         strong = evaluate_logo_domain("https://www.cimbclicks.com.my/", [logo("Maybank", 0.97)])
         assert noisy.risk_level == "safe"
         assert strong.risk_level == "safe"  # trusted domains are never flagged by the logo check
+
+
+class TestDemoSeed:
+    async def test_seed_fills_empty_database_once(self, test_db):
+        import os
+        from database.demo_seed import seed_demo_data
+
+        os.environ["PHISHGUARD_SEED_DEMO"] = "true"
+        try:
+            assert await seed_demo_data(test_db) is True
+            assert await seed_demo_data(test_db) is False  # already populated
+        finally:
+            os.environ["PHISHGUARD_SEED_DEMO"] = "false"
+        (scans,) = await (await test_db.execute("SELECT COUNT(*) FROM scan_log;")).fetchone()
+        (mules,) = await (await test_db.execute("SELECT COUNT(*) FROM mule_registry;")).fetchone()
+        (pending,) = await (await test_db.execute("SELECT COUNT(*) FROM mule_reports WHERE status='PENDING';")).fetchone()
+        assert scans == 30 and mules >= 45 and pending == 4
+
+    async def test_seed_can_be_disabled(self, test_db):
+        from database.demo_seed import seed_demo_data
+
+        assert await seed_demo_data(test_db) is False

@@ -1,0 +1,610 @@
+{
+ "note": "Curated evaluation / threat-intelligence demonstration records. OpenPhish URLs come from the public community feed (pages were not downloaded); mule accounts are fictitious numbers in valid Malaysian bank formats.",
+ "feed": "https://raw.githubusercontent.com/openphish/public_feed/refs/heads/main/feed.txt",
+ "mule_accounts": [
+  [
+   "303335435700",
+   "Maybank",
+   "Mudah.my",
+   10
+  ],
+  [
+   "5718672248",
+   "CIMB Bank",
+   "NSRC 997",
+   18
+  ],
+  [
+   "39382993812191",
+   "CIMB Bank",
+   "Carousell",
+   4
+  ],
+  [
+   "3821948245",
+   "Public Bank",
+   "Carousell",
+   3
+  ],
+  [
+   "35524761269847",
+   "RHB Bank",
+   "WhatsApp",
+   11
+  ],
+  [
+   "99065365670",
+   "Hong Leong Bank",
+   "WhatsApp",
+   10
+  ],
+  [
+   "5298291842415",
+   "AmBank",
+   "Shopee",
+   7
+  ],
+  [
+   "67548065293797",
+   "Bank Islam",
+   "Carousell",
+   16
+  ],
+  [
+   "9323175777840356",
+   "BSN",
+   "User Report",
+   22
+  ],
+  [
+   "412002475066",
+   "Bank Rakyat",
+   "WhatsApp",
+   21
+  ],
+  [
+   "767697603881105",
+   "Alliance Bank",
+   "User Report",
+   19
+  ],
+  [
+   "342498359004",
+   "Affin Bank",
+   "NSRC 997",
+   23
+  ],
+  [
+   "7618719274",
+   "UOB Malaysia",
+   "PDRM Semakmule",
+   6
+  ],
+  [
+   "4540951244",
+   "OCBC Malaysia",
+   "Telegram",
+   17
+  ],
+  [
+   "638998311896",
+   "Agrobank",
+   "Shopee",
+   2
+  ],
+  [
+   "39916936337444",
+   "Bank Muamalat",
+   "Mudah.my",
+   10
+  ],
+  [
+   "64495875743574",
+   "MBSB Bank",
+   "Telegram",
+   22
+  ],
+  [
+   "8506750812",
+   "GXBank",
+   "Telegram",
+   23
+  ],
+  [
+   "60673113697",
+   "Touch 'n Go eWallet",
+   "Facebook Marketplace",
+   17
+  ],
+  [
+   "208615948587",
+   "Maybank",
+   "WhatsApp",
+   9
+  ],
+  [
+   "9104984232",
+   "CIMB Bank",
+   "User Report",
+   1
+  ],
+  [
+   "50823873497715",
+   "CIMB Bank",
+   "Telegram",
+   5
+  ],
+  [
+   "6017027856",
+   "Public Bank",
+   "Shopee",
+   25
+  ],
+  [
+   "44471349393937",
+   "RHB Bank",
+   "Lazada",
+   16
+  ],
+  [
+   "41417874800",
+   "Hong Leong Bank",
+   "WhatsApp",
+   14
+  ],
+  [
+   "7760770671258",
+   "AmBank",
+   "Instagram",
+   17
+  ],
+  [
+   "76618190252643",
+   "Bank Islam",
+   "Mudah.my",
+   9
+  ],
+  [
+   "7112817210992772",
+   "BSN",
+   "Shopee",
+   9
+  ],
+  [
+   "944912917585",
+   "Bank Rakyat",
+   "PDRM Semakmule",
+   1
+  ],
+  [
+   "202141294684381",
+   "Alliance Bank",
+   "Shopee",
+   17
+  ],
+  [
+   "107958215386",
+   "Affin Bank",
+   "Carousell",
+   24
+  ],
+  [
+   "5252867402",
+   "UOB Malaysia",
+   "Instagram",
+   25
+  ],
+  [
+   "6016156156",
+   "OCBC Malaysia",
+   "User Report",
+   3
+  ],
+  [
+   "450962035695",
+   "Agrobank",
+   "Instagram",
+   17
+  ],
+  [
+   "78795463849059",
+   "Bank Muamalat",
+   "Mudah.my",
+   18
+  ],
+  [
+   "81735999478623",
+   "MBSB Bank",
+   "WhatsApp",
+   14
+  ],
+  [
+   "1330039820",
+   "GXBank",
+   "Telegram",
+   12
+  ],
+  [
+   "60976574867",
+   "Touch 'n Go eWallet",
+   "Telegram",
+   19
+  ],
+  [
+   "319243841164",
+   "Maybank",
+   "Telegram",
+   18
+  ],
+  [
+   "3340254436",
+   "CIMB Bank",
+   "Instagram",
+   23
+  ],
+  [
+   "13086162512804",
+   "CIMB Bank",
+   "PDRM Semakmule",
+   17
+  ],
+  [
+   "2170355917",
+   "Public Bank",
+   "Facebook Marketplace",
+   5
+  ],
+  [
+   "78586353987014",
+   "RHB Bank",
+   "Mudah.my",
+   4
+  ],
+  [
+   "73294201086",
+   "Hong Leong Bank",
+   "User Report",
+   23
+  ],
+  [
+   "5066019360887",
+   "AmBank",
+   "User Report",
+   10
+  ]
+ ],
+ "scans": [
+  {
+   "source": "dashboard",
+   "url": "https://www.rhbgroup.com/",
+   "verdict": "SAFE",
+   "rule": null,
+   "risk_score": 0.0,
+   "bert_score": null,
+   "headline": "Official RHB Bank website",
+   "latency_ms": 576.25,
+   "origin": "public suite"
+  },
+  {
+   "source": "extension",
+   "url": "https://shopeejkt3567.blogspot.com/",
+   "verdict": "BLOCK_RENDER",
+   "rule": "R2_BRAND_IN_HOSTNAME",
+   "risk_score": 0.97,
+   "bert_score": 0.137761,
+   "headline": "Fake ShopeePay / Shopee website",
+   "latency_ms": 104.37,
+   "origin": "OpenPhish feed"
+  },
+  {
+   "source": "extension",
+   "url": "http://rumaisha02.github.io/Instaclone",
+   "verdict": "WARNING",
+   "rule": "H2_INSECURE_HTTP",
+   "risk_score": 0.55,
+   "bert_score": 0.927258,
+   "headline": "Not secure: unencrypted connection (HTTP)",
+   "latency_ms": 91.54,
+   "origin": "OpenPhish feed"
+  },
+  {
+   "source": "dashboard",
+   "url": "http://http.badssl.com/",
+   "verdict": "WARNING",
+   "rule": "H2_INSECURE_HTTP",
+   "risk_score": 0.55,
+   "bert_score": 0.996609,
+   "headline": "Not secure: unencrypted connection (HTTP)",
+   "latency_ms": 833.66,
+   "origin": "public suite"
+  },
+  {
+   "source": "extension",
+   "url": "http://overview-ledger-live-login-cdn.typedream.app/",
+   "verdict": "WARNING",
+   "rule": "H2_INSECURE_HTTP",
+   "risk_score": 0.55,
+   "bert_score": 0.999751,
+   "headline": "Not secure: unencrypted connection (HTTP)",
+   "latency_ms": 210.67,
+   "origin": "OpenPhish feed"
+  },
+  {
+   "source": "extension",
+   "url": "http://httpforever.com/",
+   "verdict": "WARNING",
+   "rule": "H2_INSECURE_HTTP",
+   "risk_score": 0.55,
+   "bert_score": 0.360478,
+   "headline": "Not secure: unencrypted connection (HTTP)",
+   "latency_ms": 634.67,
+   "origin": "public suite"
+  },
+  {
+   "source": "extension",
+   "url": "http://ifps62-6vu7k2yu9-arcadawebapps2.vercel.app/",
+   "verdict": "WARNING",
+   "rule": "H2_INSECURE_HTTP",
+   "risk_score": 0.55,
+   "bert_score": 0.995093,
+   "headline": "Not secure: unencrypted connection (HTTP)",
+   "latency_ms": 126.17,
+   "origin": "OpenPhish feed"
+  },
+  {
+   "source": "dashboard",
+   "url": "https://maybank2u.com.my@evil-login.top/login",
+   "verdict": "BLOCK_RENDER",
+   "rule": "R7_USERINFO_SPOOF",
+   "risk_score": 0.96,
+   "bert_score": 0.999864,
+   "headline": "Disguised link hides the real website",
+   "latency_ms": 97.58,
+   "origin": "@ spoof"
+  },
+  {
+   "source": "extension",
+   "url": "http://gamesrobloxstore.com/",
+   "verdict": "WARNING",
+   "rule": "H2_INSECURE_HTTP",
+   "risk_score": 0.55,
+   "bert_score": 0.003562,
+   "headline": "Not secure: unencrypted connection (HTTP)",
+   "latency_ms": 95.26,
+   "origin": "OpenPhish feed"
+  },
+  {
+   "source": "extension",
+   "url": "http://us-usps.homes/DUVzTTavlOw/",
+   "verdict": "WARNING",
+   "rule": "H2_INSECURE_HTTP",
+   "risk_score": 0.55,
+   "bert_score": 0.038587,
+   "headline": "Not secure: unencrypted connection (HTTP)",
+   "latency_ms": 272.71,
+   "origin": "OpenPhish feed"
+  },
+  {
+   "source": "dashboard",
+   "url": "http://neverssl.com/",
+   "verdict": "WARNING",
+   "rule": "H2_INSECURE_HTTP",
+   "risk_score": 0.55,
+   "bert_score": 0.006683,
+   "headline": "Not secure: unencrypted connection (HTTP)",
+   "latency_ms": 4861.84,
+   "origin": "public suite"
+  },
+  {
+   "source": "extension",
+   "url": "https://www.gxbank.my/",
+   "verdict": "SAFE",
+   "rule": null,
+   "risk_score": 0.0,
+   "bert_score": null,
+   "headline": "Official GXBank website",
+   "latency_ms": 338.06,
+   "origin": "public suite"
+  },
+  {
+   "source": "extension",
+   "url": "https://en.wikipedia.org/wiki/Phishing",
+   "verdict": "SAFE",
+   "rule": null,
+   "risk_score": 0.0,
+   "bert_score": null,
+   "headline": "Trusted website",
+   "latency_ms": 300.87,
+   "origin": "public suite"
+  },
+  {
+   "source": "extension",
+   "url": "http://www.apple-store-woad-delta.vercel.app/",
+   "verdict": "WARNING",
+   "rule": "H2_INSECURE_HTTP",
+   "risk_score": 0.55,
+   "bert_score": 0.994814,
+   "headline": "Not secure: unencrypted connection (HTTP)",
+   "latency_ms": 97.67,
+   "origin": "OpenPhish feed"
+  },
+  {
+   "source": "dashboard",
+   "url": "https://www.dbs.com.sg/",
+   "verdict": "SAFE",
+   "rule": null,
+   "risk_score": 0.0,
+   "bert_score": null,
+   "headline": "Official DBS / POSB website",
+   "latency_ms": 853.89,
+   "origin": "public suite"
+  },
+  {
+   "source": "extension",
+   "url": "https://www.paypal.com/my/home",
+   "verdict": "SAFE",
+   "rule": null,
+   "risk_score": 0.0,
+   "bert_score": null,
+   "headline": "Official PayPal website",
+   "latency_ms": 736.04,
+   "origin": "public suite"
+  },
+  {
+   "source": "dashboard",
+   "url": "https://www.cimbclicks.com.my/",
+   "verdict": "SAFE",
+   "rule": null,
+   "risk_score": 0.0,
+   "bert_score": null,
+   "headline": "Official CIMB Bank website",
+   "latency_ms": 410.94,
+   "origin": "public suite"
+  },
+  {
+   "source": "extension",
+   "url": "http://ddpay-webpage-vip-login.netlify.app/",
+   "verdict": "WARNING",
+   "rule": "H2_INSECURE_HTTP",
+   "risk_score": 0.55,
+   "bert_score": 0.999913,
+   "headline": "Not secure: unencrypted connection (HTTP)",
+   "latency_ms": 133.1,
+   "origin": "OpenPhish feed"
+  },
+  {
+   "source": "extension",
+   "url": "http://dc1crsorgi1govin.netlify.app/",
+   "verdict": "WARNING",
+   "rule": "H2_INSECURE_HTTP",
+   "risk_score": 0.55,
+   "bert_score": 0.999045,
+   "headline": "Not secure: unencrypted connection (HTTP)",
+   "latency_ms": 92.1,
+   "origin": "OpenPhish feed"
+  },
+  {
+   "source": "dashboard",
+   "url": "https://www.python.org/",
+   "verdict": "SAFE",
+   "rule": null,
+   "risk_score": 0.0,
+   "bert_score": null,
+   "headline": "Trusted website",
+   "latency_ms": 319.33,
+   "origin": "public suite"
+  },
+  {
+   "source": "extension",
+   "url": "https://www.maybank2u.com.my/",
+   "verdict": "SAFE",
+   "rule": null,
+   "risk_score": 0.0,
+   "bert_score": null,
+   "headline": "Official Maybank website",
+   "latency_ms": 524.9,
+   "origin": "public suite"
+  },
+  {
+   "source": "extension",
+   "url": "http://sp25ct11-lazvani-biz-rumkelo.pages.dev/",
+   "verdict": "WARNING",
+   "rule": "H2_INSECURE_HTTP",
+   "risk_score": 0.55,
+   "bert_score": 0.938273,
+   "headline": "Not secure: unencrypted connection (HTTP)",
+   "latency_ms": 97.43,
+   "origin": "OpenPhish feed"
+  },
+  {
+   "source": "extension",
+   "url": "https://www.shopeeid899.blogspot.com/",
+   "verdict": "BLOCK_RENDER",
+   "rule": "R2_BRAND_IN_HOSTNAME",
+   "risk_score": 0.97,
+   "bert_score": 0.047788,
+   "headline": "Fake ShopeePay / Shopee website",
+   "latency_ms": 96.5,
+   "origin": "OpenPhish feed"
+  },
+  {
+   "source": "dashboard",
+   "url": "https://example.com/",
+   "verdict": "SAFE",
+   "rule": null,
+   "risk_score": 0.0,
+   "bert_score": 0.000121,
+   "headline": "No threats found",
+   "latency_ms": 539.37,
+   "origin": "public suite"
+  },
+  {
+   "source": "qr",
+   "url": "https://maybank2u.com.my@evil-login.top/secure",
+   "verdict": "BLOCK_RENDER",
+   "rule": "R7_USERINFO_SPOOF",
+   "risk_score": 0.96,
+   "bert_score": null,
+   "headline": "Disguised link hides the real website",
+   "latency_ms": 97.23,
+   "origin": "QR payload"
+  },
+  {
+   "source": "extension",
+   "url": "https://parcel-customs-pay.top/",
+   "verdict": "BLOCK_RENDER",
+   "rule": "R1_MULE_REGISTRY",
+   "risk_score": 0.99,
+   "bert_score": 0.999921,
+   "headline": "Known scam bank account on this page",
+   "latency_ms": 94.22,
+   "origin": "mule"
+  },
+  {
+   "source": "extension",
+   "url": "https://www.pbebank.com/",
+   "verdict": "SAFE",
+   "rule": null,
+   "risk_score": 0.0,
+   "bert_score": null,
+   "headline": "Official Public Bank website",
+   "latency_ms": 463.28,
+   "origin": "public suite"
+  },
+  {
+   "source": "extension",
+   "url": "http://roclick.cc/",
+   "verdict": "WARNING",
+   "rule": "H2_INSECURE_HTTP",
+   "risk_score": 0.55,
+   "bert_score": 0.386422,
+   "headline": "Not secure: unencrypted connection (HTTP)",
+   "latency_ms": 92.64,
+   "origin": "OpenPhish feed"
+  },
+  {
+   "source": "extension",
+   "url": "http://www.gebyarundian-shopee2019.blogspot.com/",
+   "verdict": "BLOCK_RENDER",
+   "rule": "R2_BRAND_IN_HOSTNAME",
+   "risk_score": 0.97,
+   "bert_score": 0.959381,
+   "headline": "Fake ShopeePay / Shopee website",
+   "latency_ms": 97.42,
+   "origin": "OpenPhish feed"
+  },
+  {
+   "source": "extension",
+   "url": "http://insttagrammoyi.netlify.app/",
+   "verdict": "WARNING",
+   "rule": "H2_INSECURE_HTTP",
+   "risk_score": 0.55,
+   "bert_score": 0.989697,
+   "headline": "Not secure: unencrypted connection (HTTP)",
+   "latency_ms": 96.23,
+   "origin": "OpenPhish feed"
+  }
+ ],
+ "openphish_urls_analysed": 150,
+ "openphish_blocked_from_url_alone": 3
+}

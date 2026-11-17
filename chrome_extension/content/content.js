@@ -34,6 +34,14 @@
   }
   window.__phishguardScan = scan;
 
+  // Single-page apps change the address without reloading: scan again when it changes.
+  let lastUrl = location.href;
+  setInterval(() => {
+    if (location.href === lastUrl) return;
+    lastUrl = location.href;
+    setTimeout(scan, 800);
+  }, 1000);
+
   /* ── Shadow-DOM host ── */
   function mount() {
     let host = document.getElementById(HOST_ID);
@@ -140,12 +148,29 @@
     shadow.append(bar);
   }
 
+  /* ── Green corner toast for safe sites (can be switched off in the popup) ── */
+  async function showSafe(r) {
+    let enabled = true;
+    try { enabled = (await chrome.storage.local.get({ showSafeToast: true })).showSafeToast !== false; } catch (_e) { /* keep default */ }
+    if (!enabled) { unmount(); return; }
+    const { host, shadow } = mount();
+    host.style.inset = "auto 16px 16px auto";
+    const toast = h("div", "toast");
+    const text = h("div", "ttext");
+    text.append(h("strong", "", "PhishGuard-AI \u2022 Verified Safe"), h("span", "", r.hostname || location.hostname));
+    toast.append(h("div", "tick", "\u2713"), text);
+    shadow.append(toast);
+    setTimeout(() => toast.classList.add("out"), 3000);
+    setTimeout(unmount, 3500);
+  }
+
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg.type !== "PG_SHOW") return;
     const r = msg.result || {};
     if (r.allowed_by_user) { unmount(); return; }
     if (r.verdict === "BLOCK_RENDER") showBlock(r);
     else if (r.verdict === "WARNING") showWarning(r);
+    else if (r.verdict === "SAFE") showSafe(r);
     else unmount();
   });
 
@@ -186,6 +211,15 @@
     .bicon { flex: 0 0 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: #f59e0b; color: #1f1608; font-weight: 800; }
     .btext { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; line-height: 1.45; overflow-wrap: anywhere; }
     .btext strong { color: #fef3c7; }
+    .toast { position: fixed; right: 16px; bottom: 16px; display: flex; align-items: center; gap: 12px; padding: 12px 16px; min-width: 230px;
+      background: #0f1f17; color: #bbf7d0; border: 1px solid rgba(34, 197, 94, 0.5); border-radius: 12px; font-size: 13px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45); animation: in .3s ease-out; transition: opacity .4s, transform .4s; }
+    .toast.out { opacity: 0; transform: translateY(8px); }
+    .tick { flex: 0 0 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: #22c55e; color: #052e16; font-weight: 800; }
+    .ttext { display: flex; flex-direction: column; line-height: 1.35; min-width: 0; overflow-wrap: anywhere; }
+    .ttext strong { color: #f0fdf4; font-size: 13.5px; }
+    .ttext span { color: #86efac; font-size: 12px; }
+    @keyframes in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
     .close { background: #f59e0b; color: #1f1608; padding: 6px 12px; font-size: 13px; }
   `;
 

@@ -1,10 +1,33 @@
-/* Header bar for the interactive API documentation (/docs), matching the dashboard. */
-body { margin: 0; background: #f8fafc; font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-.pg-bar { display: flex; align-items: center; gap: 24px; padding: 12px 28px; background: #0b1120; border-bottom: 1px solid #243047; }
-.pg-brand { display: flex; align-items: center; gap: 10px; color: #e6eaf2; font-weight: 700; font-size: 16px; text-decoration: none; }
-.pg-brand img { width: 28px; height: 28px; border-radius: 6px; }
-.pg-bar nav { display: flex; gap: 4px; margin-left: auto; }
-.pg-bar nav a { color: #94a3b8; text-decoration: none; font-weight: 600; padding: 8px 14px; border-radius: 8px; }
-.pg-bar nav a:hover, .pg-bar nav a.active { color: #e6eaf2; background: #172033; }
+/* /docs shares dashboard/styles.css (palette, type, radii); this file only re-skins Swagger UI to match. */
+main.docs { padding-top: 24px; }
+.swagger-ui, .swagger-ui .info .title, .swagger-ui .info p, .swagger-ui .info li, .swagger-ui .opblock-tag, .swagger-ui .opblock .opblock-summary-description,
+.swagger-ui .opblock-description-wrapper p, .swagger-ui table thead tr th, .swagger-ui table thead tr td, .swagger-ui .parameter__name, .swagger-ui .parameter__type,
+.swagger-ui .response-col_status, .swagger-ui .response-col_description, .swagger-ui label, .swagger-ui .tab li, .swagger-ui section.models h4, .swagger-ui .model-title,
+.swagger-ui .model, .swagger-ui .opblock-section-header h4, .swagger-ui .responses-inner h4, .swagger-ui .responses-inner h5, .swagger-ui .markdown p, .swagger-ui .markdown li { color: var(--text); font-family: var(--font); }
 .swagger-ui .topbar { display: none; }
-.swagger-ui .information-container { padding-top: 8px; }
+.swagger-ui .info { margin: 0 0 20px; } .swagger-ui .info .title { font-size: 26px; letter-spacing: -.01em; }
+.swagger-ui .info a { color: #93c5fd; }
+.swagger-ui .scheme-container { background: var(--surface); box-shadow: var(--shadow); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 20px; margin: 0 0 20px; }
+.swagger-ui .opblock-tag { border-bottom: 1px solid var(--border); font-size: 17px; }
+.swagger-ui .opblock-tag:hover { background: var(--surface-2); }
+.swagger-ui .opblock { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin: 0 0 12px; }
+.swagger-ui .opblock .opblock-summary { border: 0; padding: 6px 10px; }
+.swagger-ui .opblock .opblock-summary-path, .swagger-ui .opblock .opblock-summary-path__deprecated { color: var(--text); font-family: var(--mono); font-size: 13.5px; }
+.swagger-ui .opblock.opblock-get { border-color: rgba(59,130,246,.45); background: rgba(59,130,246,.06); }
+.swagger-ui .opblock.opblock-post { border-color: rgba(34,197,94,.4); background: rgba(34,197,94,.06); }
+.swagger-ui .opblock.opblock-delete { border-color: rgba(239,68,68,.45); background: rgba(239,68,68,.06); }
+.swagger-ui .opblock .opblock-summary-method { border-radius: 6px; min-width: 70px; font-family: var(--font); }
+.swagger-ui .opblock-body, .swagger-ui .opblock-section-header, .swagger-ui .tab, .swagger-ui .responses-table { background: transparent; box-shadow: none; }
+.swagger-ui .opblock-section-header { border-bottom: 1px solid var(--border); }
+.swagger-ui table tbody tr td { border-bottom: 1px solid var(--border); color: var(--text); }
+.swagger-ui input[type=text], .swagger-ui textarea, .swagger-ui select { background: #0d1526; color: var(--text); border: 1px solid var(--border); border-radius: 8px; }
+.swagger-ui .btn { border-radius: 8px; border-color: var(--border); color: var(--text); background: var(--surface-2); box-shadow: none; font-family: var(--font); }
+.swagger-ui .btn.execute { background: var(--accent-strong); border-color: var(--accent-strong); color: #fff; }
+.swagger-ui .btn.authorize { color: #4ade80; border-color: rgba(34,197,94,.5); background: transparent; } .swagger-ui .btn.authorize svg { fill: #4ade80; }
+.swagger-ui .highlight-code > .microlight, .swagger-ui .microlight, .swagger-ui pre.microlight { background: #0d1526 !important; color: #cbd5e1 !important; border-radius: 8px; font-family: var(--mono); }
+.swagger-ui section.models { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.swagger-ui section.models.is-open h4 { border-bottom: 1px solid var(--border); }
+.swagger-ui .model-box, .swagger-ui .dialog-ux .modal-ux { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+.swagger-ui .dialog-ux .modal-ux-header { border-bottom: 1px solid var(--border); } .swagger-ui .dialog-ux .modal-ux-header h3 { color: var(--text); }
+.swagger-ui svg:not(:root) { fill: var(--muted); }
+.swagger-ui .prop-type, .swagger-ui .parameter__in { color: #93c5fd; }

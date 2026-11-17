@@ -23,7 +23,7 @@ const HEALTH_TIMEOUT_MS = 3000;
 const BACKEND_CACHE_MS = 60000;
 const ALLOW_HOURS = 24;
 
-const DEFAULTS = { mode: "auto", onlineUrl: ONLINE_URL, localUrl: LOCAL_URL, apiKey: DEFAULT_API_KEY };
+const DEFAULTS = { mode: "auto", onlineUrl: ONLINE_URL, localUrl: LOCAL_URL, apiKey: DEFAULT_API_KEY, showSafeToast: true };
 let backendCache = { url: null, label: "offline", at: 0 };
 
 /* ── Storage helpers ── */

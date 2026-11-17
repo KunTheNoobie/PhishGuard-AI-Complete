@@ -1,5 +1,25 @@
 # Changelog
 
+## v4.1.0 — 17 November 2026
+
+- **Dashboard and /docs** share one dark-slate design (palette, type, radii, elevation); `/docs` is Swagger re-skinned to match.
+  Verdict filter restyled, no scrollbars (ten scans per page with Previous/Next), automatic refresh every 5 seconds with a
+  "Live • Auto-Refresh" pill (click to pause).
+- **QR Scanner** — payload-type badge (URL, DuitNow / EMVCo Merchant QR, Plain Text), raw payload box, "Try a sample QR" button.
+- **URL Analyzer** — Quick Demo Presets (safe HTTPS, insecure HTTP, @-spoof, mule-account text) and a confidence bar per layer.
+- **Mule Registry** — the "Reported via" box is empty with a placeholder instead of a pre-filled value.
+- **Extension** — green "Verified Safe" corner notice (3.5 s) with a switch in the popup settings (`showSafeToast`,
+  `chrome.storage.local`); popup resized to fit without a scrollbar; settings moved to their own view; pages are re-scanned
+  when a single-page site changes address.
+- **Demonstration dataset** — `database/demo_threat_intel.json` loads into an empty database (45 mule records, 30 scan rows built
+  from real pipeline verdicts incl. OpenPhish feed URLs, 4 pending reports). `PHISHGUARD_SEED_DEMO=false` disables it;
+  `python -m evaluation.build_demo_seed` rebuilds it.
+- **Hugging Face Space** — Gradio-SDK entry point `app.py` (status card at `/hf`), `packages.txt`, Space card
+  `deploy/hf_space_README.txt`, token-safe `deploy/deploy_hf_space.ps1`; `Content-Security-Policy: frame-ancestors` replaces
+  `X-Frame-Options` so the Space page can embed the app; CPU PyTorch wheels via `requirements.txt`.
+- **`setup.bat`** — one-click Git LFS pull, virtual environment, dependencies and `.env`.
+- 138 tests pass (82% coverage); report chapters, figures and screenshots refreshed.
+
 ## v4.0.0 — 17 November 2026
 
 A ground-up overhaul: protection for every website, explained verdicts, a strict HTTP/HTTPS policy, a new

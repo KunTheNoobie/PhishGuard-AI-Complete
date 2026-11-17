@@ -48,6 +48,7 @@ from core.config import (
     USING_DEFAULT_API_KEY,
 )
 from core.rate_limit import limiter
+from database.demo_seed import seed_demo_data
 from database.init_db import initialize_database
 from services.cache_service import SemanticResultCache
 from services.mule_scanner import MuleScanner
@@ -71,6 +72,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
                        "PHISHGUARD_ADMIN_KEY for any deployment beyond a demonstration.")
 
     app.state.db = await initialize_database()
+    await seed_demo_data(app.state.db)
     app.state.mule_scanner = MuleScanner()
     app.state.cache = SemanticResultCache(ttl_seconds=600)
 
@@ -138,7 +140,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         response = await call_next(request)
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
-        response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+        # frame-ancestors (not X-Frame-Options) so the Hugging Face Space page can embed the app.
+        response.headers.setdefault("Content-Security-Policy", "frame-ancestors 'self' https://huggingface.co https://*.huggingface.co")
         response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
         response.headers.setdefault("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
         if request.url.scheme == "https":
@@ -173,15 +176,18 @@ _DOCS_HTML: Final[str] = """<!doctype html>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PhishGuard-AI — API Documentation</title>
 <link rel="icon" href="/dashboard/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.14/swagger-ui.css">
+<link rel="stylesheet" href="/dashboard/styles.css">
 <link rel="stylesheet" href="/dashboard/docs.css">
 </head>
 <body>
-<header class="pg-bar">
-  <a class="pg-brand" href="/dashboard/"><img src="/dashboard/favicon.png" alt=""> PhishGuard-AI</a>
-  <nav><a href="/dashboard/">Dashboard</a><a class="active" href="/docs">API Docs</a></nav>
+<header class="topbar">
+  <a class="brand" href="/dashboard/"><img src="/dashboard/favicon.png" alt=""><span>PhishGuard-AI<small>API Documentation</small></span></a>
+  <nav class="tabs"><a class="tab" href="/dashboard/">Dashboard</a><a class="tab" href="/docs" aria-selected="true">API Docs</a></nav>
 </header>
-<main id="swagger-ui"></main>
+<main id="swagger-ui" class="docs"></main>
 <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.14/swagger-ui-bundle.js"></script>
 <script>
 window.ui = SwaggerUIBundle({url: "/openapi.json", dom_id: "#swagger-ui", docExpansion: "list",
