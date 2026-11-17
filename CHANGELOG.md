@@ -1,5 +1,14 @@
 # Changelog
 
+## v4.1.3 — 18 November 2026
+
+- **Certificate check by the server** (`services/cert_check.py`): for an https address that is not trusted and scores BERT >= 0.80,
+  the backend verifies the certificate itself (2 s limit, certifi CA bundle, public addresses only, cached 5 minutes) and applies
+  rule `W1_TLS_CERTIFICATE`, so `expired.badssl.com` is flagged even when the browser remembers "Proceed (unsafe)".
+- **Extension** — `ERR_CERT_*` / `ERR_SSL_*` errors are kept per host in `chrome.storage.local` (15 minutes); the popup buttons sit on
+  one row with the settings gear, spacing is tighter and the scrollbar is hidden.
+- 143 tests pass.
+
 ## v4.1.2 — 18 November 2026
 
 - **Extension** — results are kept per tab and per address (no cross-tab leaks); popup states "Scanning current page...",

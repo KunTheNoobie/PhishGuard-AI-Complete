@@ -119,3 +119,11 @@ def qr_png() -> Callable[[str], str]:
         return base64.b64encode(buffer.tobytes()).decode("ascii")
 
     return make
+
+
+@pytest.fixture(autouse=True)
+def _no_live_certificate_checks(monkeypatch):
+    """Tests never open real TLS connections; the certificate check has its own tests."""
+    async def none(host, port=443):
+        return None
+    monkeypatch.setattr("services.analysis_pipeline.check_certificate", none)

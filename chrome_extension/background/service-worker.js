@@ -23,7 +23,7 @@ const HEALTH_TIMEOUT_MS = 8000;
 const BACKEND_CACHE_MS = 60000;
 const ALLOW_HOURS = 24;
 const SIGNAL_TTL_MS = 10 * 60 * 1000;
-const TLS_TTL_MS = 5 * 60 * 1000;   // a certificate error is remembered per host for 5 minutes
+const TLS_TTL_MS = 15 * 60 * 1000;  // a certificate error is remembered per host for 15 minutes
 
 const DEFAULTS = { mode: "auto", onlineUrl: ONLINE_URL, localUrl: LOCAL_URL, apiKey: DEFAULT_API_KEY, showSafeToast: true };
 let backendCache = { url: null, label: "offline", at: 0 };
@@ -75,19 +75,20 @@ async function clearTab(tabId) {
   chrome.action.setBadgeText({ tabId, text: "" }).catch(() => {});
 }
 
-/* ── certificate errors: one map keyed by host name, so they survive the reload that follows "Proceed" ── */
+/* ── certificate errors: one map keyed by host name in chrome.storage.local, so they survive the reload that follows
+   "Proceed" and a restart of the extension (the server also re-checks the certificate itself) ── */
 async function rememberTlsError(url, error) {
   const host = hostOf(url);
   if (!host) return;
-  const { tlsErrors = {} } = await chrome.storage.session.get("tlsErrors");
+  const { tlsErrors = {} } = await chrome.storage.local.get("tlsErrors");
   const now = Date.now();
   for (const h of Object.keys(tlsErrors)) if (now - tlsErrors[h].at > TLS_TTL_MS) delete tlsErrors[h];
   tlsErrors[host] = { error, at: now };
-  await chrome.storage.session.set({ tlsErrors });
+  await chrome.storage.local.set({ tlsErrors });
 }
 
 async function tlsErrorFor(url) {
-  const { tlsErrors = {} } = await chrome.storage.session.get("tlsErrors");
+  const { tlsErrors = {} } = await chrome.storage.local.get("tlsErrors");
   const rec = tlsErrors[hostOf(url)];
   return rec && Date.now() - rec.at <= TLS_TTL_MS ? rec : null;
 }
@@ -214,7 +215,7 @@ chrome.webNavigation.onCommitted.addListener(async (d) => {
 });
 
 chrome.webNavigation.onErrorOccurred.addListener(async (d) => {
-  if (d.frameId !== 0 || !/^net::ERR_CERT_/.test(d.error || "")) return;
+  if (d.frameId !== 0 || !/^net::ERR_(CERT|SSL)_/.test(d.error || "")) return;
   await rememberTlsError(d.url, d.error);
   // The popup shows the certificate warning at once, even while the browser's own warning page is open.
   analyze(await currentTab(d.tabId), d.url, null, false);

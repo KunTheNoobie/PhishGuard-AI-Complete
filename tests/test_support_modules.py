@@ -84,3 +84,36 @@ class TestDemoSeed:
         from database.demo_seed import seed_demo_data
 
         assert await seed_demo_data(test_db) is False
+
+
+class TestCertificateFallback:
+    async def test_failed_verification_is_reported_and_cached(self, monkeypatch):
+        from services import cert_check
+
+        cert_check._cache.clear()
+        calls = []
+
+        async def public(url):
+            return None
+
+        monkeypatch.setattr(cert_check, "_assert_public", public)
+        monkeypatch.setattr(cert_check, "_verify", lambda h, p: calls.append(h) or "certificate verification failed: expired")
+        assert "expired" in await cert_check.check_certificate("expired.example-test.org")
+        await cert_check.check_certificate("expired.example-test.org")
+        assert calls == ["expired.example-test.org"]  # second answer came from the cache
+
+    async def test_private_addresses_are_never_contacted(self, monkeypatch):
+        from services import cert_check
+
+        cert_check._cache.clear()
+        assert await cert_check.check_certificate("localhost") is None
+
+    async def test_pipeline_warns_when_the_server_finds_a_bad_certificate(self, phishing_client, monkeypatch):
+        async def bad(host, port=443):
+            return "certificate verification failed: certificate has expired"
+
+        monkeypatch.setattr("services.analysis_pipeline.check_certificate", bad)
+        r = await phishing_client.post("/api/v1/analyze", json={"url": "https://expired.example-test.org/"})
+        body = r.json()
+        assert body["verdict"] == "WARNING" and body["rule"] == "W1_TLS_CERTIFICATE"
+        assert any(s["name"] == "Certificate check" for s in body["steps"])

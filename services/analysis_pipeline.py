@@ -31,6 +31,7 @@ from typing import Any, Final
 
 from core.config import ALL_TRUSTED_DOMAINS
 from database.repository import increment_report_counts, log_scan
+from services.cert_check import check_certificate
 from services.brand_profiler import profile_brand_impersonation
 from services.heuristic_engine import analyze_url_heuristics
 from services.page_fetcher import fetch_page
@@ -55,6 +56,9 @@ class PageInput:
     fetch: bool = False                   # download the page server-side if no HTML was sent
     extra_accounts: list[str] = field(default_factory=list)
     tls_error: str | None = None          # certificate error the browser reported (e.g. net::ERR_CERT_DATE_INVALID)
+
+
+CERT_CHECK_BERT_THRESHOLD = 0.80   # suspicious enough to spend one 2-second TLS check
 
 
 def is_trusted_host(hostname: str) -> bool:
@@ -186,6 +190,12 @@ async def analyze_page(inp: PageInput, state: Any) -> dict[str, Any]:
         steps.append({**_step("BERT URL model", "fail" if bert["is_malicious"] else "pass",
                               f"P(phishing) = {p:.3f}" + (" (cached)" if bert.get("cached") else "")),
                       "ms": parallel_ms})
+    # Certificate check by the server itself: a browser that remembers "Proceed (unsafe)" never reports the error again.
+    if (canon.is_https and not trusted and not tls_error and not bert.get("skipped")
+            and float(bert["phishing_probability"]) >= CERT_CHECK_BERT_THRESHOLD):
+        tls_error = await check_certificate(canon.hostname, canon.port or 443)
+        if tls_error:
+            steps.append(_step("Certificate check", "warn", f"The server could not verify the certificate: {tls_error}."))
     flagged = mule["flagged_accounts"]
     steps.append(_step("Mule-account registry", "fail" if flagged else "pass",
                        f"{len(mule['accounts_extracted'])} account number(s) found; "
