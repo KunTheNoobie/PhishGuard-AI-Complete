@@ -23,6 +23,7 @@ const HEALTH_TIMEOUT_MS = 8000;
 const BACKEND_CACHE_MS = 60000;
 const ALLOW_HOURS = 24;
 const SIGNAL_TTL_MS = 10 * 60 * 1000;
+const TLS_TTL_MS = 5 * 60 * 1000;   // a certificate error is remembered per host for 5 minutes
 
 const DEFAULTS = { mode: "auto", onlineUrl: ONLINE_URL, localUrl: LOCAL_URL, apiKey: DEFAULT_API_KEY, showSafeToast: true };
 let backendCache = { url: null, label: "offline", at: 0 };
@@ -74,11 +75,21 @@ async function clearTab(tabId) {
   chrome.action.setBadgeText({ tabId, text: "" }).catch(() => {});
 }
 
-async function getSignal(kind, tabId, url) {
-  const key = signalKey(kind, tabId);
-  const rec = (await chrome.storage.session.get(key))[key];
-  if (!rec || Date.now() - rec.at > SIGNAL_TTL_MS) return null;
-  return hostOf(rec.url) === hostOf(url) ? rec : null;
+/* ── certificate errors: one map keyed by host name, so they survive the reload that follows "Proceed" ── */
+async function rememberTlsError(url, error) {
+  const host = hostOf(url);
+  if (!host) return;
+  const { tlsErrors = {} } = await chrome.storage.session.get("tlsErrors");
+  const now = Date.now();
+  for (const h of Object.keys(tlsErrors)) if (now - tlsErrors[h].at > TLS_TTL_MS) delete tlsErrors[h];
+  tlsErrors[host] = { error, at: now };
+  await chrome.storage.session.set({ tlsErrors });
+}
+
+async function tlsErrorFor(url) {
+  const { tlsErrors = {} } = await chrome.storage.session.get("tlsErrors");
+  const rec = tlsErrors[hostOf(url)];
+  return rec && Date.now() - rec.at <= TLS_TTL_MS ? rec : null;
 }
 
 /* ── backend selection: online HTTPS server first, local server as fallback ── */
@@ -134,7 +145,7 @@ async function callBackend(tab, url, page, fullScan) {
   const backend = await resolveBackend();
   if (!backend.url) return offlineResult(url, "no server online");
   const s = await getSettings();
-  const tls = await getSignal("tls", tab.id, url);
+  const tls = await tlsErrorFor(url);
   const body = { url };
   if (fullScan && page) {
     body.dom_content = page.html;
@@ -204,7 +215,7 @@ chrome.webNavigation.onCommitted.addListener(async (d) => {
 
 chrome.webNavigation.onErrorOccurred.addListener(async (d) => {
   if (d.frameId !== 0 || !/^net::ERR_CERT_/.test(d.error || "")) return;
-  await chrome.storage.session.set({ [signalKey("tls", d.tabId)]: { url: d.url, error: d.error, at: Date.now() } });
+  await rememberTlsError(d.url, d.error);
   // The popup shows the certificate warning at once, even while the browser's own warning page is open.
   analyze(await currentTab(d.tabId), d.url, null, false);
 });
@@ -274,7 +285,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 });
 
 chrome.tabs.onRemoved.addListener((tabId) => {
-  chrome.storage.session.remove([tabKey(tabId), signalKey("raw", tabId), signalKey("tls", tabId), signalKey("pending", tabId)]);
+  chrome.storage.session.remove([tabKey(tabId), signalKey("raw", tabId), signalKey("pending", tabId)]);
 });
 chrome.runtime.onInstalled.addListener(async () => {
   const current = await chrome.storage.local.get(Object.keys(DEFAULTS));
