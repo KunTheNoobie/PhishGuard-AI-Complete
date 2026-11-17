@@ -13,7 +13,7 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 MAX_LEN = 128
 src = Path(sys.argv[1] if len(sys.argv) > 1 else "phishguard_custom_model")
-model = AutoModelForSequenceClassification.from_pretrained(src, low_cpu_mem_usage=True, torchscript=True).eval()
+model = AutoModelForSequenceClassification.from_pretrained(src, low_cpu_mem_usage=True, return_dict=False, attn_implementation="eager").eval()
 fq = torch.ao.quantization.float_qparams_weight_only_qconfig
 for name in ("word_embeddings", "position_embeddings", "token_type_embeddings"):
     getattr(model.bert.embeddings, name).qconfig = fq
