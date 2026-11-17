@@ -60,7 +60,7 @@ DASHBOARD_SESSION_TTL_SECONDS: Final[int] = int(os.getenv("PHISHGUARD_SESSION_TT
 CORS_ALLOWED_ORIGINS: Final[list[str]] = [
     origin.strip()
     for origin in os.getenv(
-        "PHISHGUARD_CORS_ORIGINS", "http://127.0.0.1:8000,http://localhost:8000,https://phishguard-ai-backend.onrender.com"
+        "PHISHGUARD_CORS_ORIGINS", "http://127.0.0.1:8000,http://localhost:8000,https://phishguard-ai-backend-j74v.onrender.com"
     ).split(",")
     if origin.strip()
 ]

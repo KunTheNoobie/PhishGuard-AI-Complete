@@ -1,4 +1,4 @@
-# Render Blueprint: free Docker web service -> https://phishguard-ai-backend.onrender.com
+# Render Blueprint: free Docker web service -> https://phishguard-ai-backend-j74v.onrender.com
 services:
   - type: web
     name: phishguard-ai-backend
@@ -13,7 +13,7 @@ services:
       - key: PHISHGUARD_API_KEY
         value: "12345678"
       - key: PHISHGUARD_CORS_ORIGINS
-        value: "https://phishguard-ai-backend.onrender.com"
+        value: "https://phishguard-ai-backend-j74v.onrender.com"
       - key: PHISHGUARD_ENABLE_VISUAL  # logo detector off to stay inside 512 MB; set "true" on a larger plan
         value: "false"
       - key: PHISHGUARD_QUANTIZE

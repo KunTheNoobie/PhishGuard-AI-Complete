@@ -55,7 +55,7 @@ BERT hold-out (109,870 URLs)       accuracy 98.76%, F1 97.80%
 
 ### 1. Browser extension (`chrome_extension/`)
 - Scans **every** `http://` and `https://` page, not only banking sites.
-- **Online-first:** uses `https://phishguard-ai-backend.onrender.com` and falls back to the local server
+- **Online-first:** uses `https://phishguard-ai-backend-j74v.onrender.com` and falls back to the local server
   `http://127.0.0.1:8000`. The popup's settings choose *Automatic*, *Online only* or *Local only*, hold both server
   addresses and the API key, and the popup shows which server answered.
 - Shadow-DOM block page and amber HTTP banner, so the site's own CSS cannot hide or restyle them.
@@ -152,13 +152,13 @@ with long random values for any real deployment:
 
 ## Online deployment (Render, free HTTPS web service)
 
-Target address: `https://phishguard-ai-backend.onrender.com` (`/health`, `/dashboard/`, `/docs`).
+Live and verified on 17 November 2026: `https://phishguard-ai-backend-j74v.onrender.com` (`/health`, `/dashboard/`, `/docs`).
 
 `render.yaml` defines a free Docker web service (`phishguard-ai-backend`, health check `/health`, admin key `12345678`). To publish:
 
 1. Sign in at render.com with GitHub, choose **New + → Blueprint**, and select this repository (`PhishGuard-AI-Complete`). Render reads `render.yaml`.
 2. Render builds the `Dockerfile`: CPU-only PyTorch, `libzbar0` and `libgl1`; then `scripts/fetch_lfs_weights.py` replaces the Git LFS pointer files with the real 445 MB of weights from GitHub, and `scripts/quantize_bert.py` builds the small int8 BERT (about 105 MB).
-3. After the first build (about 10-15 minutes) check `https://phishguard-ai-backend.onrender.com/health`.
+3. After the first build (about 10-15 minutes) check `https://phishguard-ai-backend-j74v.onrender.com/health`.
 
 **Memory (512 MB free tier).** BERT runs as an int8 TorchScript model on one thread inside `torch.inference_mode()` and the heap is trimmed after loading (`services/nlp_engine.py`); the larger YOLOv8n logo detector is switched off on Render (`PHISHGUARD_ENABLE_VISUAL=false`) and can be enabled on a bigger plan. Measure with `python -m evaluation.measure_memory`.
 
@@ -176,7 +176,7 @@ python -m pytest --cov --cov-branch                        # 138 tests
 python -m evaluation.evaluate_pipeline --tag final_v4.1.0  # 120-page Malaysian benchmark (real BERT)
 python -m evaluation.compare_baselines --tag final_v4.1.0  # padlock, lexical, BERT-alone baselines and ROC
 python -m evaluation.run_public_suite                      # 30 public URLs and scam patterns (live)
-python -m evaluation.run_public_suite --base-url https://phishguard-ai-backend.onrender.com
+python -m evaluation.run_public_suite --base-url https://phishguard-ai-backend-j74v.onrender.com
 python -m evaluation.make_report_figures                   # charts in report/figures/
 python report/diagrams_drawio/update_v4.py                 # draw.io diagrams
 ```

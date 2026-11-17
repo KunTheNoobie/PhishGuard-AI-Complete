@@ -7,7 +7,7 @@ pipeline the extension uses, with the real BERT model and live page fetching.
     # in-process, real models, from this computer's network
     python -m evaluation.run_public_suite
     # against a deployed server (e.g. the Render service)
-    python -m evaluation.run_public_suite --base-url https://phishguard-ai-backend.onrender.com
+    python -m evaluation.run_public_suite --base-url https://phishguard-ai-backend-j74v.onrender.com
 
 Results: evaluation/results/public_suite_<tag>/results.json and results.csv.
 A case passes when the verdict equals ``expect`` (``NOT_SAFE`` accepts

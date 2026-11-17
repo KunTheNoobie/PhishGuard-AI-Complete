@@ -2,7 +2,7 @@
 
 ## v4.1.1 — 17 November 2026
 
-- **Hosting moved to Render** (`https://phishguard-ai-backend.onrender.com`): `render.yaml` (free Docker web service), a new
+- **Hosting moved to Render** (`https://phishguard-ai-backend-j74v.onrender.com`): `render.yaml` (free Docker web service), a new
   `Dockerfile` (CPU PyTorch, `libzbar0`, `libgl1`, LFS-pointer download step, int8 BERT build). Hugging Face Space files
   (`app.py`, `packages.txt`, `deploy/`) removed. The extension defaults to the Render URL with the local server as fallback.
 - **Memory** — BERT served as an int8 TorchScript model (`scripts/quantize_bert.py`) on one thread under
