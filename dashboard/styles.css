@@ -227,3 +227,12 @@ tbody tr:hover td { background: rgba(59,130,246,.06); }
 .layer .bar { height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; margin-top: 4px; }
 .layer .bar span { display: block; height: 100%; border-radius: inherit; }
 .payload { background: #0d1526; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font: 12.5px/1.5 var(--mono); overflow-wrap: anywhere; max-height: 120px; overflow: auto; }
+
+/* File inputs: dark "Choose File" button (QR upload and analyzer screenshot) */
+input[type="file"]::file-selector-button,
+input[type="file"]::-webkit-file-upload-button {
+  background: #1e293b; color: #f1f5f9; font-weight: 500; font-family: inherit;
+  border: 1px solid #334155; border-radius: 6px; padding: 6px 12px; margin-right: 10px; cursor: pointer;
+}
+input[type="file"]::file-selector-button:hover,
+input[type="file"]::-webkit-file-upload-button:hover { background: #334155; }
