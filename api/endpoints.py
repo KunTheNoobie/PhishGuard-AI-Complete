@@ -50,7 +50,7 @@ router: Final[APIRouter] = APIRouter(
 async def analyze(payload: AnalyzeRequest, request: Request) -> dict[str, Any]:
     return await analyze_page(
         PageInput(url=payload.url, html=payload.dom_content or "", text=payload.text_content or "",
-                  screenshot=payload.screenshot, source="extension"),
+                  screenshot=payload.screenshot, source="extension", tls_error=payload.tls_error),
         request.app.state,
     )
 

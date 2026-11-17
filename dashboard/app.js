@@ -63,6 +63,7 @@ async function api(path, options = {}) {
     ...options,
   });
   if (res.status === 401) { showGate(); throw new Error("Please sign in."); }
+  if (res.ok) markOnline();
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const detail = data.detail;
@@ -99,17 +100,27 @@ function switchTab(name) {
 }
 document.querySelectorAll(".tab").forEach((b) => b.addEventListener("click", () => switchTab(b.dataset.tab)));
 
-/* ── Health indicator ── */
+/* ── Health indicator: "Online" whenever any call succeeded recently, so a slow scan never shows a false offline badge ── */
+let lastOk = 0;
+function markOnline() {
+  lastOk = Date.now();
+  $("healthDot").className = "status-dot ok";
+  if ($("healthText").textContent === "Connecting…" || $("healthText").textContent === "Backend unreachable") $("healthText").textContent = "Online";
+}
 async function loadHealth() {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10000);
   try {
-    const h = await (await fetch("/health")).json();
+    const h = await (await fetch("/health", { signal: controller.signal })).json();
     const m = h.models || {};
-    $("healthDot").className = "status-dot ok";
-    $("healthText").textContent = `v${h.version} · BERT ${m.bert_url_classifier ? "on" : "off"} · YOLO ${m.yolov8n_logo_detector ? "on" : "loading"}`;
+    markOnline();
+    $("healthText").textContent = `Online · v${h.version} · BERT ${m.bert_url_classifier ? "on" : "off"} · YOLO ${m.yolov8n_logo_detector ? "on" : "off"}`;
   } catch (_e) {
-    $("healthDot").className = "status-dot";
-    $("healthText").textContent = "Backend unreachable";
-  }
+    if (Date.now() - lastOk > 60000) {   // no successful call for a minute: now it is really offline
+      $("healthDot").className = "status-dot";
+      $("healthText").textContent = "Backend unreachable";
+    }
+  } finally { clearTimeout(timer); }
 }
 
 /* ══ Tab 1 — Overview ══ */

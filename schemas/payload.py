@@ -47,6 +47,8 @@ class AnalyzeRequest(BaseModel):
         description="Base64 or data-URL screenshot of the visible tab for the YOLOv8n logo check.",
     )
 
+    tls_error: Optional[str] = Field(None, max_length=80, pattern=r"^net::ERR_[A-Z_]+$", description="Certificate error reported by the browser, e.g. net::ERR_CERT_DATE_INVALID.")
+
     _url = field_validator("url")(_check_web_url)
 
     model_config = {

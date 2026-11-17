@@ -1,5 +1,17 @@
 # Changelog
 
+## v4.1.2 — 18 November 2026
+
+- **Extension** — results are kept per tab and per address (no cross-tab leaks); popup states "Scanning current page...",
+  "Own Dashboard (Skipped)" and "Browser internal / unreachable page (not scanned)"; `webNavigation` keeps the raw
+  `user@host` address so `@` disguises are blocked (R7) before the browser hides them; `net::ERR_CERT_*` errors are
+  recorded per tab and sent as `tls_error`, so the amber W1 certificate warning survives "Proceed"; address-only pre-scan
+  on `tabs.onUpdated` (loading); popup fits without a scrollbar; changing the server setting applies at once.
+- **API** — `POST /api/v1/analyze` accepts an optional `tls_error` (`net::ERR_...`).
+- **Dashboard** — the status pill turns Online after any successful call and the `/health` check waits up to 10 s, so slow
+  scans on Render never show a false "Backend unreachable".
+- 140 tests pass; report refreshed with new screenshots.
+
 ## v4.1.1 — 17 November 2026
 
 - **Hosting moved to Render** (`https://phishguard-ai-backend-j74v.onrender.com`): `render.yaml` (free Docker web service), a new

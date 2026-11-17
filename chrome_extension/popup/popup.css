@@ -79,7 +79,7 @@ body { padding: 10px 12px; line-height: 1.4; }
 header { margin-bottom: 8px; } header img { width: 28px; height: 28px; }
 .verdict { padding: 10px 12px; }
 .verdict h1 { margin: 6px 0 2px; font-size: 15px; }
-.explain { margin: 6px 0 0; font-size: 12.5px; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.explain { margin: 6px 0 0; font-size: 12.5px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .score { margin-top: 8px; }
 .checks { display: grid; grid-template-columns: 1fr 1fr; margin-top: 8px; }
 .checks .row { flex-direction: column; gap: 0; padding: 5px 10px; border-bottom: 1px solid #1c2740; }
@@ -89,3 +89,5 @@ header { margin-bottom: 8px; } header img { width: 28px; height: 28px; }
 .reasons-box { margin-top: 8px; } .reasons-box h2 { margin-bottom: 4px; }
 #reasons { gap: 4px; font-size: 12.5px; }
 .buttons { margin-top: 8px; } button { min-height: 32px; }
+
+.checks[hidden], .score[hidden] { display: none; }

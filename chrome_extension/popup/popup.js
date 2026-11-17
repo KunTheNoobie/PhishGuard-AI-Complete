@@ -12,6 +12,7 @@ const COLOR = { safe: "#22c55e", warning: "#f59e0b", dangerous: "#ef4444" };
 let activeTab = null;
 let current = null;
 let backendUrl = null;
+let ownHost = "";
 
 function setCheck(id, text, tone) {
   const node = $(id);
@@ -19,8 +20,23 @@ function setCheck(id, text, tone) {
   node.className = tone || "";
 }
 
+/** Fixed states shown instead of a verdict: scanning, own dashboard, browser pages. */
+function renderState(pill, headline, text, level) {
+  render(null);
+  $("verdict").className = "verdict " + (level || "neutral");
+  $("pill").className = "pill " + (level || "neutral");
+  $("pill").textContent = pill;
+  $("headline").textContent = headline;
+  $("explain").textContent = text;
+  $("host").textContent = activeTab && /^https?:/.test(activeTab.url || "") ? new URL(activeTab.url).hostname : "";
+  document.querySelector(".checks").hidden = true;
+  document.querySelector(".score").hidden = true;
+}
+
 function render(r) {
   current = r;
+  document.querySelector(".checks").hidden = false;
+  document.querySelector(".score").hidden = false;
   const level = r ? LEVEL[r.verdict] || "neutral" : "neutral";
   $("verdict").className = "verdict " + level;
   $("pill").className = "pill " + level;
@@ -73,13 +89,38 @@ function render(r) {
   $("report").title = accounts.length ? `Report ${accounts[0]}` : "Report an account shown on this page";
 }
 
-async function refresh() {
-  const result = await chrome.runtime.sendMessage({ type: "PG_GET_RESULT", tabId: activeTab.id });
-  render(result);
+const INTERNAL = /^(chrome|opera|edge|brave|vivaldi|about|chrome-error|chrome-extension|devtools|view-source|file):/i;
+let pollTimer = null;
+
+function isOwnPage(url) {
+  try {
+    const u = new URL(url);
+    return u.hostname === ownHost || ((u.hostname === "localhost" || u.hostname === "127.0.0.1") && u.port === "8000");
+  } catch (_e) { return false; }
+}
+
+async function refresh(tries = 0) {
+  clearTimeout(pollTimer);
+  const url = (activeTab && activeTab.url) || "";
+  if (!url || INTERNAL.test(url)) {
+    renderState("Not scanned", "Browser internal / unreachable page (not scanned)",
+      "PhishGuard checks websites that start with http:// or https://. Browser pages and error pages are not scanned.");
+    return;
+  }
+  if (isOwnPage(url)) {
+    renderState("Own Dashboard (Skipped)", "Own Dashboard (Skipped)", "This is PhishGuard's own dashboard, so it is not scanned.", "safe");
+    $("backend").querySelector(".dot").className = "dot online";
+    return;
+  }
+  const result = await chrome.runtime.sendMessage({ type: "PG_GET_RESULT", tabId: activeTab.id, url });
+  if (result) { render(result); return; }
+  renderState("Scanning…", "Scanning current page...", "The page is being checked. This takes a few seconds; the first check after a quiet period can take up to a minute.");
+  if (tries < 40) pollTimer = setTimeout(() => refresh(tries + 1), 1500);
 }
 
 async function loadSettings() {
-  const { settings, backend } = await chrome.runtime.sendMessage({ type: "PG_GET_SETTINGS" });
+  const { settings, backend, ownHost: own } = await chrome.runtime.sendMessage({ type: "PG_GET_SETTINGS" });
+  ownHost = own || "";
   $("mode").value = settings.mode;
   $("onlineUrl").value = settings.onlineUrl;
   $("localUrl").value = settings.localUrl;

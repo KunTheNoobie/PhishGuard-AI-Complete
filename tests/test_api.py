@@ -165,3 +165,14 @@ class TestHardening:
         assert (await test_client.get("/openapi.json")).json()["info"]["version"] == "4.1.0"
         assert (await test_client.get("/dashboard/")).status_code == 200
         assert (await test_client.get("/dashboard/sandbox.html")).status_code == 404
+
+
+class TestBrowserReportedTlsError:
+    async def test_certificate_error_from_the_browser_gives_a_warning(self, test_client):
+        r = await test_client.post("/api/v1/analyze", json={"url": "https://expired.example-test.org/", "tls_error": "net::ERR_CERT_DATE_INVALID"})
+        body = r.json()
+        assert r.status_code == 200 and body["verdict"] == "WARNING" and body["rule"] == "W1_TLS_CERTIFICATE"
+
+    async def test_malformed_tls_error_is_rejected(self, test_client):
+        r = await test_client.post("/api/v1/analyze", json={"url": "https://example.org/", "tls_error": "<script>"})
+        assert r.status_code == 422

@@ -6,7 +6,7 @@
   <p>A Manifest V3 browser extension and a FastAPI backend that combine a fine-tuned BERT URL classifier, URL canonicalisation, brand-impersonation profiling, page analysis, the connection's HTTPS status, DuitNow QR decoding and a Malaysian mule-account registry — and explain every verdict in plain language.</p>
 
   [![CI/CD Test Pipeline](https://github.com/KunTheNoobie/PhishGuard-AI-Complete/actions/workflows/test.yml/badge.svg)](https://github.com/KunTheNoobie/PhishGuard-AI-Complete/actions)
-  [![Tests: 138 Passed](https://img.shields.io/badge/Tests-138%20Passed-brightgreen)](https://github.com/KunTheNoobie/PhishGuard-AI-Complete)
+  [![Tests: 140 Passed](https://img.shields.io/badge/Tests-140%20Passed-brightgreen)](https://github.com/KunTheNoobie/PhishGuard-AI-Complete)
   [![Version](https://img.shields.io/badge/Version-v4.1.0-009688.svg?logo=fastapi&logoColor=white)](CHANGELOG.md)
   [![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue.svg?logo=python&logoColor=white)](https://python.org)
   [![Manifest V3](https://img.shields.io/badge/Chrome%20Extension-Manifest%20V3-4285F4?logo=googlechrome&logoColor=white)](https://developer.chrome.com/docs/extensions/mv3/intro/)
@@ -45,7 +45,7 @@ Baselines (F1 / false-positive)    padlock 0.775 / 0%   lexical 0.581 / 1.7%   B
 HTTPS scam pages (22)              PhishGuard 91% caught   padlock 0%
 Public URL suite (30 cases)        28 passed (2 hosts unreachable from the test network)
 Latency (CPU)                      BERT path p50 116 ms, p95 139 ms; trusted sites about 1 ms
-Automated tests                    138 passed, 81% statement + branch coverage
+Automated tests                    140 passed, 80% statement + branch coverage
 BERT hold-out (109,870 URLs)       accuracy 98.76%, F1 97.80%
 ```
 
@@ -172,7 +172,7 @@ The free tier sleeps after 15 minutes without traffic (the first request wakes i
 
 ```bash
 pip install -r requirements-dev.txt
-python -m pytest --cov --cov-branch                        # 138 tests
+python -m pytest --cov --cov-branch                        # 140 tests
 python -m evaluation.evaluate_pipeline --tag final_v4.1.0  # 120-page Malaysian benchmark (real BERT)
 python -m evaluation.compare_baselines --tag final_v4.1.0  # padlock, lexical, BERT-alone baselines and ROC
 python -m evaluation.run_public_suite                      # 30 public URLs and scam patterns (live)

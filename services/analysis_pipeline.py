@@ -54,6 +54,7 @@ class PageInput:
     source: str = "api"                   # extension | dashboard | qr | api
     fetch: bool = False                   # download the page server-side if no HTML was sent
     extra_accounts: list[str] = field(default_factory=list)
+    tls_error: str | None = None          # certificate error the browser reported (e.g. net::ERR_CERT_DATE_INVALID)
 
 
 def is_trusted_host(hostname: str) -> bool:
@@ -124,7 +125,7 @@ async def analyze_page(inp: PageInput, state: Any) -> dict[str, Any]:
     ))
 
     # 2. Live fetch (dashboard / QR only) --------------------------------------
-    html, text, tls_error, page_meta = inp.html or "", inp.text or "", None, {"fetched": False}
+    html, text, tls_error, page_meta = inp.html or "", inp.text or "", inp.tls_error, {"fetched": False}
     if inp.fetch and not html and not text:
         t = time.perf_counter()
         fetched = await fetch_page(requested.fetch_url)
