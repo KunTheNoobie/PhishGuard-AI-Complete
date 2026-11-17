@@ -1,5 +1,13 @@
 # Changelog
 
+## v4.1.4 — 18 November 2026
+
+- **URL Analyzer** — optional "Page Screenshot (YOLOv8n Logo Check)" upload (`screenshot_b64` on `/api/v1/dashboard/analyze`): a Maybank
+  screenshot on an unrelated address is blocked by rule `R8_VISUAL_BRAND_MISMATCH`. The logo detector stays off on Render (`render.yaml`)
+  and on locally via the new `start_local.bat`.
+- Logo-mismatch messages name the brand that was seen ("Copy of the Maybank website").
+- **Popup** — 400 px wide with balanced button padding. 145 tests pass (81% coverage); report refreshed (216 pages).
+
 ## v4.1.3 — 18 November 2026
 
 - **Certificate check by the server** (`services/cert_check.py`): for an https address that is not trusted and scores BERT >= 0.80,

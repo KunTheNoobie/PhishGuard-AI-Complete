@@ -147,6 +147,9 @@
             <div class="field"><label for="anAccount">Account number to check (optional)</label><input class="input mono" id="anAccount" placeholder="1122 3344 5566" maxlength="40"></div>
             <label class="check"><input type="checkbox" id="anFetch" checked> Fetch the live page</label>
           </div>
+          <div class="field" style="margin-top:12px"><label for="anShot">Page Screenshot (YOLOv8n Logo Check) — optional, PNG or JPG</label>
+            <input class="input" id="anShot" type="file" accept="image/png,image/jpeg">
+            <span class="muted" id="anShotNote">Upload a screenshot of a page to check its logo. The logo detector runs on a local server (start_local.bat); the free Render server has it switched off.</span></div>
           <div class="field" style="margin-top:12px"><label for="anText">Page text instead of fetching (optional)</label><textarea class="input" id="anText" placeholder="Paste the text of a message or page here" maxlength="100000"></textarea></div>
           <div class="actions" style="margin-top:14px"><button class="btn primary" id="anSubmit" type="submit">Analyze</button><span class="muted" id="anStatus"></span></div>
         </form>

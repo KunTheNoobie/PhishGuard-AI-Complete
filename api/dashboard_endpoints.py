@@ -208,6 +208,7 @@ async def analyze(payload: DashboardAnalyzeRequest, request: Request) -> dict[st
             url=payload.url,
             text=payload.page_text or "",
             source="dashboard",
+            screenshot=payload.screenshot_b64,
             fetch=payload.fetch_page and not payload.page_text,
             extra_accounts=[payload.account_number] if payload.account_number else [],
         ),

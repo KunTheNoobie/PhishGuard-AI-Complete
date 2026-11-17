@@ -100,3 +100,11 @@ header { margin-bottom: 6px; }
 .buttons { display: flex; flex-wrap: nowrap; align-items: center; gap: 6px; margin-top: 8px; }
 .buttons button { flex: 1 1 0; min-width: 0; height: 34px; min-height: 34px; padding: 0 6px; font-size: 12.5px; line-height: 1; }
 .buttons #openSettings { flex: 0 0 34px; width: 34px; padding: 0; font-size: 16px; }
+
+/* v4.1.4: slightly wider popup and balanced button padding */
+body { width: 396px; }
+.buttons button { padding: 8px 11px; white-space: nowrap; }
+.buttons #openSettings { flex: 0 0 38px; width: 38px; padding: 8px 0; }
+body { width: 400px; }
+.buttons button { flex: 1 1 auto; font-size: 12px; padding: 8px 11px; }
+.buttons #openSettings { flex: 0 0 38px; }

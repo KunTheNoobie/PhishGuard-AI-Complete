@@ -95,6 +95,7 @@ class DashboardAnalyzeRequest(BaseModel):
     page_text: Optional[str] = Field(None, max_length=100_000, description="Optional page text to analyse instead of fetching.")
     account_number: Optional[str] = Field(None, max_length=40, description="Optional account number to check.")
     fetch_page: bool = Field(True, description="Download the live page when no text is given.")
+    screenshot_b64: Optional[str] = Field(None, max_length=8_000_000, description="Optional page screenshot (base64 or data URL) for the YOLOv8n logo check; used when the logo detector is enabled.")
 
     _url = field_validator("url")(_check_web_url)
 

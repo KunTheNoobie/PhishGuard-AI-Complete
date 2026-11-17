@@ -176,3 +176,26 @@ class TestBrowserReportedTlsError:
     async def test_malformed_tls_error_is_rejected(self, test_client):
         r = await test_client.post("/api/v1/analyze", json={"url": "https://example.org/", "tls_error": "<script>"})
         assert r.status_code == 422
+
+
+class TestAnalyzerScreenshot:
+    async def test_uploaded_screenshot_reaches_the_logo_detector(self, dashboard):
+        from schemas.visual import BoundingBox, DetectedLogo
+
+        class FakeDetector:
+            def detect(self, screenshot):
+                assert screenshot.startswith("data:image/png;base64,")
+                return [DetectedLogo(brand="Maybank", confidence=0.96, bbox=BoundingBox(x1=1, y1=1, x2=50, y2=50))], None
+
+        dashboard._transport.app.state.visual_detector = FakeDetector()
+        shot = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+        r = await dashboard.post("/api/v1/dashboard/analyze", json={
+            "url": "https://rewards-portal.example/login", "page_text": "Enter your password to continue", "screenshot_b64": shot})
+        body = r.json()
+        visual = body["visual"]
+        assert r.status_code == 200 and visual["status"] == "ok" and visual["detected_logos"][0]["brand"] == "Maybank"
+        assert body["verdict"] == "BLOCK_RENDER"
+
+    async def test_no_screenshot_means_the_logo_check_is_skipped(self, dashboard):
+        body = (await dashboard.post("/api/v1/dashboard/analyze", json={"url": "https://example.org/", "page_text": "hello"})).json()
+        assert body["visual"] is None

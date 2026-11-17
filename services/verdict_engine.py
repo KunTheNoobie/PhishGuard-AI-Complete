@@ -168,6 +168,14 @@ def _userinfo_spoof(c: CanonicalURL) -> bool:
     return bool(info) and ("." in info or any(b in info for b in _BRAND_STRINGS))
 
 
+def _brand_name(brand_result: dict[str, Any], visual_result: dict[str, Any] | None) -> str:
+    """The brand to name in a message: the one in the address, else the one whose logo was seen, else a generic phrase."""
+    if brand_result.get("target_brand"):
+        return brand_result["target_brand"]
+    logos = (visual_result or {}).get("detected_logos") or []
+    return logos[0]["brand"] if logos else "protected brand"
+
+
 def collect_signals(
     *,
     canon: CanonicalURL,
@@ -219,7 +227,7 @@ def _reasons(
     def add(sev: str, text: str) -> None:
         out.append((rank[sev], sev, text))
 
-    brand = brand_result.get("target_brand") or "a protected brand"
+    brand = _brand_name(brand_result, visual_result)
     host = canon.hostname
     p_phish = float(bert_result.get("phishing_probability", 0.0))
 
@@ -327,7 +335,7 @@ def decide(
         brand_result=brand_result, heuristic_result=heuristic_result, visual_result=visual_result,
         sanitized_text=sanitized_text, raw_content=raw_content, tls_error=tls_error,
     )
-    brand = brand_result.get("target_brand") or "a protected brand"
+    brand = _brand_name(brand_result, visual_result)
     any_credential = s["credential_form"] or s["credential_text"]
 
     def make(verdict: str, rule: str | None, score: float) -> Verdict:

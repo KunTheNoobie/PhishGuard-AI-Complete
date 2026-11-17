@@ -385,15 +385,29 @@ const PRESETS = [
 PRESETS.forEach(([label, p]) => $("presets").append(el("button", { className: "chip", type: "button", onclick: () => {
   $("anUrl").value = p.url; $("anText").value = p.text || ""; $("anAccount").value = p.account || "";
   $("anFetch").checked = p.fetch !== false;
+  $("anShot").value = "";
   $("analyzeForm").requestSubmit();
 } }, label)));
 EXAMPLES.forEach((u) => $("examples").append(el("button", { className: "chip", type: "button", onclick: () => { $("anUrl").value = u; } }, u.replace(/^https?:\/\//, ""))));
+function readScreenshot() {
+  const file = $("anShot").files[0];
+  if (!file) return Promise.resolve(null);
+  if (file.size > 6 * 1024 * 1024) return Promise.reject(new Error("Screenshot is larger than 6 MB."));
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);   // data URL: base64 image
+    reader.onerror = () => reject(new Error("Could not read the screenshot."));
+    reader.readAsDataURL(file);
+  });
+}
 $("analyzeForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const btn = $("anSubmit");
   btn.disabled = true; $("anStatus").textContent = "Fetching the page and running the models…";
   try {
+    const screenshot_b64 = await readScreenshot();
     const r = await api("/analyze", { method: "POST", body: JSON.stringify({
+      screenshot_b64,
       url: $("anUrl").value.trim(),
       page_text: $("anText").value.trim() || null,
       account_number: $("anAccount").value.trim() || null,
