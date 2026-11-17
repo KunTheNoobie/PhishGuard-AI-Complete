@@ -161,6 +161,9 @@ class VisualLogoDetector:
                 return None
 
             self._model = YOLO(str(model_file))
+            from services.nlp_engine import release_memory
+
+            release_memory()
             self._load_error = None
             logger.info("Loaded visual YOLO model from %s", model_file)
             return self._model
@@ -171,11 +174,14 @@ class VisualLogoDetector:
             return [], self._load_error
 
         image = _decode_screenshot(screenshot)
-        with self._inference_lock:
+        import torch
+
+        with self._inference_lock, torch.inference_mode():
             results = model.predict(
                 source=image,
                 conf=self._confidence_threshold,
                 verbose=False,
+                device="cpu",
             )
 
         detections: list[DetectedLogo] = []

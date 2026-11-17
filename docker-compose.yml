@@ -5,7 +5,7 @@ services:
     container_name: phishguard-ai
     restart: unless-stopped
     ports:
-      - "8000:7860"
+      - "8000:10000"
     environment:
       - PHISHGUARD_API_KEY=12345678
       - PHISHGUARD_ADMIN_KEY=12345678

@@ -13,7 +13,7 @@ Creates the FastAPI application:
   interactive API documentation (``/docs``) and a health probe (``/health``).
 
 Run locally:   uvicorn main:app --host 127.0.0.1 --port 8000
-In Docker:     see Dockerfile (Hugging Face Spaces listens on port 7860)
+In Docker:     see Dockerfile (Render sets PORT; default 10000)
 
 Architecture Layer : Composition Root
 """
@@ -140,8 +140,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         response = await call_next(request)
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
-        # frame-ancestors (not X-Frame-Options) so the Hugging Face Space page can embed the app.
-        response.headers.setdefault("Content-Security-Policy", "frame-ancestors 'self' https://huggingface.co https://*.huggingface.co")
+        response.headers.setdefault("Content-Security-Policy", "frame-ancestors 'self'")
         response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
         response.headers.setdefault("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
         if request.url.scheme == "https":

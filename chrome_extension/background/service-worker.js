@@ -14,7 +14,7 @@
  */
 "use strict";
 
-const ONLINE_URL = "https://kunthenoobie-phishguard-backend.hf.space";
+const ONLINE_URL = "https://phishguard-ai-backend.onrender.com";
 const LOCAL_URL = "http://127.0.0.1:8000";
 const DEFAULT_API_KEY = "12345678";
 const TEXT_TIMEOUT_MS = 8000;      // page analysis without a screenshot

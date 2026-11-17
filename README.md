@@ -55,7 +55,7 @@ BERT hold-out (109,870 URLs)       accuracy 98.76%, F1 97.80%
 
 ### 1. Browser extension (`chrome_extension/`)
 - Scans **every** `http://` and `https://` page, not only banking sites.
-- **Online-first:** uses `https://kunthenoobie-phishguard-backend.hf.space` and falls back to the local server
+- **Online-first:** uses `https://phishguard-ai-backend.onrender.com` and falls back to the local server
   `http://127.0.0.1:8000`. The popup's settings choose *Automatic*, *Online only* or *Local only*, hold both server
   addresses and the API key, and the popup shows which server answered.
 - Shadow-DOM block page and amber HTTP banner, so the site's own CSS cannot hide or restyle them.
@@ -150,18 +150,19 @@ with long random values for any real deployment:
 
 ---
 
-## Online deployment (Hugging Face Space, HTTPS)
+## Online deployment (Render, free HTTPS web service)
 
-Live: `https://kunthenoobie-phishguard-backend.hf.space` (`/health`, `/dashboard/`, `/docs`, status card at `/hf`).
+Target address: `https://phishguard-ai-backend.onrender.com` (`/health`, `/dashboard/`, `/docs`).
 
-The Space uses the **Gradio SDK** (`app.py` mounts the FastAPI app and a status card; `packages.txt` installs `libzbar0` and `libgl1`; the Space card is `deploy/hf_space_README.txt`). To publish an update:
+`render.yaml` defines a free Docker web service (`phishguard-ai-backend`, health check `/health`, admin key `12345678`). To publish:
 
-```powershell
-$env:HF_TOKEN = "hf_..."     # a WRITE token; it is sent as an HTTP header and never saved to a file
-powershell -ExecutionPolicy Bypass -File deploy\deploy_hf_space.ps1
-```
+1. Sign in at render.com with GitHub, choose **New + → Blueprint**, and select this repository (`PhishGuard-AI-Complete`). Render reads `render.yaml`.
+2. Render builds the `Dockerfile`: CPU-only PyTorch, `libzbar0` and `libgl1`; then `scripts/fetch_lfs_weights.py` replaces the Git LFS pointer files with the real 445 MB of weights from GitHub, and `scripts/quantize_bert.py` builds the small int8 BERT (about 105 MB).
+3. After the first build (about 10-15 minutes) check `https://phishguard-ai-backend.onrender.com/health`.
 
-The free tier sleeps when idle (the first request wakes it) and resets its SQLite file on restart; the demonstration dataset is reloaded automatically on every start. `docker compose up` runs the same service locally.
+**Memory (512 MB free tier).** BERT runs as an int8 TorchScript model on one thread inside `torch.inference_mode()` and the heap is trimmed after loading (`services/nlp_engine.py`); the larger YOLOv8n logo detector is switched off on Render (`PHISHGUARD_ENABLE_VISUAL=false`) and can be enabled on a bigger plan. Measure with `python -m evaluation.measure_memory`.
+
+The free tier sleeps after 15 minutes without traffic (the first request wakes it in about a minute) and resets its SQLite file on restart; the demonstration dataset is reloaded automatically on every start.
 
 **Demonstration dataset.** An empty database is filled at start-up from `database/demo_threat_intel.json`: 45 curated mule-account records, 30 recent scan-log rows (real pipeline verdicts for URLs from the OpenPhish community feed, public test sites, a mule page and a QR code) and four pending reports. Set `PHISHGUARD_SEED_DEMO=false` to disable it; `python -m evaluation.build_demo_seed` rebuilds it.
 
@@ -175,7 +176,7 @@ python -m pytest --cov --cov-branch                        # 138 tests
 python -m evaluation.evaluate_pipeline --tag final_v4.1.0  # 120-page Malaysian benchmark (real BERT)
 python -m evaluation.compare_baselines --tag final_v4.1.0  # padlock, lexical, BERT-alone baselines and ROC
 python -m evaluation.run_public_suite                      # 30 public URLs and scam patterns (live)
-python -m evaluation.run_public_suite --base-url https://kunthenoobie-phishguard-backend.hf.space
+python -m evaluation.run_public_suite --base-url https://phishguard-ai-backend.onrender.com
 python -m evaluation.make_report_figures                   # charts in report/figures/
 python report/diagrams_drawio/update_v4.py                 # draw.io diagrams
 ```
@@ -199,7 +200,7 @@ Results are written to `evaluation/results/` (`final_v4.1.0`, `ablation_no_bert_
 | Registry integrity | User reports wait in a `PENDING` queue; nothing is added to the registry without an analyst |
 | Privacy | The scan log stores scheme, host and path only — never query strings or page content |
 | CSV export | Cells starting with `=`, `+`, `-` or `@` are neutralised |
-| Response headers | `X-Content-Type-Options`, CSP `frame-ancestors`, `Referrer-Policy`, `Permissions-Policy`, HSTS over HTTPS |
+| Response headers | `X-Content-Type-Options`, CSP `frame-ancestors 'self'`, `Referrer-Policy`, `Permissions-Policy`, HSTS over HTTPS |
 
 **Known limitations.** The mule registry holds demonstration accounts (Semakmule has no public API). The BERT model
 was trained on English-language URLs and over-scores some well-known domains; corroboration keeps those pages
@@ -221,7 +222,7 @@ dashboard/              four-tab SOC dashboard (HTML, CSS, JS)
 chrome_extension/       Manifest V3 extension (service worker, content script, popup)
 evaluation/             benchmark, baselines, public suite, figures and results
 tests/                  pytest suite
-deploy/                 Hugging Face Space deployment
+render.yaml, Dockerfile  Render deployment (scripts/ holds the weight fetch and int8 build)
 report/                 dissertation, figures and draw.io diagram sources
 ```
 

@@ -1,0 +1,11 @@
+venv/
+.git/
+report/
+evaluation/
+tests/
+visual_identity/data/
+visual_identity/runs/
+phishguard_custom_model/checkpoint-*/
+phishguard_custom_model/bert_int8.ts
+*.db*
+__pycache__/

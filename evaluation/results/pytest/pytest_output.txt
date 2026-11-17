@@ -158,4 +158,4 @@ tests/test_api.py::TestAnalysisApi::test_requires_api_key
     if asyncio.iscoroutinefunction(func):
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-======================= 138 passed, 6 warnings in 6.57s =======================
+======================= 138 passed, 6 warnings in 4.92s =======================
