@@ -1,0 +1,252 @@
+{
+  "tag": "ablation_no_bert_v4.0.0",
+  "app_version": "4.0.0",
+  "dataset": "malaysia_eval_v1.jsonl",
+  "n_samples": 120,
+  "n_malicious": 60,
+  "n_legitimate": 60,
+  "malicious_threshold": 0.75,
+  "device": "cpu",
+  "bert_signal_enabled": false,
+  "pipeline": {
+    "overall": {
+      "tp": 52,
+      "fp": 0,
+      "fn": 8,
+      "tn": 60,
+      "n": 120,
+      "accuracy": 0.9333,
+      "precision": 1.0,
+      "recall": 0.8667,
+      "f1": 0.9286,
+      "false_positive_rate": 0.0,
+      "false_negative_rate": 0.1333
+    },
+    "dev": {
+      "tp": 26,
+      "fp": 0,
+      "fn": 4,
+      "tn": 30,
+      "n": 60,
+      "accuracy": 0.9333,
+      "precision": 1.0,
+      "recall": 0.8667,
+      "f1": 0.9286,
+      "false_positive_rate": 0.0,
+      "false_negative_rate": 0.1333
+    },
+    "holdout": {
+      "tp": 26,
+      "fp": 0,
+      "fn": 4,
+      "tn": 30,
+      "n": 60,
+      "accuracy": 0.9333,
+      "precision": 1.0,
+      "recall": 0.8667,
+      "f1": 0.9286,
+      "false_positive_rate": 0.0,
+      "false_negative_rate": 0.1333
+    },
+    "per_category": {
+      "L1_official_portal": {
+        "n": 14,
+        "correct": 14,
+        "blocked": 0,
+        "warned": 0,
+        "accuracy": 1.0
+      },
+      "L2_benign_brand_mention": {
+        "n": 20,
+        "correct": 20,
+        "blocked": 0,
+        "warned": 0,
+        "accuracy": 1.0
+      },
+      "L3_general_benign": {
+        "n": 14,
+        "correct": 14,
+        "blocked": 0,
+        "warned": 0,
+        "accuracy": 1.0
+      },
+      "L4_benign_with_accounts": {
+        "n": 12,
+        "correct": 12,
+        "blocked": 0,
+        "warned": 0,
+        "accuracy": 1.0
+      },
+      "P1_bank_lookalike": {
+        "n": 14,
+        "correct": 14,
+        "blocked": 14,
+        "warned": 0,
+        "accuracy": 1.0
+      },
+      "P2_bm_manglish_lure": {
+        "n": 14,
+        "correct": 13,
+        "blocked": 13,
+        "warned": 1,
+        "accuracy": 0.9286
+      },
+      "P3_mule_account": {
+        "n": 12,
+        "correct": 12,
+        "blocked": 12,
+        "warned": 0,
+        "accuracy": 1.0
+      },
+      "P4_ewallet_brand": {
+        "n": 10,
+        "correct": 10,
+        "blocked": 10,
+        "warned": 0,
+        "accuracy": 1.0
+      },
+      "P5_evasive": {
+        "n": 10,
+        "correct": 3,
+        "blocked": 3,
+        "warned": 1,
+        "accuracy": 0.3
+      }
+    }
+  },
+  "rule_histogram": {
+    "H1_HTTP_SENSITIVE_FORM": 2,
+    "H2_INSECURE_HTTP": 2,
+    "R1_MULE_REGISTRY": 12,
+    "R2_BRAND_IN_HOSTNAME": 28,
+    "R3_LOOKALIKE_DOMAIN": 5,
+    "R4_BRAND_CLONE": 3,
+    "R5_COERCIVE_CREDENTIAL_REQUEST": 2
+  },
+  "bert_only": {
+    "composite": {
+      "tp": 60,
+      "fp": 60,
+      "fn": 0,
+      "tn": 0,
+      "n": 120,
+      "accuracy": 0.5,
+      "precision": 0.5,
+      "recall": 1.0,
+      "f1": 0.6667,
+      "false_positive_rate": 1.0,
+      "false_negative_rate": 0.0,
+      "threshold": 0.75,
+      "roc_auc": 0.7037
+    },
+    "url_raw": {
+      "tp": 56,
+      "fp": 52,
+      "fn": 4,
+      "tn": 8,
+      "n": 120,
+      "accuracy": 0.5333,
+      "precision": 0.5185,
+      "recall": 0.9333,
+      "f1": 0.6667,
+      "false_positive_rate": 0.8667,
+      "false_negative_rate": 0.0667,
+      "threshold": 0.75,
+      "roc_auc": 0.7596
+    },
+    "url_stripped": {
+      "tp": 53,
+      "fp": 26,
+      "fn": 7,
+      "tn": 34,
+      "n": 120,
+      "accuracy": 0.725,
+      "precision": 0.6709,
+      "recall": 0.8833,
+      "f1": 0.7626,
+      "false_positive_rate": 0.4333,
+      "false_negative_rate": 0.1167,
+      "threshold": 0.75,
+      "roc_auc": 0.8599
+    }
+  },
+  "latency_ms": {
+    "note": "In-process ASGI call, single client, CPU inference; excludes network.",
+    "all_requests": {
+      "n": 120,
+      "mean": 1.98,
+      "p50": 1.35,
+      "p95": 2.3,
+      "max": 69.66
+    },
+    "bert_path": {
+      "n": 101,
+      "mean": 2.16,
+      "p50": 1.41,
+      "p95": 2.41
+    },
+    "whitelist_bypass": {
+      "n": 19,
+      "mean": 1.02,
+      "p50": 0.99
+    }
+  },
+  "misclassified": [
+    {
+      "id": "MY-085",
+      "category": "P2_bm_manglish_lure",
+      "label": 1,
+      "verdict": "WARNING",
+      "url": "http://mahkamah-notis-rasmi.work/kes"
+    },
+    {
+      "id": "MY-111",
+      "category": "P5_evasive",
+      "label": 1,
+      "verdict": "SAFE",
+      "url": "https://secure-portal-update.com/my/auth"
+    },
+    {
+      "id": "MY-112",
+      "category": "P5_evasive",
+      "label": 1,
+      "verdict": "SAFE",
+      "url": "https://customer-care-desk.net/verify"
+    },
+    {
+      "id": "MY-116",
+      "category": "P5_evasive",
+      "label": 1,
+      "verdict": "SAFE",
+      "url": "https://docs.google.com/forms/d/e/1FAIpQLSfakeformid/viewform"
+    },
+    {
+      "id": "MY-117",
+      "category": "P5_evasive",
+      "label": 1,
+      "verdict": "WARNING",
+      "url": "http://form-submit-online.site/m2u"
+    },
+    {
+      "id": "MY-118",
+      "category": "P5_evasive",
+      "label": 1,
+      "verdict": "SAFE",
+      "url": "https://hr-payroll-notice.com/payslip"
+    },
+    {
+      "id": "MY-119",
+      "category": "P5_evasive",
+      "label": 1,
+      "verdict": "SAFE",
+      "url": "https://smart-invest-daily.com/join"
+    },
+    {
+      "id": "MY-120",
+      "category": "P5_evasive",
+      "label": 1,
+      "verdict": "SAFE",
+      "url": "https://parcel-redelivery-my.com/pay"
+    }
+  ]
+}

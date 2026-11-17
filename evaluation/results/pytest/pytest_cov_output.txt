@@ -4,26 +4,23 @@ rootdir: C:\Users\yiler\Downloads\Y3S1 & Y3S2 BMCS3404 Project I & BMCS3414 Proj
 configfile: pytest.ini
 testpaths: tests
 plugins: anyio-4.14.0, locust-2.44.4, asyncio-1.4.0, cov-7.1.0
-asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
-collected 198 items
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 136 items
 
-tests\test_endpoints.py .........................                        [ 12%]
-tests\test_enhancements.py ............................................. [ 35%]
-.                                                                        [ 35%]
-tests\test_mule_reports.py ............                                  [ 41%]
-tests\test_mule_scanner.py ..............                                [ 48%]
-tests\test_nlp_engine.py .........                                       [ 53%]
-tests\test_repository.py ........                                        [ 57%]
-tests\test_sanitizer.py .............                                    [ 64%]
-tests\test_security.py ....................                              [ 74%]
-tests\test_verdict_engine.py ........................................... [ 95%]
-                                                                         [ 95%]
-tests\test_visual.py ........                                            [100%]
+tests\test_api.py .................................                      [ 24%]
+tests\test_mule_and_qr.py ...........................                    [ 44%]
+tests\test_sanitizer.py .............                                    [ 53%]
+tests\test_support_modules.py .........                                  [ 60%]
+tests\test_url_and_brand.py .............................                [ 81%]
+tests\test_verdict_engine.py .........................                   [100%]
 
 ============================== warnings summary ===============================
-tests/test_endpoints.py::TestHealthEndpoint::test_health_returns_200
-tests/test_endpoints.py::TestHealthEndpoint::test_health_returns_200
-tests/test_endpoints.py::TestHealthEndpoint::test_health_returns_200
+tests/test_api.py::TestAnalysisApi::test_requires_api_key
+tests/test_api.py::TestAnalysisApi::test_requires_api_key
+tests/test_api.py::TestAnalysisApi::test_requires_api_key
+tests/test_api.py::TestAnalysisApi::test_requires_api_key
+tests/test_api.py::TestAnalysisApi::test_requires_api_key
+tests/test_api.py::TestAnalysisApi::test_requires_api_key
   C:\Users\yiler\Downloads\Y3S1 & Y3S2 BMCS3404 Project I & BMCS3414 Project II\PhishGuard-AI-Complete\venv\Lib\site-packages\slowapi\extension.py:720: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
     if asyncio.iscoroutinefunction(func):
 
@@ -31,50 +28,36 @@ tests/test_endpoints.py::TestHealthEndpoint::test_health_returns_200
 =============================== tests coverage ================================
 _______________ coverage: platform win32, python 3.14.3-final-0 _______________
 
-Name                              Stmts   Miss Branch BrPart  Cover
--------------------------------------------------------------------
-api\dashboard_endpoints.py          850    138    144     31    78%
-api\endpoints.py                    113     16     22      6    84%
-api\visual.py                        24      5      2      0    81%
-core\config.py                       36      2      0      0    94%
-core\rate_limit.py                    7      0      0      0   100%
-core\security.py                     46      3     18      3    91%
-database\init_db.py                  37      2      8      1    89%
-database\repository.py               71      1     14      1    98%
-main.py                             151     81     22      1    42%
-schemas\payload.py                   30      0      8      1    97%
-schemas\response.py                  48      0      0      0   100%
-schemas\visual.py                    21      0      0      0   100%
-services\batch_inspector.py          72      8     16      7    83%
-services\brand_profiler.py           60      1     30      1    98%
-services\cache_service.py            34      2      6      1    92%
-services\db_maintenance.py           63     12     12      5    77%
-services\domain_utils.py             40      4     14      2    89%
-services\heuristic_engine.py         59      9     16      2    85%
-services\mitre_mapper.py              9      0      2      0   100%
-services\mule_scanner.py             69      4     32      5    91%
-services\multi_vector_scorer.py      35      3      8      1    91%
-services\nlp_engine.py               58     26      6      0    56%
-services\nsrc_bridge.py              37     12      8      1    62%
-services\playbook_engine.py          53     18     10      3    60%
-services\qr_scanner.py               61      5     30      5    87%
-services\quishing_scanner.py         66      8     24      8    82%
-services\red_team_simulator.py       24      3      2      1    85%
-services\sanitizer.py                19      2      4      0    91%
-services\siem_exporter.py            60      4     18      0    95%
-services\ssl_analyzer.py             50     19      8      2    60%
-services\stix_exporter.py            31      4      4      1    86%
-services\threat_feed_sync.py         29      4      8      1    76%
-services\typosquat_engine.py         36      2     16      1    94%
-services\verdict_engine.py           76      3     26      2    95%
-services\visual_detector.py         151     82     56      4    44%
-services\visual_sandbox.py           43     21     24      1    37%
-services\webhook_notifier.py         47     33     12      2    27%
-services\xai_engine.py               48      5     26      3    89%
-services\yara_generator.py           24      0     12      2    94%
--------------------------------------------------------------------
-TOTAL                              2788    542    668    105    77%
+Name                            Stmts   Miss Branch BrPart  Cover
+-----------------------------------------------------------------
+api\dashboard_endpoints.py         89      2     10      1    97%
+api\endpoints.py                   28      0      0      0   100%
+core\brands.py                     11      0      4      0   100%
+core\config.py                     43      2      0      0    95%
+core\rate_limit.py                  7      0      0      0   100%
+core\security.py                   46      5     18      5    84%
+database\init_db.py                28      8      4      0    75%
+database\repository.py             82      2     14      4    94%
+main.py                            90     26     12      1    66%
+schemas\payload.py                 43      3      6      1    88%
+schemas\response.py                56      0      0      0   100%
+schemas\visual.py                  16      0      0      0   100%
+services\analysis_pipeline.py     163     41     56     10    70%
+services\brand_profiler.py         67      1     36      1    98%
+services\cache_service.py          34      0      6      0   100%
+services\domain_utils.py           28      1     12      1    95%
+services\heuristic_engine.py       36      1     16      1    96%
+services\mule_scanner.py           61      4     28      4    91%
+services\nlp_engine.py             43     25      2      0    40%
+services\page_fetcher.py           86     34     24      5    54%
+services\qr_payload.py             75      8     32      9    84%
+services\sanitizer.py              19      2      4      0    91%
+services\url_canonicalizer.py     146      7     48      5    94%
+services\verdict_engine.py        181      3     94      1    99%
+services\visual_detector.py       153     94     56      6    37%
+-----------------------------------------------------------------
+TOTAL                            1631    269    482     55    81%
 
 5 empty files skipped.
 Coverage JSON written to file evaluation/results/coverage/coverage.json
-====================== 198 passed, 3 warnings in 12.76s =======================
+====================== 136 passed, 6 warnings in 10.90s =======================

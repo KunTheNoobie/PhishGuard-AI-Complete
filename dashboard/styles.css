@@ -65,6 +65,7 @@ main { max-width: 1280px; margin: 0 auto; padding: 28px; }
 
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; min-width: 0; }
 .card + .card, .grid + .card, .card + .grid { margin-top: 16px; }
+.grid > .card { margin-top: 0; }   /* cards inside a grid align on the grid gap only */
 .card h2 { margin: 0 0 4px; font-size: 15px; }
 .card .sub { margin: 0 0 14px; color: var(--muted); font-size: 13px; }
 .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }

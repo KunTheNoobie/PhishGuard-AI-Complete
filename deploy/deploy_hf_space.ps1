@@ -26,8 +26,11 @@ if (Test-Path $work) { Remove-Item -Recurse -Force $work }
 git clone "https://huggingface.co/spaces/$Space" $work
 if ($LASTEXITCODE -ne 0) { throw "Could not clone the Space. Create it first (see the notes at the top of this script)." }
 
-# Make sure the model files are real weights, not Git LFS pointers.
-git -C $repo lfs pull
+# The model weights are not in GitHub (too large); they must exist in this folder.
+$weights = Join-Path $repo "phishguard_custom_model\model.safetensors"
+if (-not (Test-Path $weights) -or (Get-Item $weights).Length -lt 100MB) {
+  throw "phishguard_custom_model\model.safetensors is missing. Copy the trained model folder here first."
+}
 
 $items = @("main.py", "requirements.txt", "Dockerfile", "api", "core", "database", "schemas", "services",
            "dashboard", "phishguard_custom_model\config.json", "phishguard_custom_model\model.safetensors",

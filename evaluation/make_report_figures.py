@@ -1,5 +1,5 @@
 """
-PhishGuard-AI â€” Dissertation Figure Generator (300 DPI, unified style).
+PhishGuard-AI — Dissertation Figure Generator (300 DPI, unified style).
 ========================================================================
 
 Generates every quantitative chart of the dissertation into ``report/figures/``
@@ -8,7 +8,7 @@ drawn here: they are draw.io sources in ``report/diagrams_drawio/`` (exported to
 ``report/figures/`` at 300 DPI).  Nothing is hand-edited.
 
 Prerequisites (all committed or reproducible):
-    evaluation/results/{baseline_v3.0.0, final_v3.2.0, ablation_no_bert_v3.2.0}/
+    evaluation/results/{baseline_v3.0.0, final_v4.0.0, ablation_no_bert_v4.0.0}/
     evaluation/results/kaggle_holdout/metrics.json
     evaluation/results/components/metrics.json
     evaluation/results/locust/*.csv
@@ -42,7 +42,7 @@ RESULTS = ROOT / "evaluation" / "results"
 OUT = ROOT / "report" / "figures"
 
 
-# â”€â”€ data loaders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── data loaders ──────────────────────────────────────────────────────────────
 
 def rows(tag: str) -> list[dict]:
     return list(csv.DictReader((RESULTS / tag / "per_sample.csv").open(encoding="utf-8")))
@@ -83,7 +83,7 @@ def cm_from(rows_, pred_key="pipeline_pred", score_key=None, thr=0.75):
     return np.array([[tn, fp], [fn, tp]])
 
 
-# â”€â”€ chart helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── chart helpers ─────────────────────────────────────────────────────────────
 
 def draw_cm(ax, cm, title, cmap_color):
     from matplotlib.colors import LinearSegmentedColormap
@@ -104,14 +104,14 @@ def draw_cm(ax, cm, title, cmap_color):
     ax.tick_params(length=0)
 
 
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-# Chapter 2 â€” trade-off chart
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ==============================================================================
+# Chapter 2 — trade-off chart
+# ==============================================================================
 
 def tradeoff(path):
     apply_style()
     comp = json.loads((RESULTS / "components" / "metrics.json").read_text(encoding="utf-8"))
-    base, fin, abl = metrics("baseline_v3.0.0"), metrics("final_v3.2.0"), metrics("ablation_no_bert_v3.2.0")
+    base, fin, abl = metrics("baseline_v3.0.0"), metrics("final_v4.0.0"), metrics("ablation_no_bert_v4.0.0")
     pts = [
         ("URL heuristics only", comp["heuristics_only"]["latency_ms"]["mean"], comp["heuristics_only"]["f1"],
          comp["heuristics_only"]["false_positive_rate"], GREY),
@@ -121,14 +121,14 @@ def tradeoff(path):
          base["pipeline"]["overall"]["f1"], base["pipeline"]["overall"]["false_positive_rate"], AMBER),
         ("Deterministic rules, no model", abl["latency_ms"]["all_requests"]["mean"], abl["pipeline"]["overall"]["f1"],
          abl["pipeline"]["overall"]["false_positive_rate"], TEAL),
-        ("Corroborated hybrid (v3.2.0)", fin["latency_ms"]["all_requests"]["mean"], fin["pipeline"]["overall"]["f1"],
+        ("Corroborated hybrid (v4.0)", fin["latency_ms"]["all_requests"]["mean"], fin["pipeline"]["overall"]["f1"],
          fin["pipeline"]["overall"]["false_positive_rate"], NAVY),
     ]
     fig, (ax, ax2) = plt.subplots(1, 2, figsize=(6.5, 3.0), gridspec_kw={"width_ratios": [1.6, 1]})
     offsets = [(8, 0), (-10, 0), (-10, -6), (8, 0), (-10, 4)]
     for (name, lat, f1, fpr, col), (dx, dy) in zip(pts, offsets):
         ax.scatter(lat, f1, s=40 + fpr * 260, color=col, edgecolor="white", linewidth=0.8, zorder=4)
-        ax.annotate(f"{name}\nF1 {f1:.3f} Â· FPR {fpr * 100:.1f} %", (lat, f1), textcoords="offset points",
+        ax.annotate(f"{name}\nF1 {f1:.3f} · FPR {fpr * 100:.1f} %", (lat, f1), textcoords="offset points",
                     xytext=(dx, dy), fontsize=5.9, color=col, va="center", ha="left" if dx > 0 else "right")
     vis = comp["visual_yolov8n"]["latency_ms"]["mean"]
     ax.axvline(vis, color=BLUE, lw=0.8, ls="--")
@@ -157,9 +157,9 @@ def tradeoff(path):
     save(fig, path)
 
 
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ==============================================================================
 # Chapter 5
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ==============================================================================
 
 def training_loss(path):
     apply_style()
@@ -216,14 +216,14 @@ def kaggle_cm(path):
 
 def confusion_compare(path):
     apply_style()
-    fin, base = rows("final_v3.2.0"), rows("baseline_v3.0.0")
+    fin, base = rows("final_v4.0.0"), rows("baseline_v3.0.0")
     fig = plt.figure(figsize=(6.5, 2.75))
     gs = fig.add_gridspec(1, 4, width_ratios=[1, 1, 1, 1.35], wspace=0.55)
     draw_cm(fig.add_subplot(gs[0]), cm_from(fin, score_key="p_url_stripped"), "BERT URL model only\n(threshold 0.75)", PURPLE)
     draw_cm(fig.add_subplot(gs[1]), cm_from(base), "Naive hybrid\nv3.0.0", AMBER)
     draw_cm(fig.add_subplot(gs[2]), cm_from(fin), "Corroborated hybrid\nv3.2.0", NAVY)
     ax = fig.add_subplot(gs[3])
-    labels = ["BERT only", "v3.0.0", "v3.2.0"]
+    labels = ["BERT only", "v3.0.0", "v4.0"]
     cms = [cm_from(fin, score_key="p_url_stripped"), cm_from(base), cm_from(fin)]
     fpr = [c_[0, 1] / c_[0].sum() * 100 for c_ in cms]
     rec = [c_[1, 1] / c_[1].sum() * 100 for c_ in cms]
@@ -237,7 +237,7 @@ def confusion_compare(path):
     ax.set_ylim(0, 135)
     ax.set_yticks([0, 20, 40, 60, 80, 100])
     ax.set_ylabel("%")
-    ax.set_title("FPR 78.3 % â†’ 0 %", fontsize=7.4)
+    ax.set_title("FPR 78.3 % → 0 %", fontsize=7.4)
     ax.legend(loc="upper left", ncol=2, fontsize=5.6, handlelength=1, columnspacing=0.6)
     ax.grid(axis="x", visible=False)
     fig.suptitle("Malaysian benchmark (60 legitimate, 60 malicious pages)", x=0.01, ha="left", fontsize=8.5,
@@ -247,16 +247,16 @@ def confusion_compare(path):
 
 def roc_chart(path):
     apply_style()
-    fin = rows("final_v3.2.0")
+    fin = rows("final_v4.0.0")
     y = [int(r["label"]) for r in fin]
     fig, ax = plt.subplots(figsize=(4.6, 3.6))
-    for key, lab, col, ls in [("p_url_stripped", "BERT, URL without scheme (v3.2.0 input)", PURPLE, "-"),
+    for key, lab, col, ls in [("p_url_stripped", "BERT, URL without scheme (pipeline input)", PURPLE, "-"),
                               ("p_url_raw", "BERT, URL with scheme", BLUE, "--"),
                               ("p_composite", "BERT, URL + page text (v3.0.0 input)", AMBER, ":")]:
         pts = roc(y, [float(r[key]) for r in fin])
-        ax.plot([p[0] for p in pts], [p[1] for p in pts], color=col, ls=ls, lw=1.4, label=f"{lab} â€” AUC {auc(pts):.3f}")
-    ops = [("v3.0.0 pipeline", "baseline_v3.0.0", AMBER, "s"), ("rules, no model", "ablation_no_bert_v3.2.0", TEAL, "^"),
-           ("v3.2.0 pipeline", "final_v3.2.0", NAVY, "o")]
+        ax.plot([p[0] for p in pts], [p[1] for p in pts], color=col, ls=ls, lw=1.4, label=f"{lab} — AUC {auc(pts):.3f}")
+    ops = [("v3.0.0 pipeline", "baseline_v3.0.0", AMBER, "s"), ("rules, no model", "ablation_no_bert_v4.0.0", TEAL, "^"),
+           ("v4.0 pipeline", "final_v4.0.0", NAVY, "o")]
     for lab, tag, col, mk in ops:
         m = metrics(tag)["pipeline"]["overall"]
         ax.scatter(m["false_positive_rate"], m["recall"], color=col, marker=mk, s=42, zorder=5, edgecolor="white",
@@ -274,15 +274,15 @@ def roc_chart(path):
 
 def per_category(path):
     apply_style()
-    b, f = metrics("baseline_v3.0.0")["pipeline"]["per_category"], metrics("final_v3.2.0")["pipeline"]["per_category"]
-    a = metrics("ablation_no_bert_v3.2.0")["pipeline"]["per_category"]
+    b, f = metrics("baseline_v3.0.0")["pipeline"]["per_category"], metrics("final_v4.0.0")["pipeline"]["per_category"]
+    a = metrics("ablation_no_bert_v4.0.0")["pipeline"]["per_category"]
     cats = list(f.keys())
     labels = [k.split("_", 1)[0] + " " + k.split("_", 1)[1].replace("_", " ") + f" (n={f[k]['n']})" for k in cats]
     y = np.arange(len(cats))
     fig, ax = plt.subplots(figsize=(6.5, 3.1))
     ax.barh(y - 0.27, [b[k]["accuracy"] * 100 for k in cats], 0.26, color=AMBER, label="v3.0.0")
-    ax.barh(y, [a[k]["accuracy"] * 100 for k in cats], 0.26, color=TEAL, label="v3.2.0 without BERT")
-    ax.barh(y + 0.27, [f[k]["accuracy"] * 100 for k in cats], 0.26, color=NAVY, label="v3.2.0")
+    ax.barh(y, [a[k]["accuracy"] * 100 for k in cats], 0.26, color=TEAL, label="v4.0 without BERT")
+    ax.barh(y + 0.27, [f[k]["accuracy"] * 100 for k in cats], 0.26, color=NAVY, label="v4.0")
     for i, k in enumerate(cats):
         ax.text(f[k]["accuracy"] * 100 + 1, i + 0.27, f"{f[k]['accuracy'] * 100:.0f}", va="center", fontsize=6, color=NAVY)
         ax.text(b[k]["accuracy"] * 100 + 1, i - 0.27, f"{b[k]['accuracy'] * 100:.0f}", va="center", fontsize=6, color=AMBER)
@@ -358,7 +358,7 @@ def locust_timeseries(path):
         rps = [float(r["Requests/s"]) for r in hist]
         p95 = [float(r["95%"]) if r["95%"] not in ("N/A", "") else np.nan for r in hist]
         ax.plot(t, rps, color=NAVY, lw=1.2, label="requests / s")
-        ax.plot(t, [u / 5 for u in users], color=GREY, lw=1, ls="--", label="users Ã· 5")
+        ax.plot(t, [u / 5 for u in users], color=GREY, lw=1, ls="--", label="users ÷ 5")
         ax.set_xlabel("time (s)")
         ax.set_ylabel("requests / s")
         ax.set_ylim(0, 62)
@@ -417,13 +417,13 @@ def tests_coverage(path):
     ax2.set_yticks(range(len(keep)), labs, fontsize=6.0)
     ax2.set_xlim(0, 105)
     ax2.set_xlabel("statement + branch coverage (%)")
-    ax2.set_title("Coverage per module (â‰¥ 20 statements)", loc="left")
+    ax2.set_title("Coverage per module (≥ 20 statements)", loc="left")
     ax2.grid(axis="y", visible=False)
     fig.tight_layout(w_pad=1.5)
     save(fig, path)
 
 
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ==============================================================================
 
 FIGURES = {
     "tradeoff": tradeoff,              # Chapter 2

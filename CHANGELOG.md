@@ -1,5 +1,56 @@
 # Changelog
 
+## v4.0.0 — 17 November 2026
+
+A ground-up overhaul: protection for every website, explained verdicts, a strict HTTP/HTTPS policy, a new
+dashboard and extension, and online HTTPS hosting.
+
+### Detection
+- **Web-wide protection** — the extension scans every `http://` and `https://` page; real BERT, page and logo
+  analysis run on every non-trusted URL.
+- **Single pipeline** — `services/analysis_pipeline.py` serves the extension, the dashboard analyzer and the QR
+  scanner, so all three give the same answer.
+- **URL canonicalisation** (`services/url_canonicalizer.py`) — userinfo, IDN/punycode, Unicode confusables,
+  integer/hex/octal IPs, backslashes, case and default ports.
+- **`@` spoofing fixed** — `https://maybank2u.com.my@evil-login.top` is blocked by the new rule R7 even without a
+  password form.
+- **Spaced and hyphenated mule accounts fixed** — `5142 7610 3388`, `5142-7610-3388` and `+60` forms are extracted;
+  card numbers (Luhn) and amounts are ignored. Registry keys are stored as compact digits.
+- **HTTP vs HTTPS** — HTTPS with no signals is `SAFE`; plain HTTP is a `WARNING` (H2); plain HTTP with a password,
+  card or other sensitive form is `BLOCK_RENDER` (H1); certificate errors are a `WARNING` (W1).
+- **New rules** — R8 bank logo on a foreign domain, R9 credential form on free hosting with corroboration, W2
+  uncorroborated impersonation, W3 form on free hosting.
+- **Brand registry** (`core/brands.py`) — 49 organisations and 110 official domains: every licensed Malaysian bank
+  and digital bank, e-wallets and payment networks, and major global banks.
+- **Explanations** — every response has a headline, a plain-language explanation, ordered reasons and the pipeline
+  steps.
+- **Safe page fetcher** — the dashboard and QR scanner download pages through an SSRF-safe fetcher.
+
+### Interface
+- **Dashboard rebuilt** with four tabs backed only by real data: Overview (scan counters, scan log, CSV/JSON
+  export), Mule Registry (review queue and registry), QR Scanner and URL Analyzer.
+- Removed: `sandbox.html`, `test_scam.html`, simulated threat feeds, radar, war room, automation, system monitor,
+  demo mode, audio alerts, keyboard palette, the synthetic 24-hour baseline and the theme switcher.
+- **Extension rebuilt** — dark-slate popup with server selection (automatic / online / local), Shadow-DOM block page
+  and amber "Not secure" banner; online-first with local fallback.
+- `/docs` is a clean Swagger page linking only to the Dashboard and the API docs.
+
+### Platform
+- `scan_log` replaces `threat_telemetry`; query strings are never stored.
+- Dashboard API reduced to 13 operations; public API to `/analyze`, `/analyze/qr`, `/mule-reports` and `/health`.
+- Removed unused services (STIX, SIEM, YARA, MITRE, NSRC bridge, webhooks, red-team simulator, typosquat engine and
+  others) and their tests.
+- Demonstration API and admin key is now `12345678` (replace it in any real deployment).
+- `Dockerfile` and `deploy/deploy_hf_space.ps1` for HTTPS hosting on Hugging Face Spaces.
+- `requirements.txt` holds runtime packages only; test and evaluation tools are in `requirements-dev.txt`.
+
+### Evaluation
+- 136 tests pass (81% coverage).
+- Malaysian benchmark: 57/60 scams blocked, 0 false positives, F1 0.974, ROC-AUC 0.983.
+- New `evaluation/compare_baselines.py` (padlock, lexical, BERT alone) and `evaluation/run_public_suite.py` (30 public
+  URLs; 28 passed, two hosts unreachable from the test network).
+- Report Chapters 1–6, diagrams and screenshots updated for v4.0.
+
 ## Cyber Neon restored — 17 November 2026
 
 - **Dashboard** — `dashboard/apple.css` and the "Apple Light" option removed; Cyber Neon is the default theme again
