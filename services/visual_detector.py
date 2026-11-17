@@ -9,7 +9,8 @@ from pathlib import Path
 from typing import Any, Final
 from urllib.parse import urlparse
 
-from core.config import VISUAL_CONFIDENCE_THRESHOLD, VISUAL_MODEL_PATH, GLOBAL_SAFE_DOMAINS
+from core.brands import BRANDS
+from core.config import ALL_TRUSTED_DOMAINS, VISUAL_CONFIDENCE_THRESHOLD, VISUAL_MODEL_PATH
 from schemas.visual import BoundingBox, DetectedLogo, VisualAnalyzeResponse
 
 logger: Final[logging.Logger] = logging.getLogger("phishguard.visual_detector")
@@ -22,12 +23,16 @@ SUPPORTED_BRANDS: Final[set[str]] = {
     "Hong Leong Bank",
 }
 
+# YOLO class name -> brand in core/brands.py (the five classes the model was trained on).
+_CLASS_TO_BRAND: Final[dict[str, str]] = {
+    "Maybank": "Maybank",
+    "CIMB": "CIMB Bank",
+    "Public Bank": "Public Bank",
+    "RHB": "RHB Bank",
+    "Hong Leong Bank": "Hong Leong Bank",
+}
 AUTHORIZED_DOMAINS: Final[dict[str, list[str]]] = {
-    "Maybank": ["maybank2u.com.my", "maybank.com", "maybank.com.my"],
-    "CIMB": ["cimbclicks.com.my", "cimb.com.my", "cimbbank.com.my"],
-    "Public Bank": ["pbebank.com", "pbebank.com.my", "publicbank.com.my"],
-    "RHB": ["rhbgroup.com", "rhbnow.com", "rhbbank.com.my"],
-    "Hong Leong Bank": ["hlb.com.my"],
+    cls: list(BRANDS[brand]["domains"]) for cls, brand in _CLASS_TO_BRAND.items()
 }
 
 BRAND_ALIASES: Final[dict[str, str]] = {
@@ -221,7 +226,7 @@ def evaluate_logo_domain(
     # If the user is on a massively popular platform (e.g. WhatsApp, Instagram, Google),
     # bypass the visual checks. YOLOv8 can hallucinate logos in random user content,
     # and these major platforms are definitively not phishing hosting sites.
-    for safe_domain in GLOBAL_SAFE_DOMAINS:
+    for safe_domain in ALL_TRUSTED_DOMAINS:
         if host == safe_domain or host.endswith(f".{safe_domain}"):
             return VisualAnalyzeResponse(
                 detected_logos=detections,

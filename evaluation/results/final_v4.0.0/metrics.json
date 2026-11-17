@@ -1,0 +1,217 @@
+{
+  "tag": "final_v4.0.0",
+  "app_version": "4.0.0",
+  "dataset": "malaysia_eval_v1.jsonl",
+  "n_samples": 120,
+  "n_malicious": 60,
+  "n_legitimate": 60,
+  "malicious_threshold": 0.75,
+  "device": "cpu",
+  "bert_signal_enabled": true,
+  "pipeline": {
+    "overall": {
+      "tp": 57,
+      "fp": 0,
+      "fn": 3,
+      "tn": 60,
+      "n": 120,
+      "accuracy": 0.975,
+      "precision": 1.0,
+      "recall": 0.95,
+      "f1": 0.9744,
+      "false_positive_rate": 0.0,
+      "false_negative_rate": 0.05
+    },
+    "dev": {
+      "tp": 28,
+      "fp": 0,
+      "fn": 2,
+      "tn": 30,
+      "n": 60,
+      "accuracy": 0.9667,
+      "precision": 1.0,
+      "recall": 0.9333,
+      "f1": 0.9655,
+      "false_positive_rate": 0.0,
+      "false_negative_rate": 0.0667
+    },
+    "holdout": {
+      "tp": 29,
+      "fp": 0,
+      "fn": 1,
+      "tn": 30,
+      "n": 60,
+      "accuracy": 0.9833,
+      "precision": 1.0,
+      "recall": 0.9667,
+      "f1": 0.9831,
+      "false_positive_rate": 0.0,
+      "false_negative_rate": 0.0333
+    },
+    "per_category": {
+      "L1_official_portal": {
+        "n": 14,
+        "correct": 14,
+        "blocked": 0,
+        "warned": 0,
+        "accuracy": 1.0
+      },
+      "L2_benign_brand_mention": {
+        "n": 20,
+        "correct": 20,
+        "blocked": 0,
+        "warned": 0,
+        "accuracy": 1.0
+      },
+      "L3_general_benign": {
+        "n": 14,
+        "correct": 14,
+        "blocked": 0,
+        "warned": 0,
+        "accuracy": 1.0
+      },
+      "L4_benign_with_accounts": {
+        "n": 12,
+        "correct": 12,
+        "blocked": 0,
+        "warned": 0,
+        "accuracy": 1.0
+      },
+      "P1_bank_lookalike": {
+        "n": 14,
+        "correct": 14,
+        "blocked": 14,
+        "warned": 0,
+        "accuracy": 1.0
+      },
+      "P2_bm_manglish_lure": {
+        "n": 14,
+        "correct": 14,
+        "blocked": 14,
+        "warned": 0,
+        "accuracy": 1.0
+      },
+      "P3_mule_account": {
+        "n": 12,
+        "correct": 12,
+        "blocked": 12,
+        "warned": 0,
+        "accuracy": 1.0
+      },
+      "P4_ewallet_brand": {
+        "n": 10,
+        "correct": 10,
+        "blocked": 10,
+        "warned": 0,
+        "accuracy": 1.0
+      },
+      "P5_evasive": {
+        "n": 10,
+        "correct": 7,
+        "blocked": 7,
+        "warned": 1,
+        "accuracy": 0.7
+      }
+    }
+  },
+  "rule_histogram": {
+    "H2_INSECURE_HTTP": 1,
+    "R1_MULE_REGISTRY": 12,
+    "R2_BRAND_IN_HOSTNAME": 28,
+    "R3_LOOKALIKE_DOMAIN": 5,
+    "R4_BRAND_CLONE": 6,
+    "R5_COERCIVE_CREDENTIAL_REQUEST": 3,
+    "R6_EVASIVE_INFRASTRUCTURE": 3
+  },
+  "bert_only": {
+    "composite": {
+      "tp": 60,
+      "fp": 60,
+      "fn": 0,
+      "tn": 0,
+      "n": 120,
+      "accuracy": 0.5,
+      "precision": 0.5,
+      "recall": 1.0,
+      "f1": 0.6667,
+      "false_positive_rate": 1.0,
+      "false_negative_rate": 0.0,
+      "threshold": 0.75,
+      "roc_auc": 0.7037
+    },
+    "url_raw": {
+      "tp": 56,
+      "fp": 52,
+      "fn": 4,
+      "tn": 8,
+      "n": 120,
+      "accuracy": 0.5333,
+      "precision": 0.5185,
+      "recall": 0.9333,
+      "f1": 0.6667,
+      "false_positive_rate": 0.8667,
+      "false_negative_rate": 0.0667,
+      "threshold": 0.75,
+      "roc_auc": 0.7596
+    },
+    "url_stripped": {
+      "tp": 53,
+      "fp": 26,
+      "fn": 7,
+      "tn": 34,
+      "n": 120,
+      "accuracy": 0.725,
+      "precision": 0.6709,
+      "recall": 0.8833,
+      "f1": 0.7626,
+      "false_positive_rate": 0.4333,
+      "false_negative_rate": 0.1167,
+      "threshold": 0.75,
+      "roc_auc": 0.8599
+    }
+  },
+  "latency_ms": {
+    "note": "In-process ASGI call, single client, CPU inference; excludes network.",
+    "all_requests": {
+      "n": 120,
+      "mean": 99.69,
+      "p50": 113.79,
+      "p95": 132.2,
+      "max": 187.86
+    },
+    "bert_path": {
+      "n": 101,
+      "mean": 118.25,
+      "p50": 115.55,
+      "p95": 138.85
+    },
+    "whitelist_bypass": {
+      "n": 19,
+      "mean": 1.05,
+      "p50": 0.98
+    }
+  },
+  "misclassified": [
+    {
+      "id": "MY-116",
+      "category": "P5_evasive",
+      "label": 1,
+      "verdict": "SAFE",
+      "url": "https://docs.google.com/forms/d/e/1FAIpQLSfakeformid/viewform"
+    },
+    {
+      "id": "MY-117",
+      "category": "P5_evasive",
+      "label": 1,
+      "verdict": "WARNING",
+      "url": "http://form-submit-online.site/m2u"
+    },
+    {
+      "id": "MY-119",
+      "category": "P5_evasive",
+      "label": 1,
+      "verdict": "SAFE",
+      "url": "https://smart-invest-daily.com/join"
+    }
+  ]
+}

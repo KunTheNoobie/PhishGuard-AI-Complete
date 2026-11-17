@@ -1,27 +1,25 @@
 """
-PhishGuard-AI — Database Initialization Module.
-=================================================
+PhishGuard-AI — Database Schema and Start-up.
+==============================================
 
-Responsible for DDL execution (table creation) and seed-data insertion
-during the application's ``lifespan`` cold-start.  All tables conform to
-Third Normal Form (3NF) as mandated by the thesis.
+Three tables in Third Normal Form:
 
-Architecture Layer : Data-Access / Repository (Infrastructure)
-Thesis Reference   : §5.1 — Persistence Schema Design (3NF)
-
-Tables
-------
 ``mule_registry``
-    Stores known mule (money-mule) bank accounts reported across
-    Malaysian financial institutions.
-
-``threat_telemetry``
-    Append-only log of every URL blocked by the verdict engine, used for
-    post-incident forensics and threat-intelligence dashboards.
+    Reported mule accounts.  ``account_number`` is the compact registry key
+    (digits only; DuitNow phones in local 01x form) produced by
+    ``services.mule_scanner.normalise_account``.
 
 ``mule_reports``
-    Review queue of user-submitted account reports.  Linked to
-    ``mule_registry`` through the nullable foreign key ``registry_id``.
+    Review queue of user-submitted reports.  A report never blocks anything;
+    only an analyst-approved report is promoted into ``mule_registry``.
+
+``scan_log``
+    One row per page analysed — from the extension, the dashboard analyser
+    or the QR scanner.  The dashboard's counters and recent-scan table are
+    computed from this table only; nothing is simulated.  Query strings and
+    fragments are never stored.
+
+Architecture Layer : Data Access / Infrastructure
 """
 
 from __future__ import annotations
@@ -35,35 +33,17 @@ from core.config import DATABASE_PATH
 
 logger: Final[logging.Logger] = logging.getLogger("phishguard.database")
 
-# ==============================================================================
-# DDL — Table Definitions (3NF)
-# ==============================================================================
-
 _DDL_MULE_REGISTRY: Final[str] = """
 CREATE TABLE IF NOT EXISTS mule_registry (
     id               INTEGER PRIMARY KEY AUTOINCREMENT,
-    account_number   TEXT    NOT NULL UNIQUE,
+    account_number   TEXT    NOT NULL UNIQUE CHECK (length(account_number) BETWEEN 6 AND 34),
     bank_name        TEXT    NOT NULL,
-    platform_flagged TEXT    NOT NULL DEFAULT 'manual_entry',
+    platform_flagged TEXT    NOT NULL DEFAULT 'manual entry',
     report_count     INTEGER NOT NULL DEFAULT 1 CHECK (report_count >= 0),
     date_added       TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
 );
 """
 
-_DDL_THREAT_TELEMETRY: Final[str] = """
-CREATE TABLE IF NOT EXISTS threat_telemetry (
-    log_id       INTEGER PRIMARY KEY AUTOINCREMENT,
-    malicious_url TEXT    NOT NULL,
-    bert_score    REAL   NOT NULL CHECK (bert_score >= 0.0 AND bert_score <= 1.0),
-    timestamp     TEXT   NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
-);
-"""
-
-# User-submitted mule reports awaiting analyst review.  A report never blocks
-# anything by itself: only an APPROVED report is promoted into
-# ``mule_registry``.  ``registry_id`` is a nullable foreign key to the registry
-# row the report refers to (set when the account is already registered, or
-# when the report is approved).
 _DDL_MULE_REPORTS: Final[str] = """
 CREATE TABLE IF NOT EXISTS mule_reports (
     report_id      INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -79,197 +59,86 @@ CREATE TABLE IF NOT EXISTS mule_reports (
 );
 """
 
-# ── Explicit B-Tree Indexes (§4.4) ──
-# SQLite's UNIQUE constraint on account_number creates an implicit index,
-# but we declare it explicitly for clarity and to align with the thesis.
-# The malicious_url index accelerates threat-intelligence lookups.
-_IDX_MULE_ACCOUNT: Final[str] = """
-CREATE INDEX IF NOT EXISTS idx_mule_account_number
-    ON mule_registry (account_number);
+_DDL_SCAN_LOG: Final[str] = """
+CREATE TABLE IF NOT EXISTS scan_log (
+    scan_id     INTEGER PRIMARY KEY AUTOINCREMENT,
+    created_at  TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+    source      TEXT    NOT NULL CHECK (source IN ('extension', 'dashboard', 'qr', 'api')),
+    url         TEXT    NOT NULL,
+    hostname    TEXT    NOT NULL,
+    scheme      TEXT    NOT NULL,
+    verdict     TEXT    NOT NULL CHECK (verdict IN ('SAFE', 'WARNING', 'BLOCK_RENDER')),
+    rule        TEXT,
+    risk_score  REAL    NOT NULL CHECK (risk_score BETWEEN 0.0 AND 1.0),
+    bert_score  REAL             CHECK (bert_score IS NULL OR bert_score BETWEEN 0.0 AND 1.0),
+    headline    TEXT    NOT NULL,
+    latency_ms  REAL    NOT NULL
+);
 """
 
-_IDX_TELEMETRY_URL: Final[str] = """
-CREATE INDEX IF NOT EXISTS idx_telemetry_malicious_url
-    ON threat_telemetry (malicious_url);
-"""
-
-_IDX_TELEMETRY_TIME: Final[str] = """
-CREATE INDEX IF NOT EXISTS idx_telemetry_timestamp
-    ON threat_telemetry (timestamp);
-"""
-
-_IDX_REPORTS_STATUS: Final[str] = """
-CREATE INDEX IF NOT EXISTS idx_mule_reports_status
-    ON mule_reports (status, created_at);
-"""
-
-_IDX_REPORTS_REGISTRY: Final[str] = """
-CREATE INDEX IF NOT EXISTS idx_mule_reports_registry_id
-    ON mule_reports (registry_id);
-"""
-
-# Ordered DDL executed at start-up, by the test fixtures and by the evaluation
-# harness, so every environment builds an identical schema.
 SCHEMA_STATEMENTS: Final[tuple[str, ...]] = (
     _DDL_MULE_REGISTRY,
-    _DDL_THREAT_TELEMETRY,
     _DDL_MULE_REPORTS,
-    _IDX_MULE_ACCOUNT,
-    _IDX_TELEMETRY_URL,
-    _IDX_TELEMETRY_TIME,
-    _IDX_REPORTS_STATUS,
-    _IDX_REPORTS_REGISTRY,
+    _DDL_SCAN_LOG,
+    "CREATE INDEX IF NOT EXISTS idx_mule_reports_status ON mule_reports (status, created_at);",
+    "CREATE INDEX IF NOT EXISTS idx_mule_reports_registry_id ON mule_reports (registry_id);",
+    "CREATE INDEX IF NOT EXISTS idx_scan_log_created ON scan_log (created_at);",
+    "CREATE INDEX IF NOT EXISTS idx_scan_log_verdict ON scan_log (verdict, created_at);",
+    # Superseded by scan_log; dropping it also removes the simulated rows that
+    # earlier versions seeded for the dashboard.
+    "DROP TABLE IF EXISTS threat_telemetry;",
+    # Registry keys written by older versions with spaces or hyphens.
+    "UPDATE OR IGNORE mule_registry SET account_number = replace(replace(account_number, '-', ''), ' ', '') "
+    "WHERE account_number GLOB '*[- ]*';",
 )
 
-# ==============================================================================
-# Seed Data — Initial Threat Intel Feed
-# ==============================================================================
-# Initial mock mule accounts loaded for development & integration
-# testing. In production, this syncs with PDRM / BNM threat feeds.
-_SEED_MULE_ACCOUNTS: Final[list[tuple[str, str, str, int]]] = [
+# Demonstration registry.  PDRM's Semakmule service has no public API, so the
+# registry starts with these sample accounts and grows through analyst-
+# approved reports and the dashboard's "Add account" form.
+SEED_MULE_ACCOUNTS: Final[list[tuple[str, str, str, int]]] = [
     ("112233445566", "Maybank", "Shopee", 14),
     ("564738291012", "Maybank", "Facebook Marketplace", 8),
+    ("156789012345", "Maybank", "Mudah.my", 22),
     ("76001234567890", "CIMB Bank", "WhatsApp", 7),
     ("70009876543210", "CIMB Bank", "Carousell", 5),
     ("3112233445", "Public Bank", "Telegram", 3),
     ("3998877665", "Public Bank", "Lazada", 11),
+    ("3567891234", "Public Bank", "Shopee", 17),
     ("21234567890123", "RHB Bank", "Mudah.my", 6),
-    ("012345678901", "Hong Leong Bank", "WhatsApp", 2),
     ("234567890123", "Hong Leong Bank", "Facebook Marketplace", 9),
+    ("012345678901", "Hong Leong Bank", "WhatsApp", 2),
     ("8123456789012", "AmBank", "Shopee", 4),
     ("14001234567890", "Bank Islam", "Telegram", 10),
-    ("012345678912", "Bank Rakyat", "Lazada", 1),
     ("212345678901", "Bank Rakyat", "Carousell", 13),
-    ("156789012345", "Maybank", "Mudah.my", 22),
-    ("3567891234", "Public Bank", "Shopee", 17),
-    ("0123456789", "DuitNow (Maybank)", "WhatsApp Scam", 19),
-    ("0198765432", "DuitNow (CIMB)", "Telegram Scam", 15),
-    ("980102-14-5678", "DuitNow (NRIC)", "Facebook Marketplace", 8),
+    ("012345678912", "Bank Rakyat", "Lazada", 1),
+    ("0123456789", "DuitNow phone", "WhatsApp", 19),
+    ("0198765432", "DuitNow phone", "Telegram", 15),
+    ("980102145678", "DuitNow ID (NRIC)", "Facebook Marketplace", 8),
 ]
 
-_SEED_THREAT_TELEMETRY: Final[list[tuple[str, float]]] = [
-    # Maybank
-    ("http://maybznk2u.com.my/auth/login", 0.985),
-    ("http://maybank2u-secure-login.top/verify", 0.962),
-    ("http://mae-verify-otp.net/update", 0.941),
-    ("http://maybank-ccid-update.com/login", 0.978),
-    ("http://maybank2u-account-safety.org/auth", 0.953),
-    ("http://maybank-tac-portal.net/sms", 0.932),
-    # CIMB Bank
-    ("http://secure-login-cimb.com/clicks", 0.976),
-    ("http://cimb-clicks-secure.com/auth", 0.954),
-    ("http://cimb-security-gateway.net/update", 0.923),
-    ("http://cimbclicks-auth.top/login", 0.967),
-    ("http://cimb-online-verify.net/tac", 0.945),
-    ("http://cimb-portal-alerts.org/auth", 0.912),
-    # Public Bank
-    ("http://pbebank-update-info.net/login", 0.981),
-    ("http://pbb-online-auth.top/verify", 0.963),
-    ("http://publicbank-ebank.com/auth", 0.947),
-    ("http://pbe-secure-portal.org/login", 0.958),
-    ("http://pbb-secure-alert.top/verify", 0.934),
-    ("http://publicbank-pac-token.net/auth", 0.972),
-    # RHB Bank
-    ("http://rhb-online-verify.net/auth", 0.952),
-    ("http://rhbgroup-secure-auth.top/login", 0.944),
-    ("http://rhbnow-login-gateway.com/verify", 0.968),
-    ("http://rhb-ebank-portal.net/update", 0.935),
-    ("http://rhbnow-otp-token.top/auth", 0.961),
-    ("http://rhb-security-center.org/login", 0.927),
-    # Hong Leong Bank
-    ("http://hlb-connect-secure.com/auth", 0.957),
-    ("http://hongleong-auth-verify.top/login", 0.964),
-    ("http://hlbb-portal-update.net/verify", 0.938),
-    ("http://hlb-connect-online.org/auth", 0.949),
-    ("http://hongleong-security-gateway.top/login", 0.971),
-    ("http://hlb-tac-verify.net/auth", 0.922),
-    # AmBank
-    ("http://ambank-amonline-secure.top/auth", 0.963),
-    ("http://amonline-verify-auth.com/login", 0.951),
-    ("http://ambankgroup-portal.net/update", 0.937),
-    ("http://ambank-security-check.org/auth", 0.946),
-    ("http://amonline-gateway.top/login", 0.974),
-    ("http://ambank-tac-online.net/verify", 0.928),
-    # Bank Islam
-    ("http://bankislam-internet-auth.com/login", 0.969),
-    ("http://bimb-portal-verify.top/auth", 0.955),
-    ("http://bankislam-secure-login.net/update", 0.942),
-    ("http://bankislam-online-token.org/auth", 0.961),
-    ("http://bimb-security-center.top/login", 0.934),
-    ("http://bankislam-tac-sms.net/verify", 0.948),
-    # Touch 'n Go eWallet
-    ("http://tng-digital-claim-bonus.net/claim", 0.973),
-    ("http://touchngo-ewallet-auth.top/verify", 0.965),
-    ("http://tng-wallet-verify.com/login", 0.952),
-    ("http://tngdigital-voucher-claim.org/auth", 0.944),
-    ("http://touchngo-security-update.top/claim", 0.982),
-    ("http://tng-pin-reset-portal.net/auth", 0.939),
-    # GrabPay Malaysia
-    ("http://grabpay-reward-verification.top/claim", 0.958),
-    ("http://grab-malaysia-bonus.net/auth", 0.947),
-    ("http://grabpay-auth-login.com/verify", 0.966),
-    ("http://grab-voucher-rebate.org/claim", 0.938),
-    ("http://grabpay-security-alert.top/auth", 0.971),
-    ("http://grab-driver-merchant.net/login", 0.925),
-    # ShopeePay
-    ("http://shopeepay-voucher-claim.net/claim", 0.977),
-    ("http://shopee-free-gifts.net/login", 0.962),
-    ("http://shopeepay-verify-portal.top/auth", 0.953),
-    ("http://shopee-coin-rewards.org/claim", 0.941),
-    ("http://shopeepay-security-update.top/login", 0.968),
-    ("http://shopee-lucky-draw.net/auth", 0.936),
-]
-
-_INSERT_SEED: Final[str] = """
-INSERT OR IGNORE INTO mule_registry
-    (account_number, bank_name, platform_flagged, report_count)
-VALUES
-    (?, ?, ?, ?);
-"""
-
-_INSERT_TELEMETRY_SEED: Final[str] = """
-INSERT INTO threat_telemetry
-    (malicious_url, bert_score)
-VALUES
-    (?, ?);
-"""
+INSERT_SEED: Final[str] = (
+    "INSERT OR IGNORE INTO mule_registry (account_number, bank_name, platform_flagged, report_count) "
+    "VALUES (?, ?, ?, ?);"
+)
 
 
-# ==============================================================================
-# Public API
-# ==============================================================================
-
-async def initialize_database() -> aiosqlite.Connection:
-    """Create (or open) the SQLite database, execute DDL, and seed data."""
-    logger.info("Initializing database at '%s' …", DATABASE_PATH)
-
-    db: aiosqlite.Connection = await aiosqlite.connect(DATABASE_PATH)
-
-    # ── Enable WAL mode for concurrent readers + single writer ──
-    await db.execute("PRAGMA journal_mode=WAL;")
+async def apply_schema(db: aiosqlite.Connection) -> None:
+    """Create tables and indexes, and load the demonstration registry."""
     await db.execute("PRAGMA foreign_keys=ON;")
-
-    # ── DDL: Create tables and B-Tree indexes idempotently ──
     for statement in SCHEMA_STATEMENTS:
         await db.execute(statement)
-
-    # ── Seed: Insert initial threat intel (ignored on conflict) ──
-    for account in _SEED_MULE_ACCOUNTS:
-        await db.execute(_INSERT_SEED, account)
-
-    # ── Seed: Insert initial telemetry if table is fresh ──
-    cursor = await db.execute("SELECT COUNT(*) FROM threat_telemetry;")
-    count_row = await cursor.fetchone()
-    count = count_row[0] if count_row else 0
-    if count < len(_SEED_THREAT_TELEMETRY):
-        for threat in _SEED_THREAT_TELEMETRY:
-            await db.execute(_INSERT_TELEMETRY_SEED, threat)
-
+    for account in SEED_MULE_ACCOUNTS:
+        await db.execute(INSERT_SEED, account)
     await db.commit()
 
-    logger.info(
-        "Database ready — %d mule accounts and %d telemetry records verified.",
-        len(_SEED_MULE_ACCOUNTS),
-        len(_SEED_THREAT_TELEMETRY),
-    )
+
+async def initialize_database(path: str = DATABASE_PATH) -> aiosqlite.Connection:
+    """Open the SQLite database in WAL mode and apply the schema."""
+    logger.info("Initialising database at '%s' …", path)
+    db = await aiosqlite.connect(path)
+    await db.execute("PRAGMA journal_mode=WAL;")
+    await apply_schema(db)
+    cursor = await db.execute("SELECT COUNT(*) FROM mule_registry;")
+    (count,) = await cursor.fetchone()
+    logger.info("Database ready — %d registry accounts.", count)
     return db

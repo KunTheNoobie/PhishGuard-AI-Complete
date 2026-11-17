@@ -1,202 +1,131 @@
-"""
-PhishGuard-AI — Verdict Engine, Brand Profiler and Heuristic Unit Tests.
-=========================================================================
-
-Regression tests for the false-positive and scoring defects fixed in v3.2.0.
-"""
+"""Every verdict rule, the HTTP/HTTPS policy and the explanations."""
 
 from __future__ import annotations
+
+from typing import Any
 
 import pytest
 
 from services.brand_profiler import profile_brand_impersonation
-from services.domain_utils import levenshtein, registrable_domain, strip_scheme, subdomain_labels
 from services.heuristic_engine import analyze_url_heuristics
-from services.multi_vector_scorer import compute_multi_vector_risk
-from services.nlp_engine import build_model_input, predict_phishing_probability
-from services.verdict_engine import decide, has_credential_form, has_credential_text, has_scam_language
+from services.url_canonicalizer import canonicalize
+from services.verdict_engine import decide, detect_sensitive_fields, has_credential_text, scam_phrases
 
-SAFE_BERT = {"label": "LEGITIMATE", "confidence": 0.97, "is_malicious": False}
-PHISH_BERT = {"label": "PHISHING", "confidence": 0.99, "is_malicious": True}
-NO_MULE = {"mule_detected": False, "flagged_accounts": [], "accounts_extracted": []}
-LOGIN_FORM = "<form><input type='text' name='user'><input type=\"password\" name='pw'></form>"
+LOGIN_FORM = "<form><input name='user'><input type='password' name='pass'></form>"
+CARD_FORM = "<form><input name='cardnumber'><input name='cvv'></form>"
 
 
-def _decide(url: str, text: str, html: str = "", bert=None, mule=None, trusted: bool = False):
+def run(url: str, html: str = "", *, p_bert: float = 0.05, trusted: bool = False,
+        flagged: list[dict[str, Any]] | None = None, visual: dict | None = None, tls_error: str | None = None):
+    c = canonicalize(url)
+    from services.sanitizer import sanitize_dom
+    text = sanitize_dom(html) if html else ""
     return decide(
-        is_trusted=trusted,
-        bert_result=bert or SAFE_BERT,
-        mule_result=mule or NO_MULE,
-        brand_result=profile_brand_impersonation(url, text),
-        heuristic_result=analyze_url_heuristics(url),
-        sanitized_text=text,
-        raw_content=html or f"<p>{text}</p>",
+        canon=c, is_trusted=trusted,
+        bert_result={"label": "PHISHING" if p_bert >= 0.5 else "LEGITIMATE", "phishing_probability": p_bert,
+                     "confidence": max(p_bert, 1 - p_bert), "is_malicious": p_bert >= 0.75},
+        mule_result={"flagged_accounts": flagged or [], "accounts_extracted": [f["account_number"] for f in flagged or []]},
+        brand_result=profile_brand_impersonation(c, text),
+        heuristic_result=analyze_url_heuristics(c),
+        sanitized_text=text, raw_content=html, visual_result=visual, tls_error=tls_error,
     )
 
 
-class TestCredentialTextMatching:
+class TestTransportPolicy:
+    def test_https_clean_is_safe(self):
+        v = run("https://example.com/", "<h1>Example Domain</h1>")
+        assert v.verdict == "SAFE" and v.risk_level == "safe"
 
-    @pytest.mark.parametrize("text", [
-        "Great shopping deals this weekend",        # contains 'pin'
-        "Contact our sales team for a quote",       # contains 'tac'
-        "Pin this recipe for later",                # 'pin' as an ordinary word
-        "The spinach tacos were photographed",      # 'pin' and 'tac' substrings
-        "Hotpot and octopus menu",                  # contains 'otp'
-    ])
-    def test_benign_substrings_do_not_match(self, text: str) -> None:
-        assert has_credential_text(text) is False
+    def test_http_without_form_is_warning(self):
+        v = run("http://neverssl.com/", "<h1>NeverSSL</h1>")
+        assert (v.verdict, v.rule) == ("WARNING", "H2_INSECURE_HTTP")
 
-    @pytest.mark.parametrize("text", [
-        "Enter your password to continue",
-        "Sila masukkan kata laluan anda",
-        "Key in your TAC code now",
-        "Masukkan nombor TAC anda untuk pengesahan",
-        "Confirm the OTP number sent to your phone",
-        "Enter your 6-digit PIN",
-        "请输入密码和验证码",
-    ])
-    def test_explicit_credential_requests_match(self, text: str) -> None:
-        assert has_credential_text(text) is True
+    @pytest.mark.parametrize("form", [LOGIN_FORM, CARD_FORM, "<input name='otp'>"])
+    def test_http_with_sensitive_form_is_blocked(self, form):
+        v = run("http://testphp.vulnweb.com/login.php", form)
+        assert (v.verdict, v.rule) == ("BLOCK_RENDER", "H1_HTTP_SENSITIVE_FORM")
 
-    def test_form_detection(self) -> None:
-        assert has_credential_form(LOGIN_FORM) is True
-        assert has_credential_form("<input type='text' name='otp'>") is True
-        assert has_credential_form("<input autocomplete=\"cc-number\">") is True
-        assert has_credential_form("<input type='text' name='search'>") is False
-        assert has_credential_form("password") is False  # plain text is not a form
+    def test_http_is_never_safe_even_when_trusted(self):
+        assert run("http://www.maybank2u.com.my/", "<p>hi</p>", trusted=True).verdict == "WARNING"
+        assert run("http://www.maybank2u.com.my/", LOGIN_FORM, trusted=True).verdict == "BLOCK_RENDER"
 
-    def test_scam_lexicon(self) -> None:
-        assert has_scam_language("Akaun anda dibekukan, sila buat pengesahan keselamatan") is True
-        assert has_scam_language("Maybank revises fixed deposit rates") is False
+    def test_trusted_https_is_safe_with_named_owner(self):
+        v = run("https://www.maybank2u.com.my/", LOGIN_FORM, trusted=True)
+        assert v.verdict == "SAFE" and v.headline == "Official Maybank website"
+
+    def test_certificate_error_is_warning(self):
+        v = run("https://expired.badssl.com/", "<p>x</p>", tls_error="certificate has expired")
+        assert (v.verdict, v.rule) == ("WARNING", "W1_TLS_CERTIFICATE")
 
 
-class TestBrandProfilerTiers:
+class TestBlockRules:
+    def test_r1_mule_registry(self):
+        v = run("https://shop.example/", "<p>pay</p>", flagged=[{"account_number": "112233445566", "bank_name": "Maybank"}])
+        assert v.rule == "R1_MULE_REGISTRY" and "112233445566" in v.explanation
 
-    def test_news_article_mention_is_not_impersonation(self) -> None:
-        res = profile_brand_impersonation(
-            "https://ringgitplus.com/en/blog/maybank-fd-rates.html",
-            "Maybank has revised its fixed deposit rates. RHB and PayPal were also mentioned.",
-        )
-        assert res["is_impersonation"] is False
-        assert res["brand_mentioned"] is True
-        assert res["impersonation_index"] < 0.5
+    def test_r7_userinfo_spoof_needs_no_form(self):
+        v = run("https://maybank2u.com.my@evil-login.top/", "<p>Welcome</p>")
+        assert v.rule == "R7_USERINFO_SPOOF" and "evil-login.top" in v.explanation
 
-    def test_brand_in_foreign_hostname(self) -> None:
-        res = profile_brand_impersonation("http://maybank2u-secure-login.top/login", "")
-        assert res["is_impersonation"] is True and res["brand_in_hostname"] is True
-        assert res["target_brand"] == "Maybank"
+    def test_plain_user_name_is_not_spoofing(self):
+        assert run("https://admin@example.com/", "<p>x</p>").rule != "R7_USERINFO_SPOOF"
 
-    @pytest.mark.parametrize("url", ["https://rnaybank2u.com/login", "http://maybznk2u.com.my/auth"])
-    def test_lookalike_domains(self, url: str) -> None:
-        res = profile_brand_impersonation(url, "")
-        assert res["lookalike_domain"] is True and res["target_brand"] == "Maybank"
+    def test_r2_brand_in_hostname(self):
+        v = run("https://maybank2u-secure-login.top/", LOGIN_FORM)
+        assert v.rule == "R2_BRAND_IN_HOSTNAME" and v.headline == "Fake Maybank website"
 
-    @pytest.mark.parametrize("url", [
-        "https://www.maybank2u.com.my/home/m2u/common/login.do",
-        "https://ambank.amonline.com.my/web",
-        "https://www.bankislam.biz/",
-        "https://www.mybsn.com.my/mybsn/login/login.do",
-    ])
-    def test_official_domains_never_impersonation(self, url: str) -> None:
-        res = profile_brand_impersonation(url, "Login with your password")
-        assert res["is_official_domain"] is True and res["is_impersonation"] is False
+    def test_r3_lookalike(self):
+        assert run("https://rnaybank2u.com/", LOGIN_FORM).rule == "R3_LOOKALIKE_DOMAIN"
 
-    def test_short_brand_tokens_need_whole_token_match(self) -> None:
-        # 'rhb' and 'hlb' must not match inside unrelated hostnames.
-        assert profile_brand_impersonation("https://www.thrhbooks.com/", "")["is_impersonation"] is False
-        assert profile_brand_impersonation("https://rhb-online-verify.net/", "")["brand_in_hostname"] is True
+    def test_r8_visual_logo_mismatch(self):
+        visual = {"risk_level": "dangerous", "detected_logos": [{"brand": "Maybank", "confidence": 0.93}]}
+        v = run("https://rewards-portal.example/", LOGIN_FORM, visual=visual)
+        assert v.rule == "R8_VISUAL_BRAND_MISMATCH"
 
+    def test_r4_brand_clone(self):
+        assert run("https://secure-portal.example/", "<h1>Maybank2u</h1>" + LOGIN_FORM, p_bert=0.9).rule == "R4_BRAND_CLONE"
 
-class TestHeuristics:
+    def test_r5_coercive_request(self):
+        html = "<p>Account suspended. Verify immediately.</p>" + LOGIN_FORM
+        assert run("https://account-help.example/", html, p_bert=0.9).rule == "R5_COERCIVE_CREDENTIAL_REQUEST"
 
-    def test_cctld_hosts_not_penalised_for_depth(self) -> None:
-        res = analyze_url_heuristics("https://www.maybank2u.com.my/home")
-        assert res["is_suspicious"] is False
+    def test_r6_evasive_infrastructure(self):
+        assert run("https://203.0.113.5/", "<p>log in</p>", p_bert=0.95).rule == "R6_EVASIVE_INFRASTRUCTURE"
 
-    def test_deep_subdomain_chain_flagged(self) -> None:
-        res = analyze_url_heuristics("http://login.maybank2u.com.my.session-verify.info/m2u")
-        assert res["is_suspicious"] is True
-        assert res["registrable_domain"] == "session-verify.info"
-
-    @pytest.mark.parametrize("url", ["http://185.203.118.44/login.php", "https://xn--mybank2u-n4a.com/", "http://promo-claim.top/"])
-    def test_strong_indicators(self, url: str) -> None:
-        assert analyze_url_heuristics(url)["is_strong"] is True
-
-    def test_domain_utils(self) -> None:
-        assert registrable_domain("secure.kwsp.gov.my") == "kwsp.gov.my"
-        assert subdomain_labels("a.b.example.co.uk") == ["a", "b"]
-        assert strip_scheme("https://www.pbebank.com/x") == "pbebank.com/x"
-        assert build_model_input("http://evil.top/a") == "evil.top/a"
-        assert levenshtein("maybznk2u", "maybank2u") == 1
-        assert levenshtein("completely", "different", 2) == 3
+    def test_r9_free_hosting_form_with_bert(self):
+        assert run("https://pay-portal.web.app/", LOGIN_FORM, p_bert=0.9).rule == "R9_FREE_HOSTING_CREDENTIAL_FORM"
 
 
-class TestCorroborationRules:
+class TestWarningsAndSafety:
+    def test_w2_uncorroborated_impersonation(self):
+        v = run("https://maybank-fans.example/", "<p>A fan page</p>")
+        assert (v.verdict, v.rule) == ("WARNING", "W2_UNCORROBORATED_IMPERSONATION")
 
-    def test_bert_alone_never_blocks(self) -> None:
-        v = _decide("https://www.popular.com.my/eshop/account/login", "Member login. Email. Password.",
-                    LOGIN_FORM, bert=PHISH_BERT)
-        assert v.is_threat is False and 0 < v.risk_score < 0.5
+    def test_w3_form_on_free_hosting(self):
+        v = run("https://testsafebrowsing.appspot.com/s/phishing.html", LOGIN_FORM)
+        assert (v.verdict, v.rule) == ("WARNING", "W3_FREE_HOSTING_FORM")
 
-    def test_brand_mention_plus_form_without_third_signal_is_safe(self) -> None:
-        v = _decide("https://forum.lowyat.net/topic/1", "Cannot log in to Maybank MAE today", LOGIN_FORM)
-        assert v.is_threat is False
+    def test_bert_alone_never_blocks(self):
+        v = run("https://news.example.com/article", "<p>Maybank reports earnings</p>", p_bert=0.99)
+        assert v.verdict == "SAFE" and 0 < v.risk_score < 0.5
 
-    def test_mule_match_blocks_alone(self) -> None:
-        mule = {"mule_detected": True, "flagged_accounts": [{"account_number": "112233445566", "bank_name": "Maybank"}]}
-        v = _decide("http://murah-gadget-store.com/iphone", "Bank in to 112233445566", mule=mule)
-        assert v.is_threat is True and v.rule == "R1_MULE_REGISTRY" and v.risk_score == 0.99
-
-    def test_brand_hostname_with_credentials_blocks(self) -> None:
-        v = _decide("http://maybank2u-secure-login.top/m2u", "Maybank2u login", LOGIN_FORM)
-        assert v.rule == "R2_BRAND_IN_HOSTNAME"
-
-    def test_parked_brand_hostname_without_corroboration_is_safe(self) -> None:
-        v = _decide("https://maybankfoundation.org/", "Our community programmes and scholarships")
-        assert v.is_threat is False
-
-    def test_lookalike_with_credentials_blocks(self) -> None:
-        v = _decide("https://rnaybank2u.com/home/login", "Welcome", LOGIN_FORM)
-        assert v.rule == "R3_LOOKALIKE_DOMAIN"
-
-    def test_benign_near_miss_domain_is_safe(self) -> None:
-        v = _decide("https://paypay.ne.jp/", "Cashless payments for everyday shopping")
-        assert v.is_threat is False
-
-    def test_coercive_credential_request_blocks(self) -> None:
-        v = _decide("http://refund-claims-my.com/tuntutan", "Sila kemaskini maklumat untuk elak akaun digantung",
-                    LOGIN_FORM, bert=PHISH_BERT)
-        assert v.rule == "R5_COERCIVE_CREDENTIAL_REQUEST"
-
-    def test_evasive_infrastructure_blocks(self) -> None:
-        v = _decide("http://185.203.118.44/portal/login.php", "Username. Password. Login.", LOGIN_FORM, bert=PHISH_BERT)
-        assert v.rule == "R6_EVASIVE_INFRASTRUCTURE"
-
-    def test_trusted_domain_is_never_blocked(self) -> None:
-        v = _decide("https://www.maybank2u.com.my/login", "Enter your password and TAC", LOGIN_FORM,
-                    bert=PHISH_BERT, trusted=True)
-        assert v.is_threat is False and v.risk_score == 0.0
+    def test_reasons_are_ordered_and_explained(self):
+        v = run("https://maybank2u-secure-login.top/", LOGIN_FORM, p_bert=0.99)
+        severities = [r["severity"] for r in v.reasons]
+        order = ["high", "medium", "low", "info", "ok"]
+        assert severities == sorted(severities, key=order.index)
+        assert v.explanation.startswith("PhishGuard blocked this page.")
 
 
-class TestScorers:
+class TestContentDetectors:
+    def test_sensitive_fields(self):
+        assert detect_sensitive_fields(LOGIN_FORM + CARD_FORM + "<input autocomplete='one-time-code'>") == [
+            "password", "payment card", "OTP / TAC / PIN"]
+        assert detect_sensitive_fields("<input name='shopping'>") == []
 
-    def test_brand_vector_now_contributes_dynamically(self) -> None:
-        spoof = compute_multi_vector_risk("http://maybank2u-tac-verify.top/auth", "Maybank TAC", bert_score=0.5)
-        clean = compute_multi_vector_risk("http://example-bakery.com/menu", "Fresh bread daily", bert_score=0.5)
-        assert spoof["vectors"]["brand_impersonation_score"] > 9.0
-        assert clean["vectors"]["brand_impersonation_score"] == 0.0
-        assert spoof["target_brand"] == "Maybank"
+    def test_credential_text_needs_context_for_short_words(self):
+        assert has_credential_text("Please enter your TAC code")
+        assert not has_credential_text("Pin this recipe for later shopping")
 
-    def test_fallback_probability_uses_real_heuristic_score(self) -> None:
-        risky, risky_label = predict_phishing_probability("http://185.203.118.44/maybank2u/login.php")
-        benign, benign_label = predict_phishing_probability("https://www.utar.edu.my/admission.php")
-        assert risky > benign
-        assert benign_label == "LEGITIMATE"
-
-    def test_fallback_probability_ignores_benign_substrings(self) -> None:
-        prob, label = predict_phishing_probability("Great shopping deals, contact our team")
-        assert label == "LEGITIMATE" and prob < 0.2
-
-    def test_fallback_probability_flags_scam_text(self) -> None:
-        prob, label = predict_phishing_probability("URGENT: akaun digantung. Enter your password to verify immediately")
-        assert label == "PHISHING" and prob >= 0.6
+    def test_scam_phrases_multilingual(self):
+        assert scam_phrases("Akaun anda dibekukan. Tindakan segera diperlukan.") == ["tindakan segera", "akaun anda dibekukan"]

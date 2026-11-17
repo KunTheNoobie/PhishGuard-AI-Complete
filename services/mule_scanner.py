@@ -1,17 +1,24 @@
 """
-PhishGuard-AI — Mule Account Scanner Service.
-===============================================
+PhishGuard-AI — Mule Account Scanner.
+======================================
 
-Detects Malaysian bank account numbers embedded in web-page text using
-bank-specific pre-compiled regular expressions, then cross-references
-any matches against the ``mule_registry`` table via the repository layer.
+Finds Malaysian bank-account numbers, DuitNow phone numbers and NRIC proxies
+in page text and checks them against the mule registry.
 
-Each major Malaysian bank has a distinct account-number format. Targeted
-patterns reduce false positives, while the generic ``\\b\\d{10,14}\\b``
-fallback still catches formats from unlisted financial institutions.
+Account numbers are written in many ways on scam pages, so every candidate
+is reduced to a *compact* digit string before it is matched:
+
+    "514276103388"      contiguous
+    "5142 7610 3388"    space-grouped
+    "5142-7610-3388"    hyphen-grouped
+    "+60 12-345 6789"   DuitNow phone (normalised to 0123456789)
+    "980102-14-5678"    NRIC (normalised to 980102145678)
+
+A candidate is reported when its compact form is 10–16 digits.  The bank is
+guessed from the issuer's account format; the registry lookup is exact on
+the compact form, so a bank guess never causes a block on its own.
 
 Architecture Layer : Service / Detection
-Thesis Reference   : §4.4 — Mule Account Pattern Matching & Registry Lookup
 """
 
 from __future__ import annotations
@@ -22,159 +29,104 @@ from typing import Any, Final
 
 import aiosqlite
 
-from core.config import MULE_ACCOUNT_PATTERNS, MULE_ACCOUNT_REGEX
+from core.config import (
+    ACCOUNT_MAX_DIGITS,
+    ACCOUNT_MIN_DIGITS,
+    DUITNOW_PHONE_PATTERN,
+    MALAYSIAN_IC_PATTERN,
+    MULE_ACCOUNT_PATTERNS,
+)
 from database.repository import check_mule_accounts
+from services.qr_payload import extract_duitnow_accounts
 
 logger: Final[logging.Logger] = logging.getLogger("phishguard.mule_scanner")
 
+# Digit runs, optionally split into 2–6 digit groups by single spaces,
+# hyphens or dots, optionally with a leading "+".
+_CANDIDATE_RE: Final[re.Pattern[str]] = re.compile(
+    r"(?<![\w+.\-])(\+?\d{2,16}(?:[ .\-]\d{2,8}){0,5})(?![\w]|[.\-]\d)"
+)
+_PHONE_RE: Final[re.Pattern[str]] = re.compile(rf"^{DUITNOW_PHONE_PATTERN}$")
+_IC_RE: Final[re.Pattern[str]] = re.compile(rf"^{MALAYSIAN_IC_PATTERN}$")
+_BANK_RES: Final[dict[str, re.Pattern[str]]] = {
+    bank: re.compile(rf"^{pattern}$") for bank, pattern in MULE_ACCOUNT_PATTERNS.items()
+}
+
+
+def _luhn_valid(number: str) -> bool:
+    total = 0
+    for i, ch in enumerate(reversed(number)):
+        d = int(ch)
+        if i % 2:
+            d = d * 2 - 9 if d > 4 else d * 2
+        total += d
+    return total % 10 == 0
+
+
+def normalise_account(raw: str) -> str:
+    """Return the compact registry key of an account / phone / ID string."""
+    digits = re.sub(r"\D", "", raw or "")
+    # +60 12-345 6789 → 0123456789 (DuitNow phone proxies are stored locally formatted)
+    if digits.startswith("601") and 11 <= len(digits) <= 12:
+        digits = digits[1:]
+    return digits
+
+
+def classify_account(compact: str, raw: str = "") -> str:
+    """Best-effort issuer / proxy type of a compact account string."""
+    if _IC_RE.match(raw.strip()) and "-" in raw:
+        return "DuitNow ID (NRIC)"
+    if _PHONE_RE.match(compact):
+        return "DuitNow phone"
+    for bank, pattern in _BANK_RES.items():
+        if pattern.match(compact):
+            return bank
+    return "Unknown bank"
+
+
+def extract_accounts(text: str) -> list[dict[str, str]]:
+    """Return every distinct account-like number in ``text``."""
+    found: dict[str, dict[str, str]] = {}
+    for match in _CANDIDATE_RE.finditer(text or ""):
+        raw = match.group(1)
+        separators = set(re.sub(r"[\d+]", "", raw))
+        compact = normalise_account(raw)
+        if not ACCOUNT_MIN_DIGITS <= len(compact) <= ACCOUNT_MAX_DIGITS:
+            continue
+        # Mixed separators ("12 34-56") only make sense for a phone number.
+        if len(separators) > 1 and not _PHONE_RE.match(compact):
+            continue
+        if separators == {"."} and raw.count(".") < 2:
+            continue                          # "1234.56" is an amount, not an account
+        if len(compact) == 16 and _luhn_valid(compact):
+            continue                          # a payment-card number, not a bank account
+        found.setdefault(compact, {
+            "account_number": compact,
+            "as_written": raw,
+            "account_type": classify_account(compact, raw),
+        })
+    for proxy in extract_duitnow_accounts(text or ""):
+        compact = normalise_account(proxy["account_number"])
+        found.setdefault(compact, {
+            "account_number": compact,
+            "as_written": proxy["account_number"],
+            "account_type": proxy["source"],
+        })
+    return list(found.values())
+
 
 class MuleScanner:
-    """Pre-compiled bank-specific regex scanner + mule-registry cross-referencer.
+    """Extracts account numbers from page text and checks the mule registry."""
 
-    Instantiated **once** during the FastAPI ``lifespan`` and stored in
-    ``app.state``.  The compiled patterns are reused across all requests
-    (zero recompilation overhead).
-    """
-
-    def __init__(self) -> None:
-        """Compile bank-specific and generic account-number regex patterns."""
-        self._bank_patterns: Final[dict[str, re.Pattern[str]]] = {
-            bank: re.compile(pattern)
-            for bank, pattern in MULE_ACCOUNT_PATTERNS.items()
-        }
-        self._generic_pattern: Final[re.Pattern[str]] = re.compile(MULE_ACCOUNT_REGEX)
-        logger.info(
-            "MuleScanner initialised — %d bank-specific patterns + 1 generic fallback.",
-            len(self._bank_patterns),
-        )
-
-    async def scan_and_verify(
-        self,
-        text: str,
-        db: aiosqlite.Connection,
-    ) -> dict[str, Any]:
-        """Extract account numbers from text and verify against the registry.
-
-        Pipeline
-        --------
-        1. Apply bank-specific compiled regex patterns.
-        2. Apply the generic fallback pattern for remaining 10–14 digit numbers.
-        3. Deduplicate the combined matches.
-        4. Delegate to ``repository.check_mule_accounts()`` for DB lookup.
-        5. Return a structured result dict consumed by the response schema.
-
-        Parameters
-        ----------
-        text : str
-            Sanitized plaintext (post-ETL).
-        db : aiosqlite.Connection
-            Active database connection (injected via ``app.state``).
-
-        Returns
-        -------
-        dict[str, Any]
-            Keys: ``accounts_extracted``, ``flagged_accounts``,
-            ``mule_detected``.
-        """
-        # ── 1. Bank-specific regex extraction ──
-        all_matches: set[str] = set()
-
-        for bank_name, pattern in self._bank_patterns.items():
-            bank_matches: list[str] = pattern.findall(text)
-            if bank_matches:
-                logger.debug(
-                    "Regex [%s] extracted %d match(es): %s",
-                    bank_name,
-                    len(bank_matches),
-                    bank_matches,
-                )
-                all_matches.update(bank_matches)
-
-        # ── 2. Generic fallback for unmatched formats ──
-        generic_matches: list[str] = self._generic_pattern.findall(text)
-        new_generic = set(generic_matches) - all_matches
-        if new_generic:
-            logger.debug(
-                "Generic fallback extracted %d additional match(es): %s",
-                len(new_generic),
-                sorted(new_generic),
-            )
-            all_matches.update(new_generic)
-
-        unique_accounts: list[str] = sorted(all_matches)
-
-        # ── 3. Normalize for database lookup (e.g. strip dashes/spaces) ──
-        normalized_lookup: set[str] = set(unique_accounts)
-        for acc in unique_accounts:
-            clean = re.sub(r"[\s\-]", "", acc)
-            if clean:
-                normalized_lookup.add(clean)
-                if clean.startswith("+60"):
-                    normalized_lookup.add("0" + clean[3:])
-                elif clean.startswith("60"):
-                    normalized_lookup.add("0" + clean[2:])
-                elif clean.startswith("0"):
-                    normalized_lookup.add("+6" + clean)
-                    normalized_lookup.add("6" + clean)
-
-        # ── 4. QR Quishing payload scan ──
-        from services.qr_scanner import scan_and_verify_qr
-        qr_result = await scan_and_verify_qr(text, db)
-        for qr_proxy in qr_result.get("extracted_proxies", []):
-            unique_accounts.append(qr_proxy["account_number"])
-            normalized_lookup.add(qr_proxy["account_number"])
-
-        logger.debug(
-            "Total unique account(s) extracted: %d (lookup candidates: %d)",
-            len(unique_accounts),
-            len(normalized_lookup),
-        )
-
-        # ── 5. Registry lookup ──
-        flagged: list[dict[str, Any]] = await check_mule_accounts(
-            sorted(normalized_lookup), db
-        )
-
-        # Merge any specific QR flagged accounts
-        for qr_flagged in qr_result.get("flagged_accounts", []):
-            if not any(f["account_number"] == qr_flagged["account_number"] for f in flagged):
-                flagged.append(qr_flagged)
-
-        mule_detected: bool = len(flagged) > 0
-
-        if mule_detected:
-            logger.warning(
-                "MULE SCAN — %d flagged account(s) in page text.",
-                len(flagged),
-            )
-        else:
-            logger.info("MULE SCAN — No flagged accounts detected.")
-
+    async def scan_and_verify(self, text: str, db: aiosqlite.Connection) -> dict[str, Any]:
+        """Extract candidates and return those found in ``mule_registry``."""
+        extracted = extract_accounts(text)
+        flagged = await check_mule_accounts([e["account_number"] for e in extracted], db)
+        if flagged:
+            logger.warning("Mule registry match: %s", [f["account_number"] for f in flagged])
         return {
-            "accounts_extracted": unique_accounts,
+            "accounts_extracted": [e["account_number"] for e in extracted],
+            "extracted_details": extracted,
             "flagged_accounts": flagged,
-            "mule_detected": mule_detected,
-            "quishing_detected": qr_result.get("quishing_threat", False),
+            "mule_detected": bool(flagged),
         }
-
-    def extract_accounts(self, text: str) -> list[dict[str, str]]:
-        """Synchronously extract account numbers matched against bank regexes."""
-        results: list[dict[str, str]] = []
-        for bank_name, pattern in self._bank_patterns.items():
-            matches = pattern.findall(text)
-            for m in matches:
-                results.append({"bank_name": bank_name, "account_number": m, "matched_text": m})
-        generic_matches = self._generic_pattern.findall(text)
-        for gm in generic_matches:
-            if not any(r["account_number"] == gm for r in results):
-                results.append({"bank_name": "Generic Bank / DuitNow", "account_number": gm, "matched_text": gm})
-        return results
-
-    def scan_text(self, text: str) -> list[Any]:
-        """Convenience wrapper returning extracted account structures."""
-        from collections import namedtuple
-        Match = namedtuple("Match", ["account_number", "bank_name", "matched_text"])
-        raw = self.extract_accounts(text)
-        return [Match(r["account_number"], r["bank_name"], r["matched_text"]) for r in raw]
-
-

@@ -1,647 +1,193 @@
-const PHISHGUARD_TEXT_LIMIT = 30000;
-const PHISHGUARD_DOM_LIMIT = 3000000;
-const PHISHGUARD_BANNER_ID = "phishguard-ai-warning-banner";
-const PHISHGUARD_HIGHLIGHT_CLASS = "phishguard-ai-mule-highlight";
+/*
+ * PhishGuard-AI — content script.
+ *
+ * 1. Collects the page (URL, HTML, visible text) and sends it to the service worker.
+ * 2. Shows the verdict: a full-page block screen (BLOCK_RENDER), an amber
+ *    "not secure" banner (WARNING) or nothing (SAFE).
+ *
+ * The UI lives in a closed Shadow DOM, so the page's own CSS cannot restyle,
+ * hide or overlap it, and all server text is inserted with textContent.
+ * Values typed into form fields are never collected.
+ */
+(() => {
+  "use strict";
 
-function isSupportedPage() {
-  return location.protocol === "http:" || location.protocol === "https:" || location.protocol === "file:";
-}
+  // Injected again by "Re-scan": reuse the running instance.
+  if (window.__phishguardScan) { window.__phishguardScan(); return; }
 
-function extractDeepText(rootNode, visited = new Set()) {
-  if (!rootNode || visited.has(rootNode)) return "";
-  visited.add(rootNode);
+  const TEXT_LIMIT = 30000;
+  const HTML_LIMIT = 3000000;
+  const HOST_ID = "phishguard-ai-root";
 
-  const textParts = [];
-  try {
-    const walker = document.createTreeWalker(
-      rootNode,
-      NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
-      null,
-      false
-    );
-
-    let node;
-    while ((node = walker.nextNode())) {
-      if (node.nodeType === Node.TEXT_NODE) {
-        const val = (node.nodeValue || "").trim();
-        if (val) textParts.push(val);
-      } else if (node.nodeType === Node.ELEMENT_NODE) {
-        const el = node;
-        // Extract input placeholders, values, and accessibility labels
-        if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") {
-          if (el.placeholder) textParts.push(el.placeholder);
-          if (el.value && el.type !== "password") textParts.push(el.value);
-          if (el.getAttribute("aria-label")) textParts.push(el.getAttribute("aria-label"));
-        } else if (el.tagName === "BUTTON") {
-          if (el.innerText) textParts.push(el.innerText.trim());
-        } else if (el.tagName === "IMG") {
-          if (el.alt) textParts.push(el.alt);
-        }
-
-        // Recursively traverse open Shadow DOM roots (used in modern SPAs & Web Components)
-        if (el.shadowRoot) {
-          textParts.push(extractDeepText(el.shadowRoot, visited));
-        }
-
-        // Traverse accessible same-origin iframe documents
-        if (el.tagName === "IFRAME") {
-          try {
-            if (el.contentDocument && el.contentDocument.body) {
-              textParts.push(extractDeepText(el.contentDocument.body, visited));
-            }
-          } catch (_e) {}
-        }
-      }
-    }
-  } catch (_e) {}
-
-  return textParts.join(" ");
-}
-
-function getVisibleText() {
-  if (!document.body) return "";
-  try {
-    const deepText = extractDeepText(document.body);
-    const standardText = document.body.innerText || "";
-    const combined = `${standardText} ${deepText}`;
-    return combined.replace(/\s+/g, " ").trim().slice(0, PHISHGUARD_TEXT_LIMIT);
-  } catch (_e) {
-    const fallback = document.body ? document.body.innerText : "";
-    return fallback.replace(/\s+/g, " ").trim().slice(0, PHISHGUARD_TEXT_LIMIT);
-  }
-}
-
-function collectPageContext() {
-  const metaDesc = document.querySelector("meta[name='description']")?.getAttribute("content") || "";
-  const ogTitle = document.querySelector("meta[property='og:title']")?.getAttribute("content") || "";
-  const pageTitle = document.title || ogTitle || "";
-
-  let domStr = "";
-  try {
-    domStr = document.documentElement ? document.documentElement.outerHTML.slice(0, PHISHGUARD_DOM_LIMIT) : "";
-  } catch (_e) {
-    domStr = document.body ? document.body.innerHTML : "";
+  function collectPage() {
+    const root = document.documentElement;
+    return {
+      url: location.href,
+      title: document.title || "",
+      html: root ? root.outerHTML.slice(0, HTML_LIMIT) : "",
+      text: ((document.body && document.body.innerText) || "").replace(/\s+/g, " ").trim().slice(0, TEXT_LIMIT),
+    };
   }
 
-  return {
-    url: location.href,
-    title: pageTitle,
-    metaDescription: metaDesc,
-    visibleText: `${pageTitle} ${metaDesc} ${getVisibleText()}`.trim().slice(0, PHISHGUARD_TEXT_LIMIT),
-    domContent: domStr
-  };
-}
+  function scan() {
+    chrome.runtime.sendMessage({ type: "PG_PAGE", page: collectPage() }).catch(() => {});
+  }
+  window.__phishguardScan = scan;
 
-function requestVisualAnalysis() {
-  if (!isSupportedPage()) {
-    return Promise.resolve({
-      ok: false,
-      error: "Only HTTP and HTTPS pages can be scanned."
+  /* ── Shadow-DOM host ── */
+  function mount() {
+    let host = document.getElementById(HOST_ID);
+    if (host) host.remove();
+    host = document.createElement("div");
+    host.id = HOST_ID;
+    host.style.cssText = "all: initial; position: fixed; z-index: 2147483647; inset: 0 0 auto 0;";
+    (document.body || document.documentElement).appendChild(host);
+    const shadow = host.attachShadow({ mode: "closed" });
+    const style = document.createElement("style");
+    style.textContent = CSS;
+    shadow.appendChild(style);
+    return { host, shadow };
+  }
+
+  function unmount() {
+    const host = document.getElementById(HOST_ID);
+    if (host) host.remove();
+    document.documentElement.style.removeProperty("overflow");
+  }
+
+  function h(tag, cls, text) {
+    const node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text != null) node.textContent = String(text);
+    return node;
+  }
+
+  const pct = (x) => `${Math.round((Number(x) || 0) * 100)}%`;
+
+  /* ── Red block screen ── */
+  function showBlock(r) {
+    const { host, shadow } = mount();
+    host.style.inset = "0";
+    document.documentElement.style.setProperty("overflow", "hidden", "important");
+
+    const wrap = h("div", "screen");
+    const card = h("div", "card");
+    const head = h("div", "head");
+    head.append(h("div", "badge", "!"));
+    const titles = h("div", "titles");
+    titles.append(h("div", "eyebrow", "PhishGuard-AI blocked this page"), h("h1", "", r.headline || "Dangerous page"));
+    head.append(titles);
+
+    const site = h("p", "site");
+    site.append("Website: ", h("strong", "", r.hostname || location.hostname));
+    const explain = h("p", "explain", r.explanation || "");
+
+    const reasons = h("ul", "reasons");
+    (r.reasons || []).filter((x) => x.severity === "high" || x.severity === "medium").slice(0, 4)
+      .forEach((x) => { const li = h("li", x.severity); li.append(h("span", "dot"), h("span", "", x.text)); reasons.append(li); });
+
+    const facts = h("dl", "facts");
+    const bert = r.bert || {};
+    const mule = r.mule || {};
+    const visual = r.visual || null;
+    [
+      ["Rule", r.rule || "—"],
+      ["AI URL model", bert.skipped ? "skipped" : `${pct(bert.phishing_probability)} phishing`],
+      ["Mule registry", (mule.flagged_accounts || []).length ? `match: ${mule.flagged_accounts.map((a) => a.account_number).join(", ")}` : "no match"],
+      ["Logo check", visual && visual.status === "ok" ? (visual.detected_logos || []).map((d) => d.brand).join(", ") || "no bank logo" : "not run"],
+      ["Connection", (r.scheme || location.protocol.replace(":", "")) === "https" ? "HTTPS (encrypted)" : "HTTP (not encrypted)"],
+      ["Risk score", pct(r.risk_score)],
+    ].forEach(([k, v]) => { facts.append(h("dt", "", k), h("dd", "", v)); });
+
+    const actions = h("div", "actions");
+    const back = h("button", "primary", "← Back to safety");
+    back.addEventListener("click", () => { if (history.length > 1) history.back(); else location.href = "about:blank"; });
+    const report = h("button", "secondary", "Report to SOC");
+    report.addEventListener("click", () => {
+      const flagged = (mule.flagged_accounts || [])[0];
+      const extracted = (mule.accounts_extracted || [])[0];
+      const account = flagged ? flagged.account_number : extracted || window.prompt("Bank account or DuitNow number shown on this page:", "");
+      if (!account) return;
+      report.disabled = true;
+      report.textContent = "Sending…";
+      chrome.runtime.sendMessage({
+        type: "PG_REPORT_MULE", accountNumber: account, bankName: flagged ? flagged.bank_name : "Unknown", pageUrl: location.href,
+      }).then((resp) => { report.textContent = resp && resp.ok ? "Reported for review" : "Report failed"; })
+        .catch(() => { report.textContent = "Report failed"; });
     });
+    const proceed = h("button", "link", "Proceed anyway (unsafe)");
+    proceed.addEventListener("click", () => {
+      chrome.runtime.sendMessage({ type: "PG_ALLOW_SITE", host: location.hostname }).catch(() => {});
+      unmount();
+    });
+    actions.append(back, report, proceed);
+
+    card.append(head, site, explain, reasons, facts, actions);
+    wrap.append(card);
+    shadow.append(wrap);
+    back.focus();
   }
 
-  return new Promise((resolve, reject) => {
-    chrome.runtime.sendMessage({
-      type: "PHISHGUARD_ANALYZE_PAGE",
-      payload: collectPageContext()
-    }, (response) => {
-      if (chrome.runtime.lastError) {
-        reject(new Error(chrome.runtime.lastError.message));
-        return;
-      }
-      resolve(response);
-    });
+  /* ── Amber warning banner ── */
+  function showWarning(r) {
+    const { shadow } = mount();
+    const bar = h("div", "banner");
+    const text = h("div", "btext");
+    text.append(h("strong", "", r.headline || "Be careful on this page"), h("span", "", r.explanation || ""));
+    const close = h("button", "close", "Dismiss");
+    close.addEventListener("click", unmount);
+    bar.append(h("div", "bicon", "!"), text, close);
+    shadow.append(bar);
+  }
+
+  chrome.runtime.onMessage.addListener((msg) => {
+    if (msg.type !== "PG_SHOW") return;
+    const r = msg.result || {};
+    if (r.allowed_by_user) { unmount(); return; }
+    if (r.verdict === "BLOCK_RENDER") showBlock(r);
+    else if (r.verdict === "WARNING") showWarning(r);
+    else unmount();
   });
-}
 
-function warningTextForRisk(result) {
-  if (result.risk_level === "dangerous") {
-    return "Potential phishing page detected. Do not enter login credentials or banking information.";
-  }
-
-  return "This page may be suspicious. A financial logo was detected but the domain does not match the official domain.";
-}
-
-const PHISHGUARD_BLOCK_SCREEN_ID = "phishguard-ai-fullscreen-block";
-
-function showFullScreenBlockScreen(result) {
-  clearWarningBanner();
-  highlightMuleAccounts(result);
-  highlightScamKeywords();
-
-  const existingBlock = document.getElementById(PHISHGUARD_BLOCK_SCREEN_ID);
-  if (existingBlock) existingBlock.remove();
-
-  const overlay = document.createElement("div");
-  overlay.id = PHISHGUARD_BLOCK_SCREEN_ID;
-  overlay.setAttribute("role", "alertdialog");
-
-  const esc = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  const muleScan = result && result.mule_scan;
-  const semantic = result && result.semantic_analysis;
-  const backend = (result && result.semantic) || {};
-  const visual = (result && result.visual) || null;
-  const flagged = (muleScan && Array.isArray(muleScan.flagged_accounts)) ? muleScan.flagged_accounts : [];
-  const accounts = flagged.map((a) => a.account_number).join(", ");
-  const rule = backend.decision_rule ? String(backend.decision_rule).replace(/_/g, " ") : "";
-  const indicators = Array.isArray(backend.threat_indicators) ? backend.threat_indicators.slice(0, 3) : [];
-  const logos = visual && Array.isArray(visual.detected_logos) ? visual.detected_logos : [];
-  const visualText = logos.length
-    ? logos.map((l) => esc(l.brand || l.label || l.class_name || "logo")).join(", ") + (visual.risk_level ? ` · ${esc(visual.risk_level)}` : "")
-    : (visual && visual.risk_level ? esc(visual.risk_level) : "No brand logo detected");
-
-  const pill = (text, tone) => {
-    const tones = { red: ["rgba(239,68,68,0.15)", "#f87171", "rgba(239,68,68,0.4)"],
-                    green: ["rgba(16,185,129,0.15)", "#34d399", "rgba(16,185,129,0.4)"],
-                    amber: ["rgba(245,158,11,0.15)", "#fbbf24", "rgba(245,158,11,0.4)"],
-                    grey: ["rgba(148,163,184,0.12)", "#cbd5e1", "rgba(148,163,184,0.3)"] };
-    const [bg, fg, bd] = tones[tone] || tones.grey;
-    return `<span style="display:inline-block;max-width:100%;padding:3px 10px;border-radius:999px;background:${bg};color:${fg};border:1px solid ${bd};font-size:12px;font-weight:700;line-height:1.45;white-space:normal;overflow-wrap:anywhere;text-align:center;">${text}</span>`;
-  };
-  const row = (label, value) => `
-        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px 14px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.07);">
-          <span style="flex:0 0 auto;font-size:13px;color:#94a3b8;font-weight:600;">${label}</span>
-          <span style="flex:1 1 220px;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;min-width:0;">${value}</span>
-        </div>`;
-  const bertPct = semantic ? `${(semantic.confidence * 100).toFixed(1)}% ${esc(semantic.label)}` : "Not available";
-
-  overlay.innerHTML = `
-    <div style="box-sizing:border-box;max-width:600px;width:92%;max-height:92vh;overflow-y:auto;background:rgba(15,23,42,0.96);color:#f8fafc;border:1.5px solid #ef4444;border-radius:14px;padding:28px 28px 22px;box-shadow:0 25px 60px -12px rgba(0,0,0,0.85),0 0 30px rgba(239,68,68,0.35);text-align:left;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;backdrop-filter:blur(16px);">
-      <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
-        <div style="flex:0 0 48px;background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff;width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 0 16px rgba(239,68,68,0.6);">🚨</div>
-        <div style="min-width:0;">
-          <h2 style="margin:0;font-size:20px;color:#f87171;font-weight:800;letter-spacing:-0.01em;line-height:1.3;">Dangerous Phishing Page Blocked</h2>
-          <span style="display:block;font-size:12px;color:#94a3b8;font-weight:600;line-height:1.4;">Autonomous Defense Enforcement &bull; PhishGuard-AI Multi-Modal Shield</span>
-        </div>
-      </div>
-      <p style="font-size:14px;line-height:1.6;color:#cbd5e1;margin:0 0 14px;overflow-wrap:anywhere;">
-        PhishGuard-AI blocked <strong style="color:#f8fafc;">${esc(location.hostname)}</strong>. It shows high-confidence financial phishing or mule-account patterns designed to steal credentials or funds. Do not enter passwords, TAC codes or card details.
-      </p>
-      <div style="background:rgba(2,6,23,0.55);border:1px solid rgba(239,68,68,0.25);border-left:4px solid #ef4444;border-radius:8px;padding:2px 14px;margin-bottom:14px;">
-        ${row("Verdict", pill("BLOCK_RENDER", "red") + (rule ? pill(esc(rule), "grey") : ""))}
-        ${row("BERT URL model", pill(bertPct, semantic && semantic.is_malicious ? "red" : "green"))}
-        ${row("Semakmule registry", accounts ? pill("Match: " + esc(accounts), "red") : pill("No registered account", "green"))}
-        ${row("Brand / visual check", pill(visualText, logos.length ? "amber" : "grey"))}
-        ${row("Risk score", pill(backend.risk_score != null ? Number(backend.risk_score).toFixed(2) : "—", "red"))}
-      </div>
-      ${indicators.length ? `<ul style="margin:0 0 18px;padding-left:18px;font-size:12.5px;line-height:1.55;color:#94a3b8;overflow-wrap:anywhere;">${indicators.map((i) => `<li>${esc(i)}</li>`).join("")}</ul>` : ""}
-      <div style="display:flex;gap:10px;align-items:center;justify-content:flex-end;flex-wrap:wrap;">
-        <button id="phishguard-report-btn" style="flex:0 0 auto;background:rgba(6,182,212,0.12);border:1px solid rgba(6,182,212,0.5);color:#22d3ee;padding:9px 16px;border-radius:6px;font-size:13px;cursor:pointer;font-weight:700;white-space:nowrap;">
-          Report to SOC
-        </button>
-        <button id="phishguard-proceed-btn" style="flex:0 0 auto;background:rgba(30,41,59,0.8);border:1px solid #475569;color:#94a3b8;padding:9px 16px;border-radius:6px;font-size:13px;cursor:pointer;font-weight:600;white-space:nowrap;">
-          Proceed Anyway (Unsafe)
-        </button>
-        <button id="phishguard-safety-btn" style="flex:0 0 auto;background:linear-gradient(135deg,#ef4444,#dc2626);border:none;color:#fff;padding:10px 22px;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(239,68,68,0.5);white-space:nowrap;">
-          &larr; Back to Safety
-        </button>
-      </div>
-    </div>
+  const CSS = `
+    :host { all: initial; }
+    * { box-sizing: border-box; font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    .screen { position: fixed; inset: 0; display: grid; place-items: center; padding: 16px; overflow-y: auto;
+      background: rgba(7, 11, 22, 0.97); }
+    .card { width: min(640px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; background: #111827; color: #e6eaf2;
+      border: 1px solid #3b1d24; border-top: 4px solid #ef4444; border-radius: 14px; padding: 26px 28px;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6); }
+    .head { display: flex; gap: 16px; align-items: center; }
+    .badge { flex: 0 0 48px; height: 48px; border-radius: 12px; display: grid; place-items: center;
+      background: rgba(239, 68, 68, 0.15); color: #f87171; font-size: 26px; font-weight: 800; }
+    .titles { min-width: 0; }
+    .eyebrow { color: #f87171; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+    h1 { margin: 4px 0 0; font-size: 22px; line-height: 1.25; color: #f8fafc; }
+    .site { margin: 16px 0 6px; color: #94a3b8; font-size: 14px; overflow-wrap: anywhere; }
+    .site strong { color: #f8fafc; }
+    .explain { margin: 0 0 14px; color: #cbd5e1; font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
+    .reasons { list-style: none; margin: 0 0 16px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+    .reasons li { display: grid; grid-template-columns: 14px 1fr; gap: 8px; color: #e2e8f0; font-size: 13.5px; line-height: 1.5; overflow-wrap: anywhere; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 7px; background: #f59e0b; }
+    .high .dot { background: #ef4444; }
+    .facts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 0 0 20px; padding: 14px 16px;
+      background: #0b1120; border: 1px solid #243047; border-radius: 10px; font-size: 13px; }
+    .facts dt { color: #94a3b8; }
+    .facts dd { margin: 0; color: #e6eaf2; overflow-wrap: anywhere; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    button { font-size: 14px; font-weight: 700; border-radius: 9px; cursor: pointer; padding: 10px 18px; border: 1px solid transparent; white-space: nowrap; }
+    .primary { background: #ef4444; color: #fff; }
+    .primary:hover { background: #dc2626; }
+    .secondary { background: #172033; color: #e6eaf2; border-color: #33415c; }
+    .secondary:disabled { opacity: 0.7; cursor: default; }
+    .link { background: none; color: #94a3b8; padding: 10px 6px; font-weight: 600; text-decoration: underline; margin-left: auto; }
+    .banner { position: fixed; top: 0; left: 0; right: 0; display: flex; align-items: center; gap: 12px; padding: 10px 16px;
+      background: #1f1608; color: #fde68a; border-bottom: 2px solid #f59e0b; box-shadow: 0 6px 20px rgba(0,0,0,0.35); font-size: 13.5px; }
+    .bicon { flex: 0 0 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: #f59e0b; color: #1f1608; font-weight: 800; }
+    .btext { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; line-height: 1.45; overflow-wrap: anywhere; }
+    .btext strong { color: #fef3c7; }
+    .close { background: #f59e0b; color: #1f1608; padding: 6px 12px; font-size: 13px; }
   `;
 
-  Object.assign(overlay.style, {
-    position: "fixed",
-    top: "0",
-    left: "0",
-    width: "100vw",
-    height: "100vh",
-    backgroundColor: "rgba(2, 6, 23, 0.95)",
-    backdropFilter: "blur(8px)",
-    zIndex: "2147483647",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    boxSizing: "border-box",
-    padding: "16px"
-  });
-
-  const targetParent = document.body || document.documentElement;
-  if (targetParent) {
-    targetParent.appendChild(overlay);
-  }
-
-  const safetyBtn = document.getElementById("phishguard-safety-btn");
-  if (safetyBtn) {
-    safetyBtn.addEventListener("click", () => {
-      if (window.history.length > 1) {
-        window.history.back();
-      } else {
-        window.location.href = "about:blank";
-      }
-    });
-  }
-
-  const reportBtn = document.getElementById("phishguard-report-btn");
-  if (reportBtn) {
-    reportBtn.addEventListener("click", () => {
-      const acct = flagged.length ? flagged[0].account_number : window.prompt("Account number or DuitNow ID shown on this page:", "");
-      if (!acct) return;
-      reportBtn.disabled = true;
-      reportBtn.textContent = "Sending…";
-      try {
-        chrome.runtime.sendMessage({
-          type: "PHISHGUARD_REPORT_MULE",
-          accountNumber: acct,
-          bankName: flagged.length ? flagged[0].bank_name : "Unknown",
-          pageUrl: location.href
-        }, (resp) => {
-          reportBtn.textContent = resp && resp.ok ? "Reported for review" : "Report failed";
-        });
-      } catch (_e) {
-        reportBtn.textContent = "Report failed";
-      }
-    });
-  }
-
-  const proceedBtn = document.getElementById("phishguard-proceed-btn");
-  if (proceedBtn) {
-    proceedBtn.addEventListener("click", () => {
-      try {
-        chrome.runtime.sendMessage({
-          type: "PHISHGUARD_TRUST_DOMAIN",
-          domain: location.hostname,
-          hours: 168
-        });
-      } catch (_e) {}
-      overlay.remove();
-      clearWarningBanner();
-    });
-  }
-}
-
-function showWarningBanner(result) {
-  if (!result) return;
-  const isBlock = result.risk_level === "dangerous" || result.final_verdict === "BLOCK_RENDER" || (result.mule_scan && result.mule_scan.mule_detected);
-  if (isBlock) {
-    showFullScreenBlockScreen(result);
-    return;
-  }
-  if (result.risk_level === "suspicious") {
-    showTopBanner(result);
-  }
-}
-
-function showTopBanner(result) {
-  clearWarningBanner();
-  highlightMuleAccounts(result);
-  highlightScamKeywords();
-
-  const banner = document.createElement("div");
-  banner.id = PHISHGUARD_BANNER_ID;
-  banner.setAttribute("role", "alert");
-  const isDangerous = result.risk_level === "dangerous";
-
-  const label = document.createElement("strong");
-  label.textContent = "PhishGuard-AI";
-
-  const message = document.createElement("span");
-  message.textContent = warningTextForRisk(result);
-
-  const closeButton = document.createElement("button");
-  closeButton.type = "button";
-  closeButton.setAttribute("aria-label", "Close warning");
-  closeButton.textContent = "X";
-  closeButton.addEventListener("click", clearWarningBanner);
-
-  banner.append(label, message, closeButton);
-
-  Object.assign(banner.style, {
-    position: "fixed",
-    top: "0",
-    left: "0",
-    right: "0",
-    zIndex: "2147483647",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "14px",
-    padding: "10px 16px",
-    background: isDangerous ? "#b91c1c" : "#f59e0b",
-    color: isDangerous ? "#ffffff" : "#111827",
-    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-    fontSize: "15px",
-    fontWeight: "700",
-    lineHeight: "1.4",
-    textAlign: "center",
-    boxShadow: "0 4px 14px rgba(0, 0, 0, 0.25)"
-  });
-
-  Object.assign(label.style, {
-    flex: "0 0 auto",
-    letterSpacing: "0",
-    fontWeight: "800"
-  });
-
-  Object.assign(message.style, {
-    maxWidth: "900px"
-  });
-
-  Object.assign(closeButton.style, {
-    flex: "0 0 auto",
-    width: "26px",
-    height: "26px",
-    border: "1px solid rgba(255, 255, 255, 0.65)",
-    borderRadius: "6px",
-    background: isDangerous ? "rgba(255, 255, 255, 0.14)" : "rgba(17, 24, 39, 0.1)",
-    color: "inherit",
-    cursor: "pointer",
-    fontWeight: "800",
-    lineHeight: "1"
-  });
-
-  const parent = document.body || document.documentElement;
-  if (parent) {
-    parent.appendChild(banner);
-  }
-}
-
-const PHISHGUARD_KEYWORD_CLASS = "phishguard-ai-keyword-highlight";
-const PHISHGUARD_CRED_WARN_ID = "phishguard-ai-cred-warning";
-
-const SUSPICIOUS_KEYWORDS = [
-  // English
-  "urgent verification", "immediate verification", "account suspension", "account suspended",
-  "flagged for suspicious", "pdrm verification", "authorized pdrm", "transfer verification",
-  "avoid account closure", "avoid suspension", "verify account now", "update login details",
-  "unauthorized login", "security alert", "temporary freeze", "reactivate account",
-  "transfer deposit", "security deposit", "verify immediately", "claim e-wallet credit",
-  // Bahasa Melayu & Manglish
-  "akaun digantung", "akaun disekat", "tindakan segera", "pengesahan keselamatan",
-  "saman tertunggak", "pdrm saman", "tuntutan bantuan tunai", "bantuan e-wallet",
-  "kemaskini maklumat", "tukar kata laluan", "bayaran deposit", "cukai lhdn tertunggak",
-  "sekat kad debit", "log masuk tidak sah", "pengesahan maybank", "pengesahan cimb",
-  "kemaskini perbankan", "tebus hadiah", "akaun anda dibekukan"
-];
-
-// Proactive Password & OTP/TAC Credential Interceptor
-function initCredentialInterceptor() {
-  const host = location.hostname.toLowerCase().replace(/^www\./, "");
-  const officialDomains = [
-    "maybank2u.com.my", "maybank.com", "cimbclicks.com.my", "cimb.com.my",
-    "pbebank.com", "pbebank.com.my", "rhbgroup.com", "rhbnow.com", "hlb.com.my"
-  ];
-  const isOfficial = officialDomains.some(d => host === d || host.endsWith("." + d));
-  if (isOfficial) return; // Legitimate bank domain
-
-  const credInputs = document.querySelectorAll(
-    'input[type="password"], input[name*="pass" i], input[name*="pin" i], input[name*="tac" i], input[name*="otp" i], input[placeholder*="TAC" i], input[placeholder*="OTP" i], input[placeholder*="PIN" i]'
-  );
-
-  credInputs.forEach(input => {
-    input.addEventListener("focus", () => {
-      let warn = document.getElementById(PHISHGUARD_CRED_WARN_ID);
-      if (!warn) {
-        warn = document.createElement("div");
-        warn.id = PHISHGUARD_CRED_WARN_ID;
-        warn.innerHTML = "⚠️ <strong>PhishGuard Warning:</strong> Unverified Domain. Never enter online banking passwords or TAC/OTP codes on third-party pages.";
-        Object.assign(warn.style, {
-          position: "absolute",
-          background: "#1e1b4b",
-          color: "#f87171",
-          border: "1px solid #ef4444",
-          borderRadius: "6px",
-          padding: "6px 12px",
-          fontSize: "12px",
-          fontFamily: "-apple-system, sans-serif",
-          boxShadow: "0 8px 16px rgba(0,0,0,0.5)",
-          zIndex: "2147483646",
-          pointerEvents: "none",
-          transition: "opacity 0.2s ease"
-        });
-        document.body.appendChild(warn);
-      }
-      const rect = input.getBoundingClientRect();
-      warn.style.top = `${window.scrollY + rect.top - 38}px`;
-      warn.style.left = `${window.scrollX + rect.left}px`;
-      warn.style.display = "block";
-      warn.style.opacity = "1";
-    });
-
-    input.addEventListener("blur", () => {
-      const warn = document.getElementById(PHISHGUARD_CRED_WARN_ID);
-      if (warn) {
-        warn.style.opacity = "0";
-        setTimeout(() => { if (warn) warn.style.display = "none"; }, 200);
-      }
-    });
-  });
-}
-
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initCredentialInterceptor);
-} else {
-  initCredentialInterceptor();
-}
-
-
-function clearKeywordHighlights() {
-  const highlights = document.querySelectorAll(`span.${PHISHGUARD_KEYWORD_CLASS}`);
-  for (const highlight of highlights) {
-    const text = document.createTextNode(highlight.textContent || "");
-    highlight.replaceWith(text);
-  }
-}
-
-function highlightScamKeywords() {
-  clearKeywordHighlights();
-  if (!document.body) return;
-
-  const escaped = SUSPICIOUS_KEYWORDS.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
-  const pattern = new RegExp(`(${escaped.join("|")})`, "gi");
-  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-  const nodes = [];
-
-  while (walker.nextNode()) {
-    const node = walker.currentNode;
-    if (!shouldSkipTextNode(node) && pattern.test(node.nodeValue || "")) {
-      nodes.push(node);
-    }
-    pattern.lastIndex = 0;
-  }
-
-  for (const node of nodes) {
-    const text = node.nodeValue || "";
-    const fragment = document.createDocumentFragment();
-    let lastIndex = 0;
-    pattern.lastIndex = 0;
-    let match = pattern.exec(text);
-
-    while (match) {
-      if (match.index > lastIndex) {
-        fragment.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
-      }
-
-      const span = document.createElement("span");
-      span.className = PHISHGUARD_KEYWORD_CLASS;
-      span.textContent = match[0];
-      span.title = "PhishGuard AI: High-risk Social Engineering Phrasing Detected";
-      Object.assign(span.style, {
-        background: "rgba(239, 68, 68, 0.18)",
-        color: "#b91c1c",
-        borderBottom: "2px wavy #ef4444",
-        padding: "0 2px",
-        fontWeight: "600",
-        cursor: "help"
-      });
-      fragment.appendChild(span);
-      lastIndex = match.index + match[0].length;
-      match = pattern.exec(text);
-    }
-
-    if (lastIndex < text.length) {
-      fragment.appendChild(document.createTextNode(text.slice(lastIndex)));
-    }
-    node.replaceWith(fragment);
-  }
-}
-
-function clearWarningBanner() {
-  const existing = document.getElementById(PHISHGUARD_BANNER_ID);
-  if (existing) existing.remove();
-  const existingBlock = document.getElementById(PHISHGUARD_BLOCK_SCREEN_ID);
-  if (existingBlock) existingBlock.remove();
-  clearMuleHighlights();
-  clearKeywordHighlights();
-}
-
-function getFlaggedAccountNumbers(result) {
-  const muleScan = result && result.mule_scan;
-  if (!muleScan || !Array.isArray(muleScan.flagged_accounts)) {
-    return [];
-  }
-  return muleScan.flagged_accounts
-    .map((account) => String(account.account_number || "").trim())
-    .filter(Boolean);
-}
-
-function clearMuleHighlights() {
-  const highlights = document.querySelectorAll(`span.${PHISHGUARD_HIGHLIGHT_CLASS}`);
-  for (const highlight of highlights) {
-    const text = document.createTextNode(highlight.textContent || "");
-    highlight.replaceWith(text);
-  }
-}
-
-function shouldSkipTextNode(node) {
-  const parent = node.parentElement;
-  if (!parent) {
-    return true;
-  }
-  const tag = parent.tagName.toLowerCase();
-  return ["script", "style", "textarea", "input", "select", "option"].includes(tag) ||
-    parent.closest(`#${PHISHGUARD_BANNER_ID}`) ||
-    parent.closest(`.${PHISHGUARD_HIGHLIGHT_CLASS}`);
-}
-
-function highlightMuleAccounts(result) {
-  clearMuleHighlights();
-  const accounts = getFlaggedAccountNumbers(result);
-  if (!accounts.length || !document.body) {
-    return;
-  }
-
-  const escaped = accounts
-    .sort((a, b) => b.length - a.length)
-    .map((account) => account.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
-  const pattern = new RegExp(`\\b(${escaped.join("|")})\\b`, "g");
-  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-  const nodes = [];
-
-  while (walker.nextNode()) {
-    const node = walker.currentNode;
-    if (!shouldSkipTextNode(node) && pattern.test(node.nodeValue || "")) {
-      nodes.push(node);
-    }
-    pattern.lastIndex = 0;
-  }
-
-  for (const node of nodes) {
-    const text = node.nodeValue || "";
-    const fragment = document.createDocumentFragment();
-    let lastIndex = 0;
-    pattern.lastIndex = 0;
-    let match = pattern.exec(text);
-
-    while (match) {
-      if (match.index > lastIndex) {
-        fragment.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
-      }
-
-      const span = document.createElement("span");
-      span.className = PHISHGUARD_HIGHLIGHT_CLASS;
-      span.textContent = match[0];
-      Object.assign(span.style, {
-        background: "#fde68a",
-        color: "#7f1d1d",
-        border: "2px solid #dc2626",
-        borderRadius: "4px",
-        padding: "1px 3px",
-        fontWeight: "700"
-      });
-      fragment.appendChild(span);
-      lastIndex = match.index + match[0].length;
-      match = pattern.exec(text);
-    }
-
-    if (lastIndex < text.length) {
-      fragment.appendChild(document.createTextNode(text.slice(lastIndex)));
-    }
-    node.replaceWith(fragment);
-  }
-}
-
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message.type === "PHISHGUARD_RUN_SCAN") {
-    requestVisualAnalysis()
-      .then((response) => {
-        sendResponse(response || {
-          ok: false,
-          error: "No scan response was returned."
-        });
-      })
-      .catch((error) => {
-        sendResponse({
-          ok: false,
-          error: error.message || "Scan failed."
-        });
-      });
-    return true;
-  }
-
-  if (message.type === "PHISHGUARD_SHOW_WARNING") {
-    showWarningBanner(message.result);
-    return false;
-  }
-
-  if (message.type === "PHISHGUARD_CLEAR_WARNING") {
-    clearWarningBanner();
-    return false;
-  }
-
-  return false;
-});
-
-// ═══════════════════════════════════════════════════════════════════
-// AUTONOMOUS REAL-TIME BACKGROUND AUTO-SCAN ON PAGE LOAD
-// ═══════════════════════════════════════════════════════════════════
-function autoScanOnPageLoad() {
-  if (!isSupportedPage()) return;
-  if (location.protocol !== "http:" && location.protocol !== "https:" && location.protocol !== "file:") return;
-
-  requestVisualAnalysis()
-    .then((response) => {
-      if (response && response.result) {
-        showWarningBanner(response.result);
-      }
-    })
-    .catch((_err) => {});
-}
-
-// Automatically trigger autonomous scan immediately and on load
-if (document.readyState === "complete") {
-  autoScanOnPageLoad();
-} else {
-  window.addEventListener("load", autoScanOnPageLoad);
-  document.addEventListener("DOMContentLoaded", autoScanOnPageLoad);
-}
-setTimeout(autoScanOnPageLoad, 400);
+  scan();
+})();

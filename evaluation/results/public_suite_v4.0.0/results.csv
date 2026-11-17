@@ -1,0 +1,31 @@
+id,group,url,expect,verdict,rule,headline,risk_score,bert_p_phishing,fetch,passed,server_ms,wall_ms
+PUB-01,live_https_legitimate,https://example.com/,SAFE,SAFE,,No threats found,0.0,0.000121,"pass: HTTP 200, 577 characters (no redirects).",True,539.37,565.8
+PUB-02,live_https_legitimate,https://www.maybank2u.com.my/,SAFE,SAFE,,Official Maybank website,0.0,,"pass: HTTP 200, 12,412 characters (https://www.maybank2u.com.my/ → https://www.maybank2u.com.my/home/m2u/common/login.do).",True,524.9,529.5
+PUB-03,live_https_legitimate,https://www.cimbclicks.com.my/,SAFE,SAFE,,Official CIMB Bank website,0.0,,"pass: HTTP 200, 56,110 characters (no redirects).",True,410.94,414.1
+PUB-04,live_https_legitimate,https://www.pbebank.com/,SAFE,SAFE,,Official Public Bank website,0.0,,"pass: HTTP 200, 118,993 characters (no redirects).",True,463.28,466.6
+PUB-05,live_https_legitimate,https://www.rhbgroup.com/,SAFE,SAFE,,Official RHB Bank website,0.0,,"pass: HTTP 200, 148,823 characters (https://www.rhbgroup.com/ → https://www.rhbgroup.com/index.html).",True,576.25,579.7
+PUB-06,live_https_legitimate,https://www.gxbank.my/,SAFE,SAFE,,Official GXBank website,0.0,,"pass: HTTP 200, 67,461 characters (no redirects).",True,338.06,341.2
+PUB-07,live_https_legitimate,https://www.dbs.com.sg/,SAFE,SAFE,,Official DBS / POSB website,0.0,,"pass: HTTP 200, 89,356 characters (https://www.dbs.com.sg/ → https://www.dbs.com.sg/index/default.page).",True,853.89,857.4
+PUB-08,live_https_legitimate,https://www.paypal.com/my/home,SAFE,SAFE,,Official PayPal website,0.0,,"pass: HTTP 403, 4,868 characters (no redirects).",True,736.04,739.6
+PUB-09,live_https_legitimate,https://www.python.org/,SAFE,SAFE,,Trusted website,0.0,,"pass: HTTP 200, 52,028 characters (no redirects).",True,319.33,322.7
+PUB-10,live_https_legitimate,https://en.wikipedia.org/wiki/Phishing,SAFE,SAFE,,Trusted website,0.0,,"pass: HTTP 403, 141 characters (no redirects).",True,300.87,304.4
+PUB-11,live_http_insecure,http://neverssl.com/,WARNING,WARNING,H2_INSECURE_HTTP,Not secure: unencrypted connection (HTTP),0.55,0.006683,"pass: HTTP 200, 3,957 characters (no redirects).",True,4861.84,4865.0
+PUB-12,live_http_insecure,http://httpforever.com/,WARNING,WARNING,H2_INSECURE_HTTP,Not secure: unencrypted connection (HTTP),0.55,0.360478,"pass: HTTP 200, 11,489 characters (no redirects).",True,634.67,638.0
+PUB-13,live_http_insecure,http://http.badssl.com/,WARNING,WARNING,H2_INSECURE_HTTP,Not secure: unencrypted connection (HTTP),0.55,0.996609,"pass: HTTP 200, 483 characters (no redirects).",True,833.66,837.0
+PUB-14,live_http_insecure,http://testphp.vulnweb.com/,WARNING,WARNING,H2_INSECURE_HTTP,Not secure: unencrypted connection (HTTP),0.55,0.969764,warn: The website did not respond within 8 seconds. The URL is analysed without page content.,True,8393.02,8396.3
+PUB-15,live_http_login_form,http://testphp.vulnweb.com/login.php,BLOCK_RENDER,WARNING,H2_INSECURE_HTTP,Not secure: unencrypted connection (HTTP),0.55,0.996673,warn: The website did not respond within 8 seconds. The URL is analysed without page content.,False,8390.79,8394.0
+PUB-16,live_tls_error,https://expired.badssl.com/,WARNING,WARNING,W1_TLS_CERTIFICATE,Security certificate could not be verified,0.6,0.988189,warn: Certificate check failed: certificate has expired.,True,4049.91,4053.3
+PUB-17,live_tls_error,https://self-signed.badssl.com/,WARNING,WARNING,W1_TLS_CERTIFICATE,Security certificate could not be verified,0.6,0.916735,warn: Certificate check failed: self-signed certificate.,True,2036.73,2040.1
+PUB-18,live_tls_error,https://wrong.host.badssl.com/,WARNING,SAFE,,No threats found,0.1985,0.984736,warn: The website did not respond within 8 seconds. The URL is analysed without page content.,False,8416.89,8420.7
+PUB-19,live_phishing_test_page,https://testsafebrowsing.appspot.com/s/phishing.html,WARNING,WARNING,W3_FREE_HOSTING_FORM,Log-in form on a free hosting site,0.6,0.000585,"pass: HTTP 200, 989 characters (no redirects).",True,732.77,736.8
+PUB-20,url_pattern,https://maybank2u.com.my@evil-login.top/login,BLOCK_RENDER,BLOCK_RENDER,R7_USERINFO_SPOOF,Disguised link hides the real website,0.96,0.999864,warn: The domain evil-login.top does not resolve. The URL is analysed without page content.,True,380.34,384.0
+PUB-21,url_pattern,http://maybank2u-secure-login.top/m2u/login,BLOCK_RENDER,BLOCK_RENDER,R2_BRAND_IN_HOSTNAME,Fake Maybank website,0.97,0.999911,warn: The domain maybank2u-secure-login.top does not resolve. The URL is analysed without page content.,True,418.91,422.5
+PUB-22,url_pattern,https://cimb-clicks-verify.vercel.app/,BLOCK_RENDER,BLOCK_RENDER,R2_BRAND_IN_HOSTNAME,Fake CIMB Bank website,0.97,0.999834,"pass: HTTP 404, 7,856 characters (no redirects).",True,468.91,472.3
+PUB-23,url_pattern,https://rnaybank2u.com/login,NOT_SAFE,BLOCK_RENDER,R3_LOOKALIKE_DOMAIN,Look-alike of Maybank,0.95,0.972189,warn: The website did not respond within 8 seconds. The URL is analysed without page content.,True,8426.91,8430.4
+PUB-24,url_pattern,https://xn--mybank2u-16g.com/,NOT_SAFE,BLOCK_RENDER,R3_LOOKALIKE_DOMAIN,Look-alike of Maybank,0.95,0.954797,warn: The domain xn--mybank2u-16g.com does not resolve. The URL is analysed without page content.,True,395.52,399.1
+PUB-25,content,https://pos-laju-redelivery.top/track,BLOCK_RENDER,BLOCK_RENDER,R4_BRAND_CLONE,Fake Pos Malaysia log-in page,0.93,0.999731,,True,120.02,123.4
+PUB-26,content,https://carousell-deals-my.shop/checkout,BLOCK_RENDER,BLOCK_RENDER,R1_MULE_REGISTRY,Known scam bank account on this page,0.99,0.964246,,True,119.53,123.1
+PUB-27,content,https://tng-ewallet-rebate.click/claim,BLOCK_RENDER,BLOCK_RENDER,R2_BRAND_IN_HOSTNAME,Fake Touch 'n Go eWallet website,0.97,0.999662,,True,114.62,117.9
+PUB-28,content,https://lhdn-refund-portal.com/,BLOCK_RENDER,BLOCK_RENDER,R2_BRAND_IN_HOSTNAME,Fake LHDN website,0.97,0.069217,,True,101.91,105.4
+PUB-29,content,https://www.thestar.com.my/business,SAFE,SAFE,,Trusted website,0.0,,,True,0.69,4.0
+PUB-30,content,https://kedai-kek-mak-ngah.com/order,SAFE,SAFE,,No threats found,0.2979,0.979396,,True,102.85,106.2

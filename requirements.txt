@@ -1,50 +1,26 @@
 # ==============================================================================
-# PhishGuard-AI Backend — Dependency Manifest
-# ==============================================================================
-# Pinned to compatible ranges for reproducible builds.
+# PhishGuard-AI v4.0 — runtime dependencies (what the server needs)
 # Install: pip install -r requirements.txt
+# Development and evaluation tools: pip install -r requirements-dev.txt
 # ==============================================================================
 
-# --- ASGI Framework & Server ---
+# Web framework and server
 fastapi>=0.111.0,<1.0.0
 uvicorn[standard]>=0.30.0,<1.0.0
-
-# --- Data Validation (Pydantic v2) ---
 pydantic>=2.7.0,<3.0.0
-pydantic[email]>=2.7.0,<3.0.0
+slowapi>=0.1.9,<1.0.0
+python-dotenv>=1.0.0
+httpx>=0.27.0                 # safe live page fetching (dashboard analyser, QR scanner)
 
-# --- ML / NLP Pipeline ---
+# BERT URL classifier (the shipped weights load on transformers 4.x and 5.x)
 torch>=2.3.0
-# The shipped weights were saved with transformers 5.9 (Colab) and load unchanged
-# on 4.57 (local inference); both major lines are therefore allowed.
 transformers>=4.41.0,<6.0.0
 
-# --- Visual Identity / YOLOv8 Logo Detection ---
+# YOLOv8n logo detector and QR decoding
 ultralytics>=8.2.0,<9.0.0
+opencv-python>=4.8.0
 Pillow>=10.0.0,<12.0.0
 
-# --- Async Database ---
+# Storage and HTML parsing
 aiosqlite>=0.20.0,<1.0.0
-
-# --- HTML Sanitization ---
 beautifulsoup4>=4.12.0,<5.0.0
-
-# --- Rate Limiting ---
-slowapi>=0.1.9,<1.0.0
-
-# --- Utilities ---
-python-multipart>=0.0.9
-psutil>=5.9.0
-python-dotenv>=1.0.0
-
-# --- Testing ---
-pytest>=8.0.0
-pytest-asyncio>=0.23.0
-pytest-cov>=5.0.0
-httpx>=0.27.0
-
-# --- Evaluation artefacts (confusion matrix / ROC plots) ---
-matplotlib>=3.8.0
-
-# --- Load / Stress Testing ---
-locust>=2.29.0

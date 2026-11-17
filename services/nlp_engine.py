@@ -139,18 +139,14 @@ class SemanticEngine:
             logits, dim=-1
         )
         predicted_class: int = int(torch.argmax(probabilities, dim=-1).item())
-        confidence: float = round(
-            float(probabilities[0][predicted_class].item()), 6
-        )
-        label: str = _LABEL_MAP.get(predicted_class, "UNKNOWN")
-        is_malicious: bool = (
-            predicted_class == 1 and confidence >= MALICIOUS_THRESHOLD
-        )
+        confidence: float = round(float(probabilities[0][predicted_class].item()), 6)
+        phishing_probability: float = round(float(probabilities[0][1].item()), 6)
 
         return {
-            "label": label,
+            "label": _LABEL_MAP.get(predicted_class, "UNKNOWN"),
             "confidence": confidence,
-            "is_malicious": is_malicious,
+            "phishing_probability": phishing_probability,
+            "is_malicious": phishing_probability >= MALICIOUS_THRESHOLD,
         }
 
     # ------------------------------------------------------------------
@@ -199,39 +195,13 @@ class SemanticEngine:
 
 
 def build_model_input(url: str) -> str:
-    """Return the BERT input for ``url``.
+    """Return the BERT input for ``url``: the URL without scheme or ``www.``.
 
-    The classifier was fine-tuned on bare URL strings (no scheme, usually no
-    ``www.``).  Feeding it page text, or a URL that still carries its scheme,
-    is out of distribution and was measured to push the false-positive rate
-    on the Malaysian benchmark from 43 % to 87–100 %.  Inference input is
-    therefore normalised to the training distribution.
+    The classifier was fine-tuned on bare URL strings.  Feeding it page text,
+    or a URL that still carries its scheme, is out of distribution and was
+    measured to raise the false-positive rate on the Malaysian benchmark from
+    43% to 87-100%.
     """
-    from services.domain_utils import strip_scheme
+    from services.url_canonicalizer import canonicalize
 
-    return strip_scheme(url)
-
-
-def predict_phishing_probability(text: str) -> tuple[float, str]:
-    """Model-free fallback estimate ``(probability, label)`` for a URL or text.
-
-    Used by the batch inspector and diagnostics when the BERT engine is not
-    injected.  Combines the structural URL heuristic score with the
-    multilingual scam lexicon and explicit credential-request detection; all
-    matching is word-boundary based.
-    """
-    from services.heuristic_engine import analyze_url_heuristics
-    from services.verdict_engine import has_credential_text, has_scam_language
-
-    first_token = text.strip().split()[0] if text.strip() else ""
-    looks_like_url = "." in first_token and " " not in text.strip()
-    heuristic_score = float(analyze_url_heuristics(text.strip())["heuristic_score"]) if looks_like_url else 0.0
-
-    prob = 0.08 + 0.80 * heuristic_score
-    if has_scam_language(text):
-        prob += 0.45
-    if has_credential_text(text):
-        prob += 0.35
-    prob = round(min(0.99, max(0.08, prob)), 4)
-    label = "PHISHING" if prob >= 0.60 else "LEGITIMATE"
-    return prob, label
+    return canonicalize(url).model_url

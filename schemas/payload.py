@@ -1,123 +1,109 @@
 """
-PhishGuard-AI — Request Payload Schemas.
-=========================================
+PhishGuard-AI — Request Schemas.
+=================================
 
-Pydantic v2 models defining the shape of incoming request bodies. Every
-field carries explicit type annotations (PEP 484) and validator metadata
-so that FastAPI can auto-generate OpenAPI documentation and perform
-server-side validation *before* any business logic executes.
+Pydantic v2 models for every request body.  Validation happens before any
+handler runs, so malformed input is rejected with HTTP 422 and never reaches
+the models or the database.
 
-Architecture Layer: DTO / Anti-Corruption Layer
-Thesis Reference : §3.4 — Inbound Data Contracts
+Architecture Layer : DTO / Validation
 """
 
 from __future__ import annotations
 
-from typing import Any, Optional
-from pydantic import BaseModel, Field, HttpUrl, model_validator
+import re
+from typing import Optional
+
+from pydantic import BaseModel, Field, field_validator
+
+_URL_FIELD = Field(..., min_length=4, max_length=2048, description="Page address (http or https).")
 
 
-class WebPayload(BaseModel):
-    """Canonical inbound payload for the ``/analyze/semantics`` endpoint.
+_SCHEME_RE = re.compile(r"^([a-zA-Z][a-zA-Z0-9+.\-]*):(?!\d)")
 
-    Attributes
-    ----------
-    url : HttpUrl
-        The fully-qualified URL of the page currently rendered in the
-        user's browser. Validated to reject malformed URIs at the edge.
-    dom_content : Optional[str]
-        The raw ``document.documentElement.outerHTML`` captured by the
-        browser extension. Will be ETL-sanitised before NLP inference.
-    text_content : Optional[str]
-        Sanitised innerText / plaintext extracted from the webpage DOM.
-    origin : Optional[str]
-        Optional HTTP origin or referrer header.
-    extract_mules : bool
-        Flag to enable deterministic Regex mule account scanning.
-    """
 
-    url: HttpUrl = Field(
-        ...,
-        title="Page URL",
-        description="Fully-qualified URL of the inspected page.",
-        examples=["https://secure-banking.example.com/login"],
-    )
-    dom_content: Optional[str] = Field(
-        None,
-        title="Raw DOM Content",
-        description=(
-            "Complete outerHTML of the page. Must contain at least one "
-            "non-whitespace character after sanitization."
-        ),
-        max_length=5_000_000,  # 5 MB hard cap to prevent DoS.
-    )
-    text_content: Optional[str] = Field(
-        None,
-        title="Sanitised innerText / DOM text",
-        description="Sanitised plaintext extracted from the webpage DOM.",
-        max_length=5_000_000,
-    )
-    origin: Optional[str] = Field(
-        None,
-        title="Origin Header",
-        description="Optional HTTP origin or referrer header.",
-    )
-    extract_mules: bool = Field(
-        True,
-        title="Extract Mules Flag",
-        description="Flag to enable deterministic Regex mule account scanning.",
+def _check_web_url(value: str) -> str:
+    """Accept http(s) URLs or bare host names; reject javascript:, data:, ftp:// and the like."""
+    text = value.strip()
+    match = _SCHEME_RE.match(text)
+    if match and match.group(1).lower() not in ("http", "https"):
+        raise ValueError("Only http:// and https:// addresses can be analysed.")
+    if not match:
+        # Typed without a scheme: insist on a real domain name, then assume http.
+        if "." not in text.split("/", 1)[0] and "[" not in text:
+            raise ValueError("The address needs a domain name such as example.com.")
+        text = "http://" + text
+    return text
+
+
+class AnalyzeRequest(BaseModel):
+    """Body of ``POST /api/v1/analyze`` (sent by the browser extension)."""
+
+    url: str = _URL_FIELD
+    dom_content: Optional[str] = Field(None, max_length=3_000_000, description="Page HTML (document.documentElement.outerHTML).")
+    text_content: Optional[str] = Field(None, max_length=100_000, description="Visible page text.")
+    screenshot: Optional[str] = Field(
+        None, max_length=8_000_000,
+        description="Base64 or data-URL screenshot of the visible tab for the YOLOv8n logo check.",
     )
 
-    @model_validator(mode="before")
-    @classmethod
-    def validate_content_presence(cls, data: Any) -> Any:
-        if isinstance(data, dict):
-            dom = data.get("dom_content")
-            txt = data.get("text_content")
-            if not dom and txt:
-                data["dom_content"] = txt
-            elif not txt and dom:
-                data["text_content"] = dom
-
-            content = data.get("dom_content") or data.get("text_content")
-            if content is None or not str(content).strip():
-                raise ValueError("Payload must contain non-empty 'dom_content' or 'text_content'.")
-        return data
+    _url = field_validator("url")(_check_web_url)
 
     model_config = {
         "json_schema_extra": {
-            "examples": [
-                {
-                    "url": "https://maybank2u.com.my/login",
-                    "dom_content": (
-                        "<html><body><h1>Login</h1>"
-                        "<p>Please transfer RM500 to account 1234567890</p>"
-                        "</body></html>"
-                    ),
-                    "text_content": "Login Please transfer RM500 to account 1234567890",
-                    "extract_mules": True,
-                }
-            ]
+            "examples": [{
+                "url": "http://maybank2u-secure-login.top/m2u/login",
+                "dom_content": "<html><body><h1>Maybank2u</h1><form><input type='password' name='pass'></form>"
+                               "<p>Your account access has been limited. Verify immediately.</p></body></html>",
+            }]
         }
     }
 
 
 class MuleReportRequest(BaseModel):
-    """Body of ``POST /api/v1/mule-reports`` (extension "report account" action)."""
+    """Body of ``POST /api/v1/mule-reports`` (extension "Report account" action)."""
 
     account_number: str = Field(
-        ...,
-        min_length=6,
-        max_length=34,
-        pattern=r"^\+?[0-9][0-9\- ]{4,32}[0-9]$",
-        description="Bank account number, DuitNow phone number or NRIC (digits, spaces and dashes only).",
-        examples=["112233445566"],
+        ..., min_length=6, max_length=34, pattern=r"^\+?[0-9][0-9\- ]{4,32}[0-9]$",
+        description="Bank account, DuitNow phone or NRIC (digits, spaces and dashes only).",
+        examples=["5142 7610 3388"],
     )
-    bank_name: str = Field("Unknown", max_length=60, description="Issuing bank if known.")
-    page_url: Optional[HttpUrl] = Field(None, description="Page on which the account was displayed.")
+    bank_name: str = Field("Unknown", max_length=60)
+    page_url: Optional[str] = Field(None, max_length=2048, description="Page on which the account was shown.")
 
 
 class MuleReportReview(BaseModel):
     """Body of ``POST /api/v1/dashboard/mule-reports/{report_id}/review``."""
 
     decision: str = Field(..., pattern=r"^(APPROVE|REJECT)$", description="'APPROVE' or 'REJECT'.")
+
+
+class MuleAccountCreate(BaseModel):
+    """Body of ``POST /api/v1/dashboard/mules`` (analyst adds a verified account)."""
+
+    account_number: str = Field(..., min_length=6, max_length=34, pattern=r"^\+?[0-9][0-9\- ]{4,32}[0-9]$")
+    bank_name: str = Field(..., min_length=2, max_length=60)
+    platform_flagged: str = Field("PDRM Semakmule", max_length=80, description="Where the account was reported.")
+
+
+class DashboardAnalyzeRequest(BaseModel):
+    """Body of ``POST /api/v1/dashboard/analyze`` (Live URL & Page Analyzer tab)."""
+
+    url: str = _URL_FIELD
+    page_text: Optional[str] = Field(None, max_length=100_000, description="Optional page text to analyse instead of fetching.")
+    account_number: Optional[str] = Field(None, max_length=40, description="Optional account number to check.")
+    fetch_page: bool = Field(True, description="Download the live page when no text is given.")
+
+    _url = field_validator("url")(_check_web_url)
+
+
+class QRScanRequest(BaseModel):
+    """Body of ``POST /api/v1/dashboard/qr-scan`` and ``POST /api/v1/analyze/qr``."""
+
+    image_base64: str = Field(..., min_length=20, max_length=12_000_000, description="QR image as base64 or data URL.")
+
+
+class DashboardLoginRequest(BaseModel):
+    """Body of ``POST /api/v1/dashboard/auth/login``."""
+
+    api_key: str = Field(..., min_length=1, max_length=256)

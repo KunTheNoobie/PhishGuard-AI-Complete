@@ -1,125 +1,100 @@
 """
-PhishGuard-AI — Domain & Network Security Heuristic Engine.
-============================================================
+PhishGuard-AI — Structural URL Heuristics.
+===========================================
 
-Performs zero-latency structural and network anomaly detection on target URLs,
-including:
-    1. Raw IPv4 / IPv6 address host detection.
-    2. Punycode (IDN homoglyph) lookalike attacks.
-    3. Disposable & high-risk TLD profiling (.top, .xyz, .tk, .buzz).
-    4. Excessive subdomain nesting & deceptive keyword prefixing.
+Zero-latency checks on the shape of the URL, independent of any model:
 
-Architecture Layer: Services / Threat Intelligence
-Thesis Reference : §3.4 — Network & Structural Domain Heuristics
+1. Raw IPv4 / IPv6 host, including integer and hex forms.
+2. Userinfo before ``@`` that hides the real host.
+3. Punycode / mixed-script internationalised hostnames.
+4. Disposable, high-abuse top-level domains.
+5. Excessive subdomain nesting and deceptive keyword subdomains.
+6. Non-standard ports.
+7. Free hosting platforms where anyone can publish a page (web.app,
+   vercel.app, appspot.com ...), heavily abused for throw-away phishing.
+
+"Strong" indicators are evasion techniques a legitimate consumer site has no
+reason to use; the verdict engine treats them differently from weak ones.
+
+Architecture Layer : Service / Detection
 """
 
 from __future__ import annotations
 
-import ipaddress
-import re
 from typing import Any, Final
-from urllib.parse import urlparse
 
 from services.domain_utils import registrable_domain, subdomain_labels
+from services.url_canonicalizer import CanonicalURL, canonicalize
 
-# High-risk TLDs disproportionately observed in disposable phishing campaigns
-HIGH_RISK_TLDS: Final[set[str]] = {
-    "top", "xyz", "tk", "buzz", "club", "work", "click", "gq", "cf", "ml", "ga", "fit", "rest", "surf"
-}
+HIGH_RISK_TLDS: Final[frozenset[str]] = frozenset({
+    "top", "xyz", "tk", "buzz", "club", "work", "click", "gq", "cf", "ml", "ga", "fit",
+    "rest", "surf", "icu", "cyou", "sbs", "cfd", "monster", "quest",
+})
 
-# Deceptive security keywords commonly prefixed as subdomains
-DECEPTIVE_SUBDOMAINS: Final[set[str]] = {
-    "login", "verify", "secure", "auth", "security", "update", "banking", "online", "portal"
-}
+DECEPTIVE_SUBDOMAINS: Final[frozenset[str]] = frozenset({
+    "login", "verify", "secure", "auth", "security", "update", "banking", "online",
+    "portal", "account", "signin", "wallet",
+})
+
+_STANDARD_PORTS: Final[frozenset[int]] = frozenset({80, 443, 8000, 8080})
+
+FREE_HOSTING_SUFFIXES: Final[frozenset[str]] = frozenset({
+    "appspot.com", "web.app", "firebaseapp.com", "vercel.app", "netlify.app", "github.io",
+    "pages.dev", "workers.dev", "glitch.me", "repl.co", "replit.app", "onrender.com",
+    "herokuapp.com", "hf.space", "weebly.com", "wixsite.com", "blogspot.com", "000webhostapp.com",
+    "square.site", "godaddysites.com", "webflow.io", "framer.website", "ngrok-free.app", "ngrok.io",
+})
 
 
-def analyze_url_heuristics(raw_url: str) -> dict[str, Any]:
-    """Inspect a URL and evaluate heuristic risk vectors.
+def analyze_url_heuristics(url: str | CanonicalURL) -> dict[str, Any]:
+    """Return the structural indicators found in ``url``."""
+    c = url if isinstance(url, CanonicalURL) else canonicalize(url)
+    host = c.hostname
+    strong: list[str] = []
+    weak: list[str] = []
 
-    Returns risk score adjustment and identified threat indicators.
-    """
-    clean_url = raw_url.strip()
-    if "://" not in clean_url:
-        clean_url = f"http://{clean_url}"
-
-    indicators: list[str] = []
-    heuristic_penalty: float = 0.0
-    hostname = ""
-    port = None
-
-    try:
-        parsed = urlparse(clean_url)
-        try:
-            hostname = (parsed.hostname or "").lower()
-        except Exception:
-            hostname = (parsed.netloc or "").split(":")[0].lower()
-
-        try:
-            port = parsed.port
-        except (ValueError, Exception):
-            port = None
-    except Exception:
-        hostname = ""
-
-    # 1. Check for raw IP address hostname
-    try:
-        ipaddress.ip_address(hostname)
-        indicators.append("Host is a raw numeric IP address (Common evasion technique)")
-        heuristic_penalty += 0.45
-    except ValueError:
-        pass
-
-    # 2. Check for Punycode / IDN Homoglyphs
-    if hostname.startswith("xn--") or ".xn--" in hostname:
-        indicators.append("Punycode (IDN Homoglyph) character set detected")
-        heuristic_penalty += 0.40
-
-    # 3. Check for High-Risk TLDs
-    parts = hostname.split(".")
-    is_ip_host = any("raw numeric IP" in i for i in indicators)
-    high_risk_tld = False
-    if len(parts) >= 2 and not is_ip_host:
-        tld = parts[-1]
-        if tld in HIGH_RISK_TLDS:
-            indicators.append(f"High-risk disposable TLD detected (.{tld})")
-            heuristic_penalty += 0.35
-            high_risk_tld = True
-
-    # 4. Check for Excessive Subdomain Depth.
-    #    Depth is measured relative to the registrable domain so that ordinary
-    #    ccTLD hosts such as ``www.maybank2u.com.my`` are not penalised.
-    sub_labels = [] if is_ip_host else [lbl for lbl in subdomain_labels(hostname) if lbl != "www"]
-    if len(sub_labels) >= 3:
-        indicators.append(
-            f"Excessive subdomain nesting ({len(sub_labels)} levels below {registrable_domain(hostname)})"
+    if c.is_ip:
+        strong.append(f"The website address is a raw IP address ({host}) instead of a domain name")
+    if c.has_userinfo:
+        strong.append(
+            f"The address hides its real destination: '{c.userinfo[:60]}' before '@' is ignored "
+            f"and the browser actually opens {host}"
         )
-        heuristic_penalty += 0.20
+    if c.is_idn:
+        (strong if c.mixed_script or c.skeleton_hostname != c.unicode_hostname else weak).append(
+            f"Internationalised domain ({c.unicode_hostname}) that can imitate Latin letters"
+        )
 
-    # 5. Check for Deceptive Keyword Subdomains
-    for sub in sub_labels:
-        if sub in DECEPTIVE_SUBDOMAINS:
-            indicators.append(f"Deceptive keyword subdomain detected: '{sub}'")
-            heuristic_penalty += 0.25
-            break
+    tld = host.rsplit(".", 1)[-1] if "." in host and not c.is_ip else ""
+    if tld in HIGH_RISK_TLDS:
+        strong.append(f"High-abuse top-level domain (.{tld})")
 
-    # 6. Check for Non-Standard Ports
-    if port and port not in (80, 443, 8000, 3000, 5000):
-        indicators.append(f"Non-standard web port ({port})")
-        heuristic_penalty += 0.15
+    sub_labels = [] if c.is_ip else [lbl for lbl in subdomain_labels(host) if lbl != "www"]
+    if len(sub_labels) >= 3:
+        weak.append(f"Unusually deep subdomain nesting ({len(sub_labels)} levels below {registrable_domain(host)})")
+    deceptive = next((s for s in sub_labels if s in DECEPTIVE_SUBDOMAINS), None)
+    if deceptive:
+        weak.append(f"Deceptive keyword subdomain '{deceptive}'")
 
+    if c.port and c.port not in _STANDARD_PORTS:
+        weak.append(f"Non-standard web port ({c.port})")
+
+    free_host = next((sfx for sfx in FREE_HOSTING_SUFFIXES if host == sfx or host.endswith("." + sfx)), None)
+    if free_host:
+        weak.append(f"Hosted on a free publishing platform ({free_host}) where anyone can create a page")
+
+    indicators = strong + weak
+    score = min(1.0, round(0.35 * len(strong) + 0.15 * len(weak), 2))
     return {
-        "hostname": hostname,
-        "is_ip_address": any("raw numeric IP" in i for i in indicators),
-        "is_punycode": any("Punycode" in i for i in indicators),
+        "hostname": host,
+        "registrable_domain": registrable_domain(host) if not c.is_ip else host,
+        "is_ip_address": c.is_ip,
+        "has_userinfo": c.has_userinfo,
+        "free_hosting": free_host is not None,
+        "is_punycode": c.is_idn,
         "indicators": indicators,
-        "heuristic_score": min(1.0, round(heuristic_penalty, 2)),
-        "is_suspicious": len(indicators) > 0,
-        # Strong indicators are structural evasion techniques that a legitimate
-        # consumer-facing site has no reason to use.
-        "is_strong": bool(
-            any("raw numeric IP" in i for i in indicators)
-            or any("Punycode" in i for i in indicators)
-            or high_risk_tld
-        ),
-        "registrable_domain": registrable_domain(hostname),
+        "strong_indicators": strong,
+        "heuristic_score": score,
+        "is_suspicious": bool(indicators),
+        "is_strong": bool(strong),
     }

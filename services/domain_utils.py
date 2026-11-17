@@ -5,14 +5,10 @@ PhishGuard-AI — Domain Parsing Utilities.
 Small, dependency-free helpers shared by the heuristic engine, the brand
 profiler and the verdict engine:
 
-* ``extract_hostname``     — tolerant hostname extraction from a URL.
 * ``registrable_domain``   — eTLD+1 using a compact multi-label suffix table
                              (``maybank2u.com.my`` rather than ``com.my``).
 * ``subdomain_labels``     — labels left of the registrable domain.
 * ``host_tokens``          — hostname split on dots and hyphens.
-* ``strip_scheme``         — URL without scheme / leading ``www.``; this is
-                             the form in which URLs appear in the corpus the
-                             BERT classifier was fine-tuned on.
 * ``levenshtein``          — bounded edit distance for look-alike detection.
 
 Architecture Layer : Services / Shared Utilities
@@ -21,7 +17,6 @@ Architecture Layer : Services / Shared Utilities
 from __future__ import annotations
 
 from typing import Final
-from urllib.parse import urlparse
 
 # Multi-label public suffixes that matter for this project's target region.
 # A full Public Suffix List is deliberately avoided to keep the hot path
@@ -35,17 +30,6 @@ _MULTI_LABEL_SUFFIXES: Final[frozenset[str]] = frozenset({
     "co.jp", "ne.jp", "or.jp", "co.kr", "co.nz", "co.in", "co.th", "co.za",
     "com.cn", "net.cn", "org.cn", "com.hk", "com.tw", "com.ph", "com.vn", "com.br",
 })
-
-
-def extract_hostname(raw_url: str) -> str:
-    """Return the lower-cased hostname of ``raw_url`` ('' if unparsable)."""
-    candidate = (raw_url or "").strip()
-    if "://" not in candidate:
-        candidate = f"http://{candidate}"
-    try:
-        return (urlparse(candidate).hostname or "").lower().strip(".")
-    except ValueError:
-        return ""
 
 
 def registrable_domain(hostname: str) -> str:
@@ -68,12 +52,6 @@ def subdomain_labels(hostname: str) -> list[str]:
 def host_tokens(hostname: str) -> list[str]:
     """Split a hostname into alphanumeric tokens on dots and hyphens."""
     return [tok for tok in hostname.lower().replace("-", ".").split(".") if tok]
-
-
-def strip_scheme(raw_url: str) -> str:
-    """Return ``raw_url`` without its scheme and without a leading ``www.``."""
-    stripped = (raw_url or "").strip().split("://", 1)[-1]
-    return stripped[4:] if stripped.lower().startswith("www.") else stripped
 
 
 def levenshtein(a: str, b: str, max_distance: int = 2) -> int:

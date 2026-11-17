@@ -120,7 +120,7 @@ def strip_scheme(url: str) -> str:
 
 async def run(tag: str, no_bert: bool = False) -> dict[str, Any]:
     from core.config import API_SECRET_TOKEN, MALICIOUS_THRESHOLD, APP_VERSION
-    from database.init_db import SCHEMA_STATEMENTS, _INSERT_SEED, _SEED_MULE_ACCOUNTS
+    from database.init_db import apply_schema
     from main import app
     from services.mule_scanner import MuleScanner
     from services.nlp_engine import SemanticEngine
@@ -131,12 +131,7 @@ async def run(tag: str, no_bert: bool = False) -> dict[str, Any]:
 
     # Fresh in-memory registry seeded exactly like production start-up.
     db = await aiosqlite.connect(":memory:")
-    await db.execute("PRAGMA foreign_keys=ON;")
-    for ddl in SCHEMA_STATEMENTS:
-        await db.execute(ddl)
-    for account in _SEED_MULE_ACCOUNTS:
-        await db.execute(_INSERT_SEED, account)
-    await db.commit()
+    await apply_schema(db)
 
     print("Loading the fine-tuned BERT model (real weights) ...")
     engine = SemanticEngine()
@@ -148,7 +143,7 @@ async def run(tag: str, no_bert: bool = False) -> dict[str, Any]:
     app.state.semantic_engine = None if no_bert else engine
     app.state.mule_scanner = MuleScanner()
     app.state.cache = None
-    app.state.simulator_running = False
+    app.state.visual_detector = None
 
     headers = {"Authorization": f"Bearer {API_SECRET_TOKEN}"}
     rows: list[dict[str, Any]] = []
@@ -161,13 +156,13 @@ async def run(tag: str, no_bert: bool = False) -> dict[str, Any]:
                 "dom_content": sample["html"],
             }
             started = time.perf_counter()
-            resp = await client.post("/api/v1/analyze/semantics", json=body, headers=headers)
+            resp = await client.post("/api/v1/analyze", json=body, headers=headers)
             wall_ms = (time.perf_counter() - started) * 1000.0
             if resp.status_code != 200:
                 raise RuntimeError(f"{sample['id']} returned HTTP {resp.status_code}: {resp.text[:200]}")
             data = resp.json()
-            sem = data["data"]["semantic_analysis"]
-            mule = data["data"]["mule_scan"]
+            sem = data["bert"]
+            mule = data["mule"]
 
             def p_phish(text: str) -> float:
                 res = engine._run_inference(text)  # noqa: SLF001 — evaluation only
@@ -180,18 +175,20 @@ async def run(tag: str, no_bert: bool = False) -> dict[str, Any]:
                 "label": sample["label"],
                 "url": sample["url"],
                 "form": sample["form"],
-                "pipeline_verdict": data["orchestration"],
-                "pipeline_pred": 1 if data["orchestration"] == "BLOCK_RENDER" else 0,
+                "pipeline_verdict": data["verdict"],
+                "pipeline_pred": 1 if data["verdict"] == "BLOCK_RENDER" else 0,
+                "pipeline_warning": 1 if data["verdict"] == "WARNING" else 0,
+                "risk_score": data["risk_score"],
                 "is_whitelisted": bool(data.get("is_whitelisted")),
                 "endpoint_bert_label": sem["label"],
                 "endpoint_bert_confidence": sem["confidence"],
-                "mule_detected": bool(mule["mule_detected"]),
-                "decision_rule": data.get("decision_rule") or "",
-                "indicators": "; ".join(data.get("threat_indicators") or []),
+                "mule_detected": bool(mule["flagged_accounts"]),
+                "decision_rule": data.get("rule") or "",
+                "indicators": "; ".join(r["text"] for r in data["reasons"] if r["severity"] in ("high", "medium")),
                 "p_composite": p_phish(f"URL: {sample['url']} | {sample['text']}"),
                 "p_url_raw": p_phish(sample["url"]),
                 "p_url_stripped": p_phish(strip_scheme(sample["url"])),
-                "server_ms": data["meta"]["processing_time_ms"],
+                "server_ms": data["processing_time_ms"],
                 "wall_ms": round(wall_ms, 2),
             })
 
@@ -217,6 +214,7 @@ async def run(tag: str, no_bert: bool = False) -> dict[str, Any]:
             "n": len(sel),
             "correct": correct,
             "blocked": sum(r["pipeline_pred"] for r in sel),
+            "warned": sum(r["pipeline_warning"] for r in sel),
             "accuracy": round(correct / len(sel), 4),
         }
 

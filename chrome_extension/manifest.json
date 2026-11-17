@@ -1,37 +1,23 @@
 {
   "manifest_version": 3,
   "name": "PhishGuard-AI",
-  "version": "3.2.0",
-  "description": "Real-time anti-phishing browser protection v3.2: BERT URL classification, visual logo detection, Quishing QR audits and mule-account scanning for Malaysian online banking.",
+  "version": "4.0.0",
+  "description": "Real-time phishing and scam protection for every website: AI URL model, logo detection, Malaysian mule-account checks and HTTPS warnings, explained in plain language.",
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "permissions": [
-    "activeTab",
-    "storage",
-    "notifications",
-    "scripting",
-    "tabs"
-  ],
-  "host_permissions": [
-    "<all_urls>"
-  ],
+  "permissions": ["storage", "tabs", "scripting"],
+  "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "background/service-worker.js"
   },
   "content_scripts": [
     {
-      "matches": [
-        "http://*/*",
-        "https://*/*",
-        "file://*/*"
-      ],
-      "js": [
-        "content/content.js"
-      ],
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content/content.js"],
       "run_at": "document_idle"
     }
   ],
@@ -46,6 +32,6 @@
     }
   },
   "content_security_policy": {
-    "extension_pages": "default-src 'self'; script-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:* http://localhost:* https:"
+    "extension_pages": "default-src 'self'; script-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; img-src 'self' data:; style-src 'self'; connect-src 'self' https: http://127.0.0.1:* http://localhost:*"
   }
 }

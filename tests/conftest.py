@@ -1,177 +1,120 @@
 """
-PhishGuard-AI — Shared Pytest Fixtures.
-=========================================
+PhishGuard-AI — Shared Test Fixtures.
+======================================
 
-Provides reusable fixtures for all test modules:
+* ``test_db``          in-memory SQLite with the production schema and seed.
+* ``test_client``      the real FastAPI app with a mock BERT engine (LEGITIMATE),
+                       sending the API key by default.
+* ``phishing_client``  the same app with a mock engine that says PHISHING.
+* ``anon_client``      no credentials, to prove routes are protected.
+* ``dashboard``        a client signed in to the dashboard with a session cookie.
+* ``qr_png``           builds a PNG QR code for any payload (OpenCV encoder).
 
-- ``test_client``: An ``httpx.AsyncClient`` wired to the FastAPI app, sending
-  the API key by default (dashboard routes require authentication).
-- ``anon_client``: The same client without any default credentials.
-- ``mock_semantic_engine``: A lightweight mock of ``SemanticEngine``.
-- ``test_db``: An in-memory aiosqlite database with schema + seed data.
-- ``auth_headers``: Pre-built Authorization headers with the test API key.
+The real 438 MB BERT model and the YOLO weights are never loaded in tests.
 """
 
 from __future__ import annotations
 
-import asyncio
-from typing import Any, AsyncGenerator, Final
-from unittest.mock import AsyncMock, MagicMock
+import base64
+import os
+import sys
+from typing import Any, AsyncGenerator, Callable, Final
 
 import aiosqlite
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 
-# ── Ensure the project root is importable ──
-import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from core.config import API_SECRET_TOKEN
-from database.init_db import (
-    SCHEMA_STATEMENTS,
-    _INSERT_SEED,
-    _SEED_MULE_ACCOUNTS,
-)
+from core.config import API_SECRET_TOKEN  # noqa: E402
+from database.init_db import apply_schema  # noqa: E402
+
+AUTH_HEADERS: Final[dict[str, str]] = {"Authorization": f"Bearer {API_SECRET_TOKEN}"}
 
 
-# ==============================================================================
-# Auth Headers
-# ==============================================================================
+class MockSemanticEngine:
+    """Stand-in for ``SemanticEngine`` returning a fixed classification."""
 
-AUTH_HEADERS: Final[dict[str, str]] = {
-    "Authorization": f"Bearer {API_SECRET_TOKEN}",
-    "Content-Type": "application/json",
-}
+    def __init__(self, phishing_probability: float = 0.05) -> None:
+        self.p = phishing_probability
+        self.calls: list[str] = []
 
+    async def predict(self, text: str) -> dict[str, Any]:
+        self.calls.append(text)
+        label = "PHISHING" if self.p >= 0.5 else "LEGITIMATE"
+        return {
+            "label": label,
+            "confidence": self.p if label == "PHISHING" else 1 - self.p,
+            "phishing_probability": self.p,
+            "is_malicious": self.p >= 0.75,
+        }
 
-@pytest.fixture
-def auth_headers() -> dict[str, str]:
-    """Return pre-built Authorization headers."""
-    return dict(AUTH_HEADERS)
-
-
-# ==============================================================================
-# In-Memory Database
-# ==============================================================================
 
 @pytest_asyncio.fixture
 async def test_db() -> AsyncGenerator[aiosqlite.Connection, None]:
-    """Create a fresh in-memory SQLite database with schema + seed data."""
     db = await aiosqlite.connect(":memory:")
-    await db.execute("PRAGMA journal_mode=WAL;")
-    await db.execute("PRAGMA foreign_keys=ON;")
-    for statement in SCHEMA_STATEMENTS:
-        await db.execute(statement)
-
-    for account in _SEED_MULE_ACCOUNTS:
-        await db.execute(_INSERT_SEED, account)
-    await db.commit()
-
+    await apply_schema(db)
     yield db
-
     await db.close()
 
 
-# ==============================================================================
-# Mock Semantic Engine
-# ==============================================================================
+def _wire(app: Any, db: aiosqlite.Connection, engine: MockSemanticEngine) -> None:
+    from core.rate_limit import limiter
+    from services.mule_scanner import MuleScanner
 
-class MockSemanticEngine:
-    """Lightweight stand-in for ``SemanticEngine`` that avoids loading BERT."""
+    app.state.db = db
+    app.state.semantic_engine = engine
+    app.state.mule_scanner = MuleScanner()
+    app.state.cache = None
+    app.state.visual_detector = None
+    limiter._storage.reset()  # noqa: SLF001 — isolate rate limits between tests
 
-    def __init__(self, label: str = "LEGITIMATE", confidence: float = 0.95,
-                 is_malicious: bool = False) -> None:
-        self._result: dict[str, Any] = {
-            "label": label,
-            "confidence": confidence,
-            "is_malicious": is_malicious,
-        }
 
-    async def predict(self, text: str) -> dict[str, Any]:
-        return dict(self._result)
+async def _client(engine: MockSemanticEngine, db: aiosqlite.Connection, headers: dict[str, str]):
+    from main import app
 
-    def warm_up(self) -> None:
-        pass
+    _wire(app, db, engine)
+    return AsyncClient(transport=ASGITransport(app=app), base_url="https://test", headers=headers)
 
-    def shutdown(self) -> None:
-        pass
+
+@pytest_asyncio.fixture
+async def test_client(test_db: aiosqlite.Connection) -> AsyncGenerator[AsyncClient, None]:
+    async with await _client(MockSemanticEngine(0.05), test_db, AUTH_HEADERS) as client:
+        yield client
+
+
+@pytest_asyncio.fixture
+async def phishing_client(test_db: aiosqlite.Connection) -> AsyncGenerator[AsyncClient, None]:
+    async with await _client(MockSemanticEngine(0.97), test_db, AUTH_HEADERS) as client:
+        yield client
+
+
+@pytest_asyncio.fixture
+async def anon_client(test_db: aiosqlite.Connection) -> AsyncGenerator[AsyncClient, None]:
+    async with await _client(MockSemanticEngine(0.05), test_db, {}) as client:
+        yield client
+
+
+@pytest_asyncio.fixture
+async def dashboard(test_db: aiosqlite.Connection) -> AsyncGenerator[AsyncClient, None]:
+    async with await _client(MockSemanticEngine(0.05), test_db, {}) as client:
+        response = await client.post("/api/v1/dashboard/auth/login", json={"api_key": API_SECRET_TOKEN})
+        assert response.status_code == 200
+        yield client
 
 
 @pytest.fixture
-def mock_semantic_engine() -> MockSemanticEngine:
-    """Return a safe mock engine (LEGITIMATE, 0.95, not malicious)."""
-    return MockSemanticEngine()
+def qr_png() -> Callable[[str], str]:
+    """Return a function that encodes ``payload`` as a base64 PNG QR code."""
+    import cv2
 
+    def make(payload: str) -> str:
+        image = cv2.QRCodeEncoder.create().encode(payload)
+        image = cv2.resize(image, None, fx=8, fy=8, interpolation=cv2.INTER_NEAREST)
+        image = cv2.copyMakeBorder(image, 40, 40, 40, 40, cv2.BORDER_CONSTANT, value=255)
+        ok, buffer = cv2.imencode(".png", image)
+        assert ok
+        return base64.b64encode(buffer.tobytes()).decode("ascii")
 
-@pytest.fixture
-def mock_phishing_engine() -> MockSemanticEngine:
-    """Return a mock engine that always flags content as PHISHING."""
-    return MockSemanticEngine(
-        label="PHISHING", confidence=0.97, is_malicious=True
-    )
-
-
-# ==============================================================================
-# Full Test Client (wired to the FastAPI app with mocked singletons)
-# ==============================================================================
-
-@pytest_asyncio.fixture
-async def test_client(
-    test_db: aiosqlite.Connection,
-    mock_semantic_engine: MockSemanticEngine,
-) -> AsyncGenerator[AsyncClient, None]:
-    """Provide an ``httpx.AsyncClient`` backed by the real FastAPI app
-    but with mocked ML engine and in-memory database."""
-    from main import app
-    from services.mule_scanner import MuleScanner
-    from core.rate_limit import limiter as endpoint_limiter
-
-    # Inject test singletons into app.state
-    app.state.db = test_db
-    app.state.semantic_engine = mock_semantic_engine
-    app.state.mule_scanner = MuleScanner()
-
-    # Reset the shared rate limiter to prevent 429 collisions across tests
-    endpoint_limiter._storage.reset()
-
-    transport = ASGITransport(app=app)
-    async with AsyncClient(
-        transport=transport, base_url="http://test",
-        headers={"Authorization": AUTH_HEADERS["Authorization"]},
-    ) as client:
-        yield client
-
-
-@pytest_asyncio.fixture
-async def anon_client(test_client: AsyncClient) -> AsyncGenerator[AsyncClient, None]:
-    """Client bound to the same app state as ``test_client`` but with no
-    default credentials — used to assert that protected routes reject
-    unauthenticated callers."""
-    from main import app
-
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        yield client
-
-
-@pytest_asyncio.fixture
-async def phishing_client(
-    test_db: aiosqlite.Connection,
-    mock_phishing_engine: MockSemanticEngine,
-) -> AsyncGenerator[AsyncClient, None]:
-    """Test client where the engine always returns PHISHING."""
-    from main import app
-    from services.mule_scanner import MuleScanner
-    from core.rate_limit import limiter as endpoint_limiter
-
-    app.state.db = test_db
-    app.state.semantic_engine = mock_phishing_engine
-    app.state.mule_scanner = MuleScanner()
-
-    # Reset the shared rate limiter to prevent 429 collisions across tests
-    endpoint_limiter._storage.reset()
-
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        yield client
+    return make

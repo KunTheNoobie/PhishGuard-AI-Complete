@@ -1,201 +1,84 @@
 """
-PhishGuard-AI — Response Envelope Schemas.
-===========================================
+PhishGuard-AI — Response Schemas.
+==================================
 
-Defines the unified JSON response structure returned by all analysis
-endpoints. The envelope follows the **JSend** convention extended with
-an ``orchestration`` directive consumed by the browser extension's
-content-script to decide whether to block page rendering, and provides
-top-level convenience fields for direct threat intelligence consumption.
+The shape of an analysis result.  Declaring it here makes FastAPI validate
+every response and publish the exact contract in ``/docs``.
 
-Architecture Layer : DTO / Presentation
-Thesis Reference   : §3.5 — Outbound Data Contracts & Orchestration Signals
+Architecture Layer : DTO / Contract
 """
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Literal, Optional
+
 from pydantic import BaseModel, Field
 
 
-# ==============================================================================
-# Sub-Models
-# ==============================================================================
-
-class MetaBlock(BaseModel):
-    """Operational metadata attached to every API response."""
-
-    transaction_id: str = Field(
-        ...,
-        description="UUID v4 uniquely identifying this analysis transaction.",
-    )
-    processing_time_ms: float = Field(
-        ...,
-        description="Wall-clock latency of the full analysis pipeline in ms.",
-    )
+class Reason(BaseModel):
+    severity: Literal["high", "medium", "low", "info", "ok"]
+    text: str
 
 
-class SemanticResult(BaseModel):
-    """Output of the BERT-based semantic analysis stage."""
-
-    label: str = Field(
-        ...,
-        description=(
-            "Classification label emitted by the NLP model "
-            "(e.g., 'PHISHING', 'LEGITIMATE')."
-        ),
-    )
-    confidence: float = Field(
-        ...,
-        ge=0.0,
-        le=1.0,
-        description="Softmax confidence score in [0, 1].",
-    )
-    is_malicious: bool = Field(
-        ...,
-        description="True if the label is PHISHING with confidence at or above the configured threshold.",
-    )
-    sanitized_text_preview: str = Field(
-        ...,
-        description="Truncated preview of the sanitised page text analysed by the rule layer.",
-    )
+class PipelineStep(BaseModel):
+    name: str
+    status: Literal["pass", "warn", "fail", "skip", "info"]
+    detail: str
+    ms: Optional[float] = None
 
 
-class MuleScanResult(BaseModel):
-    """Output of the mule-account scanning stage."""
-
-    accounts_extracted: list[str] = Field(
-        default_factory=list,
-        description="Account numbers extracted from the page via regex.",
-    )
-    flagged_accounts: list[dict[str, Any]] = Field(
-        default_factory=list,
-        description=(
-            "Subset of extracted accounts that matched known mule records "
-            "in the registry, including bank name and report count."
-        ),
-    )
-    mule_detected: bool = Field(
-        ...,
-        description="True if at least one flagged mule account was found.",
-    )
+class BertResult(BaseModel):
+    label: Optional[str] = None
+    confidence: Optional[float] = None
+    phishing_probability: Optional[float] = None
+    is_malicious: Optional[bool] = None
+    skipped: Optional[bool] = None
 
 
-class DataBlock(BaseModel):
-    """Aggregated analysis results from all pipeline stages."""
+class MuleResult(BaseModel):
+    accounts_extracted: list[str] = Field(default_factory=list)
+    flagged_accounts: list[dict[str, Any]] = Field(default_factory=list)
+    details: list[dict[str, Any]] = Field(default_factory=list)
 
-    semantic_analysis: SemanticResult
-    mule_scan: MuleScanResult
-
-
-# ==============================================================================
-# Top-Level Envelopes
-# ==============================================================================
 
 class AnalysisResponse(BaseModel):
-    """Unified response envelope for the ``/analyze/semantics`` endpoint.
+    """Explained verdict for one page."""
 
-    The ``orchestration`` field carries a directive that the browser
-    extension's content-script interprets:
-
-    - ``BLOCK_RENDER`` — inject a warning interstitial and prevent the
-      page from rendering.
-    - ``SAFE`` — allow normal rendering; no action required.
-    """
-
-    meta: MetaBlock
-    data: DataBlock
-    orchestration: str = Field(
-        ...,
-        description="Orchestration directive: 'BLOCK_RENDER' or 'SAFE'.",
-        examples=["BLOCK_RENDER", "SAFE"],
-    )
-
-    # Top-level unified fields for thesis and OpenAPI compatibility (§4.3.2)
-    status: str = Field(default="success", description="API execution status.")
-    verdict: Optional[str] = Field(default=None, description="Final orchestration directive ('BLOCK_RENDER' or 'SAFE').")
-    risk_score: Optional[float] = Field(default=None, description="Severity of the triggered corroboration rule (0.90–0.99) or a low advisory score (< 0.50) when the page is SAFE.")
-    threat_indicators: Optional[list[str]] = Field(default=None, description="Human-readable reasons behind the verdict (explainability).")
-    decision_rule: Optional[str] = Field(default=None, description="Identifier of the corroboration rule that fired (R1…R6), or null when SAFE.")
-    signals: Optional[dict[str, bool]] = Field(default=None, description="Boolean signal vector evaluated by the verdict engine.")
-    bert_score: Optional[float] = Field(default=None, description="Softmax confidence of the label predicted by the BERT URL classifier.")
-    is_whitelisted: Optional[bool] = Field(default=None, description="True if the domain matched the trusted-domain whitelist.")
-    brand_impersonation: Optional[dict[str, Any]] = Field(default=None, description="Brand impersonation profile.")
-    mule_accounts_flagged: Optional[list[dict[str, Any]]] = Field(default=None, description="List of matched mule accounts.")
-    execution_time_ms: Optional[float] = Field(default=None, description="Total server-side processing latency in ms.")
-    timestamp: Optional[str] = Field(default=None, description="ISO-8601 evaluation timestamp.")
-
-    model_config = {
-        "json_schema_extra": {
-            "examples": [
-                {
-                    "meta": {
-                        "transaction_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-                        "processing_time_ms": 142.7,
-                    },
-                    "data": {
-                        "semantic_analysis": {
-                            "label": "PHISHING",
-                            "confidence": 0.97,
-                            "is_malicious": True,
-                            "sanitized_text_preview": "Please transfer RM500 to ...",
-                        },
-                        "mule_scan": {
-                            "accounts_extracted": ["1234567890"],
-                            "flagged_accounts": [
-                                {
-                                    "account_number": "1234567890",
-                                    "bank_name": "Maybank",
-                                    "report_count": 14,
-                                }
-                            ],
-                            "mule_detected": True,
-                        },
-                    },
-                    "orchestration": "BLOCK_RENDER",
-                    "status": "success",
-                    "verdict": "BLOCK_RENDER",
-                    "risk_score": 0.985,
-                    "bert_score": 0.972418,
-                    "is_whitelisted": False,
-                    "mule_accounts_flagged": [
-                        {
-                            "account_number": "1234567890",
-                            "bank_name": "Maybank",
-                            "report_count": 14,
-                        }
-                    ],
-                    "execution_time_ms": 142.7,
-                }
-            ]
-        }
-    }
+    transaction_id: str
+    timestamp: str
+    source: str
+    url: str = Field(..., description="Requested URL (user name, query and fragment removed).")
+    final_url: str = Field(..., description="URL actually analysed (after redirects).")
+    hostname: str
+    scheme: str
+    is_whitelisted: bool
+    verdict: Literal["SAFE", "WARNING", "BLOCK_RENDER"]
+    risk_level: Literal["safe", "warning", "dangerous"]
+    risk_score: float = Field(..., ge=0.0, le=1.0)
+    rule: Optional[str] = Field(None, description="Rule that produced the verdict (R1–R9, H1–H2, W1–W3).")
+    headline: str
+    explanation: str = Field(..., description="One-paragraph plain-language explanation.")
+    reasons: list[Reason]
+    signals: dict[str, bool]
+    steps: list[PipelineStep]
+    bert: BertResult
+    mule: MuleResult
+    brand: dict[str, Any]
+    heuristics: dict[str, Any]
+    visual: Optional[dict[str, Any]] = None
+    page: dict[str, Any]
+    processing_time_ms: float
 
 
-class QuishingAnalysisRequest(BaseModel):
-    """Payload schema for optical QR and Quishing forensic inspection (§4.3.3)."""
+class QRScanResponse(BaseModel):
+    """Decoded QR code plus the analysis of the URL it points to."""
 
-    image_base64: str = Field(
-        ...,
-        title="Base64 Encoded QR Code Image",
-        description="Base64-encoded image bytes of the suspicious QR code.",
-    )
-    page_url: Optional[str] = Field(
-        None,
-        title="Page URL",
-        description="URL of the page where the QR code was rendered.",
-    )
-
-
-class QuishingAnalysisResponse(BaseModel):
-    """Forensic evaluation response for Quishing inspection."""
-
-    quishing_threat: bool = Field(..., description="True if payload is flagged as malicious.")
-    quishing_score: float = Field(..., description="Calibrated quishing forensic probability.")
-    decoded_payload: str = Field(..., description="Decoded URL or PayNet EMVCo string.")
-    verdict: str = Field(..., description="Defensive action: 'BLOCK_RENDER' or 'SAFE'.")
-    risk_factors: list[str] = Field(default_factory=list, description="Forensic risk flags.")
-    raw_payload: Optional[str] = Field(default=None, description="Exact raw decoded payload.")
-    is_duitnow_scheme: Optional[bool] = Field(default=None, description="True if DuitNow EMVCo QR code.")
-    extracted_destination_urls: Optional[list[str]] = Field(default_factory=list, description="Extracted URLs.")
-    extracted_mule_accounts: Optional[list[str]] = Field(default_factory=list, description="Extracted mule accounts.")
+    decoded: bool
+    payload: Optional[str] = None
+    payload_type: Optional[Literal["url", "payment", "text"]] = None
+    error: Optional[str] = None
+    accounts: list[dict[str, Any]] = Field(default_factory=list)
+    flagged_accounts: list[dict[str, Any]] = Field(default_factory=list)
+    verdict: Literal["SAFE", "WARNING", "BLOCK_RENDER", "UNKNOWN"]
+    headline: str
+    analysis: Optional[AnalysisResponse] = None

@@ -1,175 +1,56 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>PhishGuard-AI</title>
-    <link rel="icon" type="image/png" href="../icons/icon32.png">
-    <link rel="stylesheet" href="popup.css">
-  </head>
-  <body>
-    <main class="popup-shell">
-      <header class="topbar">
-        <div class="brand-group">
-          <img src="../icons/icon48.png" alt="PhishGuard Cyber Shield" width="32" height="32" style="border-radius: 8px; box-shadow: 0 0 12px rgba(99, 102, 241, 0.4);" />
-          <div>
-            <h1>PhishGuard-AI</h1>
-            <p id="pingStatusText">Enterprise Browser Shield</p>
-          </div>
-        </div>
-        <span id="statusPill" class="status-pill neutral">Waiting</span>
-      </header>
+<head>
+  <meta charset="utf-8">
+  <title>PhishGuard-AI</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <img src="../icons/icon48.png" alt="">
+    <div class="brand"><strong>PhishGuard-AI</strong><span id="backend"><i class="dot"></i> Checking server…</span></div>
+  </header>
 
-      <!-- ─── LIVE SOC PING & CONNECTION METER ─── -->
-      <div id="socLiveBanner" class="soc-live-banner online" title="Real-Time SOC API Health & Latency">
-        <div class="soc-live-left">
-          <span id="pingPulseDot" class="ping-pulse-dot online"></span>
-          <strong id="socPingStatus">SOC Engine: Checking...</strong>
-        </div>
-        <div class="soc-live-right">
-          <span id="socLatencyTag" class="soc-latency-tag">-- ms</span>
-        </div>
-      </div>
+  <section class="verdict" id="verdict">
+    <span class="pill neutral" id="pill">Waiting</span>
+    <h1 id="headline">No result for this tab yet</h1>
+    <p class="host mono" id="host"></p>
+    <div class="score"><div class="bar"><span id="bar"></span></div><span id="score"></span></div>
+    <p class="explain" id="explain">Open or reload a website, or press Re-scan.</p>
+  </section>
 
-      <!-- ─── Navigation Tabs ─── -->
-      <nav class="popup-tabs">
-        <button id="tabScannerBtn" class="tab-btn active" type="button">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-          Scanner
-        </button>
-        <button id="tabTrustedBtn" class="tab-btn" type="button">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          Trusted
-        </button>
-        <button id="tabHistoryBtn" class="tab-btn" type="button">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          History
-        </button>
-      </nav>
+  <section class="checks">
+    <div class="row"><span>Connection</span><b id="cConn">—</b></div>
+    <div class="row"><span>AI URL model (BERT)</span><b id="cBert">—</b></div>
+    <div class="row"><span>Mule-account registry</span><b id="cMule">—</b></div>
+    <div class="row"><span>Brand impersonation</span><b id="cBrand">—</b></div>
+    <div class="row"><span>Logo check (YOLOv8n)</span><b id="cLogo">—</b></div>
+    <div class="row"><span>Password / card fields</span><b id="cForm">—</b></div>
+  </section>
 
-      <!-- ─── SCANNER VIEW ─── -->
-      <div id="scannerView" class="tab-view active">
-        <section id="resultPanel" class="result-panel neutral">
-          <div class="scan-meta">
-            <span id="currentDomain" class="current-domain">No domain</span>
-            <span id="scanTime" class="scan-time">Not scanned</span>
-          </div>
+  <section class="reasons-box">
+    <h2>Why</h2>
+    <ul id="reasons"><li class="muted">No reasons yet.</li></ul>
+  </section>
 
-          <!-- Circular Risk Gauge & Status Title -->
-          <div class="gauge-status-row">
-            <div class="gauge-wrapper">
-              <svg class="gauge-svg" viewBox="0 0 80 80">
-                <circle class="gauge-bg" cx="40" cy="40" r="32"></circle>
-                <circle id="gaugeProgress" class="gauge-fill" cx="40" cy="40" r="32"></circle>
-              </svg>
-              <div class="gauge-text">
-                <span id="gaugeScore">0%</span>
-                <small>RISK</small>
-              </div>
-            </div>
-            <div class="status-info">
-              <div id="statusTitle" class="status-title">No page result yet</div>
-              <p id="reasonText" class="reason">Open an HTTP or HTTPS page and scan it.</p>
-            </div>
-          </div>
+  <div class="buttons">
+    <button id="rescan" class="primary" type="button">Re-scan</button>
+    <button id="report" type="button">Report account</button>
+    <button id="dashboard" type="button">Dashboard</button>
+  </div>
 
-          <ul id="logoList" class="logo-list"></ul>
-
-          <div class="result-actions">
-            <button id="trustSiteBtn" class="action-pill-btn hidden" type="button">✓ Trust Domain</button>
-            <button id="reportSafeBtn" class="action-pill-btn hidden" type="button">🛡️ Report Safe</button>
-            <button id="copyVerdictBtn" class="action-pill-btn hidden" type="button" title="Copy formatted verdict summary">📋 Copy Verdict</button>
-            <button id="flagMuleBtn" class="action-pill-btn hidden" style="background: rgba(239,68,68,0.2); border-color: #ef4444; color: #f87171;" type="button">🚨 Flag Mule to NSRC</button>
-          </div>
-        </section>
-
-        <!-- Multi-Modal Modules Breakdown -->
-        <section class="module-panel" aria-label="Analysis modules">
-          <div class="module-row">
-            <span class="module-label">Visual Match</span>
-            <strong id="visualStatus" class="module-value neutral">Waiting</strong>
-          </div>
-          <div class="module-row">
-            <span class="module-label">BERT Semantic</span>
-            <strong id="semanticStatus" class="module-value neutral">Waiting</strong>
-          </div>
-          <div class="module-row">
-            <span class="module-label">Mule & DuitNow</span>
-            <strong id="muleStatus" class="module-value neutral">Waiting</strong>
-          </div>
-          <div class="module-row">
-            <span class="module-label">Final Verdict</span>
-            <strong id="finalVerdict" class="module-value neutral">Waiting</strong>
-          </div>
-        </section>
-
-        <button id="scanButton" class="primary-button" type="button">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-          Scan Page
-        </button>
-
-        <details class="settings">
-          <summary>Backend & Settings</summary>
-          <label>
-            API Base URL
-            <input id="apiBaseUrl" type="text" autocomplete="off" placeholder="http://127.0.0.1:8000">
-          </label>
-          <label>
-            API Secret Key
-            <input id="apiToken" type="password" autocomplete="off">
-          </label>
-          <button id="saveSettingsButton" class="secondary-button" type="button">Save Settings</button>
-          <button id="openDashboardBtn" class="secondary-button" type="button" style="margin-top: 0.5rem; background: rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.4); color: #a5b4fc;">
-            📊 Launch Threat Dashboard
-          </button>
-        </details>
-      </div>
-
-      <!-- ─── TRUSTED SITES VIEW ─── -->
-      <div id="trustedView" class="tab-view">
-        <div class="history-header">
-          <span class="history-title">Custom Trusted Domains</span>
-          <button id="clearTrustedBtn" class="clear-btn" type="button">Revoke All</button>
-        </div>
-        <div id="trustedList" class="history-list">
-          <div class="history-empty">No custom trusted domains registered yet.</div>
-        </div>
-      </div>
-
-      <!-- ─── HISTORY VIEW ─── -->
-      <div id="historyView" class="tab-view">
-        <div class="history-header">
-          <span class="history-title">Recent Scans (Last 10)</span>
-          <button id="clearHistoryBtn" class="clear-btn" type="button">Clear</button>
-        </div>
-        <div id="historyList" class="history-list">
-          <div class="history-empty">No scan history recorded yet.</div>
-        </div>
-      </div>
-
-      <!-- ─── CYBERPOPUP TOAST CONTAINER ─── -->
-      <div id="popupToastContainer" class="popup-toast-container"></div>
-
-      <!-- ─── CYBERPOPUP MODAL DIALOG ─── -->
-      <div id="popupModalOverlay" class="popup-modal-overlay hidden">
-        <div class="popup-modal-card">
-          <div class="popup-modal-header">
-            <span id="popupModalIcon">🛡️</span>
-            <h3 id="popupModalTitle">PhishGuard Notice</h3>
-          </div>
-          <p id="popupModalMessage">Message goes here...</p>
-          <div id="popupModalInputContainer" class="hidden" style="margin-bottom: 12px;">
-            <input type="text" id="popupModalInput" class="popup-modal-input" />
-          </div>
-          <div class="popup-modal-actions">
-            <button type="button" id="popupModalCancelBtn" class="action-pill-btn">Cancel</button>
-            <button type="button" id="popupModalConfirmBtn" class="primary-button" style="padding: 6px 14px; font-size: 11px;">Confirm</button>
-          </div>
-        </div>
-      </div>
-
-    </main>
-
-    <script src="popup.js"></script>
-  </body>
+  <details id="settings">
+    <summary>Backend settings</summary>
+    <label>Server <select id="mode">
+      <option value="auto">Automatic (online, then local)</option>
+      <option value="online">Online HTTPS server only</option>
+      <option value="local">Local server only</option>
+    </select></label>
+    <label>Online URL <input id="onlineUrl" type="url"></label>
+    <label>Local URL <input id="localUrl" type="url"></label>
+    <label>API key <input id="apiKey" type="password" autocomplete="off"></label>
+    <div class="buttons"><button id="save" class="primary" type="button">Save and test</button><span id="saveMsg" class="muted"></span></div>
+  </details>
+  <script src="popup.js"></script>
+</body>
 </html>

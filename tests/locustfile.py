@@ -3,7 +3,7 @@ PhishGuard-AI — Locust Load / Stress Test.
 ============================================
 
 Simulates concurrent browser extension clients sending analysis requests
-to the ``/api/v1/analyze/semantics`` endpoint.
+to the ``/api/v1/analyze`` endpoint.
 
 Usage
 -----
@@ -34,7 +34,7 @@ from typing import Final
 from locust import HttpUser, between, task
 
 # Read the API key from the environment or use the default test key.
-API_KEY: Final[str] = os.getenv("PHISHGUARD_API_KEY", "phishguard_secret_key_2026")
+API_KEY: Final[str] = os.getenv("PHISHGUARD_API_KEY", "12345678")
 
 # ── Realistic DOM payloads ──
 
@@ -128,7 +128,7 @@ class PhishGuardUser(HttpUser):
     def analyse_legitimate_page(self) -> None:
         """A whitelisted banking page: exercises the whitelist bypass path."""
         self.client.post(
-            "/api/v1/analyze/semantics",
+            "/api/v1/analyze",
             json=LEGITIMATE_PAYLOAD,
             headers=self.headers,
             name="/analyze/semantics [WHITELISTED]",
@@ -148,7 +148,7 @@ class PhishGuardUser(HttpUser):
             f"article-{random.randint(1, 10**9)}.html"
         )
         self.client.post(
-            "/api/v1/analyze/semantics",
+            "/api/v1/analyze",
             json=payload,
             headers=self.headers,
             name="/analyze/semantics [BERT cache-miss]",
@@ -158,7 +158,7 @@ class PhishGuardUser(HttpUser):
     def analyse_phishing_page(self) -> None:
         """Simulate analysing a phishing page."""
         self.client.post(
-            "/api/v1/analyze/semantics",
+            "/api/v1/analyze",
             json=PHISHING_PAYLOAD,
             headers=self.headers,
             name="/analyze/semantics [PHISHING, cached]",
@@ -168,7 +168,7 @@ class PhishGuardUser(HttpUser):
     def analyse_mule_page(self) -> None:
         """Simulate analysing a page with a mule account."""
         self.client.post(
-            "/api/v1/analyze/semantics",
+            "/api/v1/analyze",
             json=MULE_PAYLOAD,
             headers=self.headers,
             name="/analyze/semantics [MULE, trusted host]",
