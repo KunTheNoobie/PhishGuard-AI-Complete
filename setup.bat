@@ -7,14 +7,21 @@ echo  PhishGuard-AI setup  (Git LFS, virtual environment, .env)
 echo  The first run downloads about 4 GB of packages.
 echo ========================================================
 
-where git >nul 2>&1 || (echo [ERROR] Git is not installed. Get it from https://git-scm.com & goto :fail)
-
 echo.
-echo [1/5] Git LFS: downloading the model weights (about 430 MB)...
+echo [1/5] Checking the included model weights...
+call :verify_models
+if not errorlevel 1 goto :models_ready
+if /i "%~1"=="--check-models" exit /b 1
+if not exist .git (echo [ERROR] This ZIP is missing complete models. Obtain the complete release ZIP. & goto :fail)
+where git >nul 2>&1 || (echo [ERROR] Git is required to fetch missing model weights. & goto :fail)
 git lfs install
 git lfs pull
-if errorlevel 1 (echo [ERROR] git lfs pull failed. Install Git LFS from https://git-lfs.com and run again. & goto :fail)
-
+if errorlevel 1 goto :fail
+call :verify_models
+if errorlevel 1 (echo [ERROR] Model weights are still missing or incomplete. & goto :fail)
+:models_ready
+echo Complete model weights found. No model download is needed.
+if /i "%~1"=="--check-models" exit /b 0
 echo.
 echo [2/5] Creating the virtual environment...
 where py >nul 2>&1 && (set "PY=py -3") || (set "PY=python")
@@ -22,9 +29,8 @@ if not exist venv (%PY% -m venv venv || (echo [ERROR] Python 3.11 or newer is re
 
 echo.
 echo [3/5] Installing requirements.txt (PyTorch, Transformers, YOLO, FastAPI...)...
-call venv\Scripts\activate.bat
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
+venv\Scripts\python.exe -m pip install --upgrade pip
+venv\Scripts\python.exe -m pip install -r requirements.txt
 if errorlevel 1 (echo [ERROR] Package installation failed. & goto :fail)
 
 echo.
@@ -37,7 +43,7 @@ if not exist phishguard_custom_model\model.safetensors (echo [WARNING] BERT weig
 
 echo.
 echo ========================================================
-echo  Setup finished.  Start the server with run_server.bat
+echo  Setup finished.  Start the server with start_local.bat
 echo  Dashboard: http://127.0.0.1:8000/dashboard/   (admin key 12345678)
 echo ========================================================
 pause
@@ -48,3 +54,12 @@ echo.
 echo Setup stopped. Fix the message above and run setup.bat again.
 pause
 exit /b 1
+
+:verify_models
+if not exist "phishguard_custom_model\model.safetensors" exit /b 1
+if not exist "phishguard_custom_model\tokenizer.json" exit /b 1
+if not exist "visual_identity\models\best.pt" exit /b 1
+for %%F in ("phishguard_custom_model\model.safetensors") do if %%~zF LSS 1000000 exit /b 1
+for %%F in ("phishguard_custom_model\tokenizer.json") do if %%~zF LSS 10000 exit /b 1
+for %%F in ("visual_identity\models\best.pt") do if %%~zF LSS 10000 exit /b 1
+exit /b 0

@@ -91,6 +91,7 @@ MALICIOUS_THRESHOLD: Final[float] = float(os.getenv("PHISHGUARD_MALICIOUS_THRESH
 # YOLOv8n logo detector (Module 2).
 VISUAL_MODEL_PATH: Final[str] = os.getenv("PHISHGUARD_VISUAL_MODEL", "visual_identity/models/best.pt")
 VISUAL_CONFIDENCE_THRESHOLD: Final[float] = float(os.getenv("PHISHGUARD_VISUAL_CONFIDENCE", "0.85"))
+VISUAL_IMAGE_SIZE: Final[int] = int(os.getenv("PHISHGUARD_VISUAL_IMAGE_SIZE", "960"))
 ENABLE_VISUAL_ENGINE: Final[bool] = os.getenv("PHISHGUARD_ENABLE_VISUAL", "true").lower() not in {
     "0", "false", "no",
 }

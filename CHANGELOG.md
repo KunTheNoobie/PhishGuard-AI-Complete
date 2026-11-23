@@ -1,5 +1,14 @@
 # Changelog
 
+## v4.2.0 — 24 November 2026
+
+- **29-bank logo detector** (Cheon Jie Han): `visual_identity/models/best.pt` now holds the 29-class YOLOv8n model (best epoch 16 of 23, image size 960,
+  confidence 0.85); the previous 5-bank weights are kept as `best_5banks_backup.pt`. `services/visual_detector.py` maps all 29 labels (class IDs 0-4
+  unchanged), checks the model's class IDs when loading, and matches DBS and POSB to their shared domains. New `class_map.json`, `best.metadata.json`,
+  `tests/test_visual_bank29.py`, `VISUAL_IMAGE_SIZE` setting, and `setup.bat` / `start_local.bat` that reuse an existing environment.
+- 208 tests pass (145 for Module 1 plus 63 for the visual module).
+- **Hugging Face Space as the primary online host** (`app.py`, `packages.txt`, README front matter, `gradio` in `requirements.txt`); Render stays as a backup. The report covers Module 1 only (216 pages).
+
 ## v4.1.4 — 18 November 2026
 
 - **URL Analyzer** — optional "Page Screenshot (YOLOv8n Logo Check)" upload (`screenshot_b64` on `/api/v1/dashboard/analyze`): a Maybank

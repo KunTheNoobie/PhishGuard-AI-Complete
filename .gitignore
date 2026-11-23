@@ -30,6 +30,7 @@ Thumbs.db
 
 # Environment variables
 .env
+.local-python-path
 
 # ML training checkpoints (not needed in production)
 phishguard_custom_model/checkpoint-*/

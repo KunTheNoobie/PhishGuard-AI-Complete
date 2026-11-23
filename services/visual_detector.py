@@ -10,32 +10,52 @@ from typing import Any, Final
 from urllib.parse import urlparse
 
 from core.brands import BRANDS
-from core.config import ALL_TRUSTED_DOMAINS, VISUAL_CONFIDENCE_THRESHOLD, VISUAL_MODEL_PATH
+from core.config import ALL_TRUSTED_DOMAINS, VISUAL_CONFIDENCE_THRESHOLD, VISUAL_IMAGE_SIZE, VISUAL_MODEL_PATH
 from schemas.visual import BoundingBox, DetectedLogo, VisualAnalyzeResponse
 
 logger: Final[logging.Logger] = logging.getLogger("phishguard.visual_detector")
 
-SUPPORTED_BRANDS: Final[set[str]] = {
-    "Maybank",
-    "CIMB",
-    "Public Bank",
-    "RHB",
-    "Hong Leong Bank",
-}
-
-# YOLO class name -> brand in core/brands.py (the five classes the model was trained on).
+# In model class-ID order. Registry names can differ from the displayed YOLO label.
 _CLASS_TO_BRAND: Final[dict[str, str]] = {
     "Maybank": "Maybank",
     "CIMB": "CIMB Bank",
     "Public Bank": "Public Bank",
     "RHB": "RHB Bank",
     "Hong Leong Bank": "Hong Leong Bank",
+    "AmBank": "AmBank",
+    "Bank Islam": "Bank Islam",
+    "Bank Rakyat": "Bank Rakyat",
+    "BSN": "BSN",
+    "Alliance Bank": "Alliance Bank",
+    "Affin Bank": "Affin Bank",
+    "UOB Malaysia": "UOB Malaysia",
+    "OCBC Malaysia": "OCBC Malaysia",
+    "HSBC Malaysia": "HSBC Malaysia",
+    "Standard Chartered Malaysia": "Standard Chartered Malaysia",
+    "Citibank Malaysia": "Citibank Malaysia",
+    "Agrobank": "Agrobank",
+    "Bank Muamalat": "Bank Muamalat",
+    "MBSB Bank": "MBSB Bank",
+    "GXBank": "GXBank",
+    "AEON Bank": "AEON Bank",
+    "Boost Bank": "Boost Bank",
+    "KAF Digital Bank": "KAF Digital Bank",
+    "Chase": "Chase",
+    "Bank of America": "Bank of America",
+    "Wells Fargo": "Wells Fargo",
+    "Barclays": "Barclays",
+    "DBS": "DBS / POSB",
+    "POSB": "DBS / POSB",
 }
+SUPPORTED_BRANDS: Final[set[str]] = set(_CLASS_TO_BRAND)
 AUTHORIZED_DOMAINS: Final[dict[str, list[str]]] = {
     cls: list(BRANDS[brand]["domains"]) for cls, brand in _CLASS_TO_BRAND.items()
 }
 
 BRAND_ALIASES: Final[dict[str, str]] = {
+    **{label.lower(): label for label in SUPPORTED_BRANDS},
+    **{registry.lower(): label for label, registry in _CLASS_TO_BRAND.items()
+       if registry != "DBS / POSB"},
     "maybank": "Maybank",
     "cimb": "CIMB",
     "publicbank": "Public Bank",
@@ -160,7 +180,16 @@ class VisualLogoDetector:
                 logger.warning(self._load_error)
                 return None
 
-            self._model = YOLO(str(model_file))
+            model = YOLO(str(model_file))
+            expected_names = dict(enumerate(_CLASS_TO_BRAND))
+            if model.names != expected_names:
+                self._load_error = (
+                    "Visual model class IDs do not match the configured 29-bank model. "
+                    "Use the matching best.pt and visual class configuration."
+                )
+                logger.error(self._load_error)
+                return None
+            self._model = model
             from services.nlp_engine import release_memory
 
             release_memory()
@@ -180,6 +209,7 @@ class VisualLogoDetector:
             results = model.predict(
                 source=image,
                 conf=self._confidence_threshold,
+                imgsz=VISUAL_IMAGE_SIZE,
                 verbose=False,
                 device="cpu",
             )
@@ -223,7 +253,7 @@ def evaluate_logo_domain(
         return VisualAnalyzeResponse(
             detected_logos=[],
             risk_level="safe",
-            reason="No supported Malaysian financial logo was detected in the screenshot.",
+            reason="No supported bank logo was detected in the screenshot.",
         )
 
     host = _hostname(current_url)
@@ -244,10 +274,12 @@ def evaluate_logo_domain(
 
     if official_brand:
         matching_detections = [
-            detection for detection in detections if detection.brand == official_brand
+            detection for detection in detections
+            if _CLASS_TO_BRAND.get(detection.brand) == _CLASS_TO_BRAND[official_brand]
         ]
         cross_brand_detections = [
-            detection for detection in detections if detection.brand != official_brand
+            detection for detection in detections
+            if _CLASS_TO_BRAND.get(detection.brand) != _CLASS_TO_BRAND[official_brand]
         ]
 
         if matching_detections:

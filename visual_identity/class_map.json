@@ -1,0 +1,176 @@
+[
+  {
+    "class_id": 0,
+    "name": "Maybank",
+    "backend_brand": "Maybank",
+    "folder": "00_maybank"
+  },
+  {
+    "class_id": 1,
+    "name": "CIMB",
+    "backend_brand": "CIMB Bank",
+    "folder": "01_cimb"
+  },
+  {
+    "class_id": 2,
+    "name": "Public Bank",
+    "backend_brand": "Public Bank",
+    "folder": "02_public_bank"
+  },
+  {
+    "class_id": 3,
+    "name": "RHB",
+    "backend_brand": "RHB Bank",
+    "folder": "03_rhb"
+  },
+  {
+    "class_id": 4,
+    "name": "Hong Leong Bank",
+    "backend_brand": "Hong Leong Bank",
+    "folder": "04_hong_leong_bank"
+  },
+  {
+    "class_id": 5,
+    "name": "AmBank",
+    "backend_brand": "AmBank",
+    "folder": "05_ambank"
+  },
+  {
+    "class_id": 6,
+    "name": "Bank Islam",
+    "backend_brand": "Bank Islam",
+    "folder": "06_bank_islam"
+  },
+  {
+    "class_id": 7,
+    "name": "Bank Rakyat",
+    "backend_brand": "Bank Rakyat",
+    "folder": "07_bank_rakyat"
+  },
+  {
+    "class_id": 8,
+    "name": "BSN",
+    "backend_brand": "BSN",
+    "folder": "08_bsn"
+  },
+  {
+    "class_id": 9,
+    "name": "Alliance Bank",
+    "backend_brand": "Alliance Bank",
+    "folder": "09_alliance_bank"
+  },
+  {
+    "class_id": 10,
+    "name": "Affin Bank",
+    "backend_brand": "Affin Bank",
+    "folder": "10_affin_bank"
+  },
+  {
+    "class_id": 11,
+    "name": "UOB Malaysia",
+    "backend_brand": "UOB Malaysia",
+    "folder": "11_uob_malaysia"
+  },
+  {
+    "class_id": 12,
+    "name": "OCBC Malaysia",
+    "backend_brand": "OCBC Malaysia",
+    "folder": "12_ocbc_malaysia"
+  },
+  {
+    "class_id": 13,
+    "name": "HSBC Malaysia",
+    "backend_brand": "HSBC Malaysia",
+    "folder": "13_hsbc_malaysia"
+  },
+  {
+    "class_id": 14,
+    "name": "Standard Chartered Malaysia",
+    "backend_brand": "Standard Chartered Malaysia",
+    "folder": "14_standard_chartered_malaysia"
+  },
+  {
+    "class_id": 15,
+    "name": "Citibank Malaysia",
+    "backend_brand": "Citibank Malaysia",
+    "folder": "15_citibank_malaysia"
+  },
+  {
+    "class_id": 16,
+    "name": "Agrobank",
+    "backend_brand": "Agrobank",
+    "folder": "16_agrobank"
+  },
+  {
+    "class_id": 17,
+    "name": "Bank Muamalat",
+    "backend_brand": "Bank Muamalat",
+    "folder": "17_bank_muamalat"
+  },
+  {
+    "class_id": 18,
+    "name": "MBSB Bank",
+    "backend_brand": "MBSB Bank",
+    "folder": "18_mbsb_bank"
+  },
+  {
+    "class_id": 19,
+    "name": "GXBank",
+    "backend_brand": "GXBank",
+    "folder": "19_gxbank"
+  },
+  {
+    "class_id": 20,
+    "name": "AEON Bank",
+    "backend_brand": "AEON Bank",
+    "folder": "20_aeon_bank"
+  },
+  {
+    "class_id": 21,
+    "name": "Boost Bank",
+    "backend_brand": "Boost Bank",
+    "folder": "21_boost_bank"
+  },
+  {
+    "class_id": 22,
+    "name": "KAF Digital Bank",
+    "backend_brand": "KAF Digital Bank",
+    "folder": "22_kaf_digital_bank"
+  },
+  {
+    "class_id": 23,
+    "name": "Chase",
+    "backend_brand": "Chase",
+    "folder": "23_chase"
+  },
+  {
+    "class_id": 24,
+    "name": "Bank of America",
+    "backend_brand": "Bank of America",
+    "folder": "24_bank_of_america"
+  },
+  {
+    "class_id": 25,
+    "name": "Wells Fargo",
+    "backend_brand": "Wells Fargo",
+    "folder": "25_wells_fargo"
+  },
+  {
+    "class_id": 26,
+    "name": "Barclays",
+    "backend_brand": "Barclays",
+    "folder": "26_barclays"
+  },
+  {
+    "class_id": 27,
+    "name": "DBS",
+    "backend_brand": "DBS / POSB",
+    "folder": "27_dbs"
+  },
+  {
+    "class_id": 28,
+    "name": "POSB",
+    "backend_brand": "DBS / POSB",
+    "folder": "28_posb"
+  }
+]

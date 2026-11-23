@@ -3,3 +3,27 @@ CIMB
 Public Bank
 RHB
 Hong Leong Bank
+AmBank
+Bank Islam
+Bank Rakyat
+BSN
+Alliance Bank
+Affin Bank
+UOB Malaysia
+OCBC Malaysia
+HSBC Malaysia
+Standard Chartered Malaysia
+Citibank Malaysia
+Agrobank
+Bank Muamalat
+MBSB Bank
+GXBank
+AEON Bank
+Boost Bank
+KAF Digital Bank
+Chase
+Bank of America
+Wells Fargo
+Barclays
+DBS
+POSB

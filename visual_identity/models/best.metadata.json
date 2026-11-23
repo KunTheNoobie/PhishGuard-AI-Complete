@@ -1,0 +1,24 @@
+{
+  "release": "Cheon Jie Han bank29 v3",
+  "architecture": "YOLOv8n",
+  "class_map": "visual_identity/class_map.json",
+  "class_count": 29,
+  "sha256": "507a02aa25806d34ccf742eb9fa82bdbb99bf133c03b684b3a632cd179e4b0cd",
+  "inference_imgsz": 960,
+  "confidence_threshold": 0.85,
+  "epochs_completed": 23,
+  "best_epoch": 16,
+  "regression_results": {
+    "primary_logo_pages": "28/29",
+    "extra_primary_logo_pages": "13/14",
+    "unmatched_predictions_on_29_pages": 6,
+    "unmatched_predictions_on_extra_pages": 2,
+    "scope": "Previously inspected regression pages, with corrected BSN ink boxes. These are not untouched final-test accuracy measurements."
+  },
+  "known_limitations": [
+    "Bank of America regression detection confidence 0.846 falls below the fixed 0.85 threshold.",
+    "Boost Bank pure glyph is missed on one extra page.",
+    "Affin banner generates high-confidence false Wells Fargo detections.",
+    "Other secondary-logo misses and cross-brand false detections remain; absence of a detection is not proof that a website is legitimate."
+  ]
+}

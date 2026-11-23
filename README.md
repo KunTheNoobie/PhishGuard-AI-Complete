@@ -1,3 +1,15 @@
+---
+title: PhishGuard-AI
+emoji: 🛡️
+colorFrom: indigo
+colorTo: gray
+sdk: gradio
+python_version: '3.12'
+app_file: app.py
+pinned: false
+short_description: Phishing, quishing and mule-account protection for every website
+---
+
 # PhishGuard-AI Complete
 
 <div align="center">
@@ -6,7 +18,7 @@
   <p>A Manifest V3 browser extension and a FastAPI backend that combine a fine-tuned BERT URL classifier, URL canonicalisation, brand-impersonation profiling, page analysis, the connection's HTTPS status, DuitNow QR decoding and a Malaysian mule-account registry — and explain every verdict in plain language.</p>
 
   [![CI/CD Test Pipeline](https://github.com/KunTheNoobie/PhishGuard-AI-Complete/actions/workflows/test.yml/badge.svg)](https://github.com/KunTheNoobie/PhishGuard-AI-Complete/actions)
-  [![Tests: 145 Passed](https://img.shields.io/badge/Tests-145%20Passed-brightgreen)](https://github.com/KunTheNoobie/PhishGuard-AI-Complete)
+  [![Tests: 208 Passed](https://img.shields.io/badge/Tests-208%20Passed-brightgreen)](https://github.com/KunTheNoobie/PhishGuard-AI-Complete)
   [![Version](https://img.shields.io/badge/Version-v4.1.0-009688.svg?logo=fastapi&logoColor=white)](CHANGELOG.md)
   [![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue.svg?logo=python&logoColor=white)](https://python.org)
   [![Manifest V3](https://img.shields.io/badge/Chrome%20Extension-Manifest%20V3-4285F4?logo=googlechrome&logoColor=white)](https://developer.chrome.com/docs/extensions/mv3/intro/)
@@ -45,7 +57,7 @@ Baselines (F1 / false-positive)    padlock 0.775 / 0%   lexical 0.581 / 1.7%   B
 HTTPS scam pages (22)              PhishGuard 91% caught   padlock 0%
 Public URL suite (30 cases)        28 passed (2 hosts unreachable from the test network)
 Latency (CPU)                      BERT path p50 116 ms, p95 139 ms; trusted sites about 1 ms
-Automated tests                    145 passed, 81% statement + branch coverage
+Automated tests                    208 passed, 85% statement + branch coverage
 BERT hold-out (109,870 URLs)       accuracy 98.76%, F1 97.80%
 ```
 
@@ -150,7 +162,11 @@ with long random values for any real deployment:
 
 ---
 
-## Online deployment (Render, free HTTPS web service)
+## Online deployment
+
+**Primary: Hugging Face Space** — `https://kunthenoobie-phishguard-ai.hf.space` (`KunTheNoobie/phishguard-ai`, Gradio SDK, Python 3.12). `app.py` imports the FastAPI app, mounts a small Gradio status page at `/gradio` and serves on port 7860 with the BERT model and the YOLOv8n logo detector both enabled; `packages.txt` installs `libzbar0` and `libgl1`; the front matter at the top of this README is the Space card. Push `app.py`, `packages.txt`, `requirements.txt`, the application folders and the model weights (Git LFS) to the Space repository. The Space must use **CPU** hardware (the default for a new Gradio Space on some accounts is ZeroGPU, which fails with "No @spaces.GPU function detected").
+
+**Backup: Render** (free HTTPS web service, logo detector off to stay inside 512 MB).
 
 Live and verified on 17 November 2026: `https://phishguard-ai-backend-j74v.onrender.com` (`/health`, `/dashboard/`, `/docs`).
 
@@ -172,7 +188,7 @@ The free tier sleeps after 15 minutes without traffic (the first request wakes i
 
 ```bash
 pip install -r requirements-dev.txt
-python -m pytest --cov --cov-branch                        # 145 tests
+python -m pytest --cov --cov-branch                        # 208 tests
 python -m evaluation.evaluate_pipeline --tag final_v4.1.0  # 120-page Malaysian benchmark (real BERT)
 python -m evaluation.compare_baselines --tag final_v4.1.0  # padlock, lexical, BERT-alone baselines and ROC
 python -m evaluation.run_public_suite                      # 30 public URLs and scam patterns (live)
@@ -204,7 +220,7 @@ Results are written to `evaluation/results/` (`final_v4.1.0`, `ablation_no_bert_
 
 **Known limitations.** The mule registry holds demonstration accounts (Semakmule has no public API). The BERT model
 was trained on English-language URLs and over-scores some well-known domains; corroboration keeps those pages
-`SAFE`. The logo detector was trained on a synthetic dataset of five banks. A page the dashboard cannot download is
+`SAFE`. The logo detector covers 29 banks (23 Malaysian, 6 international), is trained mostly on synthetic images, and still has known misses (see `visual_identity/models/best.metadata.json`). A page the dashboard cannot download is
 judged on its URL alone.
 
 ---
