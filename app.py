@@ -18,6 +18,22 @@ os.environ.setdefault("PHISHGUARD_ENABLE_VISUAL", "true")
 os.environ.setdefault("PHISHGUARD_ENABLE_SEMANTIC", "true")
 os.environ.setdefault("PHISHGUARD_DB_PATH", "/tmp/phishguard.db" if os.name != "nt" else "phishguard.db")
 
+# Hugging Face ZeroGPU Spaces refuse to start unless a @spaces.GPU function exists. This do-nothing function only
+# satisfies that startup check: all inference stays on the CPU. `spaces` is not in requirements.txt (it is provided
+# by Hugging Face), so Render and local installs simply skip this block. It must come before torch is imported.
+try:
+    import spaces  # type: ignore[import-not-found]
+
+    @spaces.GPU
+    def _zero_gpu_startup_check() -> None:
+        return None
+except ImportError:
+    pass
+
+import torch  # noqa: E402
+
+torch.cuda.is_available = lambda: False  # ZeroGPU fakes a GPU; the models must stay on the CPU
+
 from core.config import APP_VERSION  # noqa: E402
 from main import app  # noqa: E402
 
