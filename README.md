@@ -7,7 +7,7 @@ sdk: gradio
 python_version: '3.12'
 app_file: app.py
 pinned: false
-short_description: Phishing, quishing and mule-account protection for every website
+short_description: Phishing, quishing and mule-account protection
 ---
 
 # PhishGuard-AI Complete
