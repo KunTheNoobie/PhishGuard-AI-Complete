@@ -31,7 +31,7 @@ except ImportError:  # python-dotenv is optional at runtime
 # 1. Application metadata
 # ==============================================================================
 APP_TITLE: Final[str] = "PhishGuard-AI"
-APP_VERSION: Final[str] = "4.1.0"
+APP_VERSION: Final[str] = "4.2.0"
 APP_DESCRIPTION: Final[str] = (
     "Real-time phishing and scam protection for every website. Each page is checked "
     "by a fine-tuned BERT URL classifier, page-structure (DOM) analysis, a YOLOv8n "

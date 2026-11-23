@@ -7,7 +7,7 @@
 
   [![CI/CD Test Pipeline](https://github.com/KunTheNoobie/PhishGuard-AI-Complete/actions/workflows/test.yml/badge.svg)](https://github.com/KunTheNoobie/PhishGuard-AI-Complete/actions)
   [![Tests: 208 Passed](https://img.shields.io/badge/Tests-208%20Passed-brightgreen)](https://github.com/KunTheNoobie/PhishGuard-AI-Complete)
-  [![Version](https://img.shields.io/badge/Version-v4.1.0-009688.svg?logo=fastapi&logoColor=white)](CHANGELOG.md)
+  [![Version](https://img.shields.io/badge/Version-v4.2.0-009688.svg?logo=fastapi&logoColor=white)](CHANGELOG.md)
   [![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue.svg?logo=python&logoColor=white)](https://python.org)
   [![Manifest V3](https://img.shields.io/badge/Chrome%20Extension-Manifest%20V3-4285F4?logo=googlechrome&logoColor=white)](https://developer.chrome.com/docs/extensions/mv3/intro/)
 </div>
@@ -36,7 +36,7 @@ plain-language explanation and the list of reasons.
 | **Module 1 — Backend, BERT engine, mule scanner, SOC dashboard** | Liew Yi Ler (25WMR09747) |
 | **Module 2 — Chrome extension, YOLOv8n logo detection** | Cheon Jie Han (25WMR09703) |
 
-### Measured results (v4.1.0)
+### Measured results (v4.2.0)
 
 ```
 Malaysian benchmark (120 pages)   57/60 scams blocked, 0/60 legitimate pages blocked
@@ -172,15 +172,15 @@ The free tier sleeps after 15 minutes without traffic (the first request wakes i
 ```bash
 pip install -r requirements-dev.txt
 python -m pytest --cov --cov-branch                        # 208 tests
-python -m evaluation.evaluate_pipeline --tag final_v4.1.0  # 120-page Malaysian benchmark (real BERT)
-python -m evaluation.compare_baselines --tag final_v4.1.0  # padlock, lexical, BERT-alone baselines and ROC
+python -m evaluation.evaluate_pipeline --tag final_v4.0.0  # 120-page Malaysian benchmark (real BERT)
+python -m evaluation.compare_baselines --tag final_v4.0.0  # padlock, lexical, BERT-alone baselines and ROC
 python -m evaluation.run_public_suite                      # 30 public URLs and scam patterns (live)
 python -m evaluation.run_public_suite --base-url https://phishguard-ai-backend-j74v.onrender.com
 python -m evaluation.make_report_figures                   # charts in report/figures/
 python report/diagrams_drawio/update_v4.py                 # draw.io diagrams
 ```
 
-Results are written to `evaluation/results/` (`final_v4.1.0`, `ablation_no_bert_v4.1.0`, `public_suite_v4.1.0`,
+Results are written to `evaluation/results/` (`final_v4.0.0`, `ablation_no_bert_v4.0.0`, `public_suite_v4.0.0`,
 `pytest`, `coverage`, `locust`).
 
 ---
