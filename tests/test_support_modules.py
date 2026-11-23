@@ -78,7 +78,11 @@ class TestDemoSeed:
         (scans,) = await (await test_db.execute("SELECT COUNT(*) FROM scan_log;")).fetchone()
         (mules,) = await (await test_db.execute("SELECT COUNT(*) FROM mule_registry;")).fetchone()
         (pending,) = await (await test_db.execute("SELECT COUNT(*) FROM mule_reports WHERE status='PENDING';")).fetchone()
-        assert scans == 30 and mules >= 45 and pending == 4
+        import json
+        from database.demo_seed import DATA_FILE
+
+        data = json.loads(DATA_FILE.read_text(encoding='utf-8'))
+        assert scans == len(data['scans']) >= 35 and mules >= len(data['mule_accounts']) and pending == 6
 
     async def test_seed_can_be_disabled(self, test_db):
         from database.demo_seed import seed_demo_data

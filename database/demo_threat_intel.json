@@ -1,399 +1,552 @@
 {
- "note": "Curated evaluation / threat-intelligence demonstration records. OpenPhish URLs come from the public community feed (pages were not downloaded); mule accounts are fictitious numbers in valid Malaysian bank formats.",
- "feed": "https://raw.githubusercontent.com/openphish/public_feed/refs/heads/main/feed.txt",
+ "note": "Curated evaluation / threat-intelligence demonstration records. Scan rows are real pipeline results for look-alike, plain-HTTP and official addresses (pages were not downloaded); mule accounts and phone numbers are fictitious.",
  "mule_accounts": [
   [
-   "303335435700",
+   "300297727693",
    "Maybank",
-   "Mudah.my",
-   10
-  ],
-  [
-   "5718672248",
-   "CIMB Bank",
-   "NSRC 997",
-   18
-  ],
-  [
-   "39382993812191",
-   "CIMB Bank",
    "Carousell",
-   4
-  ],
-  [
-   "3821948245",
-   "Public Bank",
-   "Carousell",
-   3
-  ],
-  [
-   "35524761269847",
-   "RHB Bank",
-   "WhatsApp",
-   11
-  ],
-  [
-   "99065365670",
-   "Hong Leong Bank",
-   "WhatsApp",
-   10
-  ],
-  [
-   "5298291842415",
-   "AmBank",
-   "Shopee",
-   7
-  ],
-  [
-   "67548065293797",
-   "Bank Islam",
-   "Carousell",
-   16
-  ],
-  [
-   "9323175777840356",
-   "BSN",
-   "User Report",
-   22
-  ],
-  [
-   "412002475066",
-   "Bank Rakyat",
-   "WhatsApp",
-   21
-  ],
-  [
-   "767697603881105",
-   "Alliance Bank",
-   "User Report",
-   19
-  ],
-  [
-   "342498359004",
-   "Affin Bank",
-   "NSRC 997",
-   23
-  ],
-  [
-   "7618719274",
-   "UOB Malaysia",
-   "PDRM Semakmule",
-   6
-  ],
-  [
-   "4540951244",
-   "OCBC Malaysia",
-   "Telegram",
-   17
-  ],
-  [
-   "638998311896",
-   "Agrobank",
-   "Shopee",
+   26,
    2
   ],
   [
-   "39916936337444",
-   "Bank Muamalat",
+   "9027408594",
+   "CIMB Bank",
+   "Carousell",
+   3,
+   69
+  ],
+  [
+   "52785349445928",
+   "CIMB Bank",
    "Mudah.my",
-   10
+   1,
+   40
   ],
   [
-   "64495875743574",
-   "MBSB Bank",
-   "Telegram",
-   22
-  ],
-  [
-   "8506750812",
-   "GXBank",
-   "Telegram",
-   23
-  ],
-  [
-   "60673113697",
-   "Touch 'n Go eWallet",
-   "Facebook Marketplace",
-   17
-  ],
-  [
-   "208615948587",
-   "Maybank",
-   "WhatsApp",
-   9
-  ],
-  [
-   "9104984232",
-   "CIMB Bank",
-   "User Report",
-   1
-  ],
-  [
-   "50823873497715",
-   "CIMB Bank",
-   "Telegram",
-   5
-  ],
-  [
-   "6017027856",
+   "1204876769",
    "Public Bank",
-   "Shopee",
-   25
+   "PDRM Semakmule",
+   21,
+   56
   ],
   [
-   "44471349393937",
+   "45321376316296",
    "RHB Bank",
    "Lazada",
-   16
+   16,
+   15
   ],
   [
-   "41417874800",
+   "80769107385",
    "Hong Leong Bank",
-   "WhatsApp",
-   14
+   "Instagram",
+   6,
+   20
   ],
   [
-   "7760770671258",
+   "8504665859101",
    "AmBank",
-   "Instagram",
-   17
+   "Facebook Marketplace",
+   27,
+   37
   ],
   [
-   "76618190252643",
+   "46881307005747",
    "Bank Islam",
-   "Mudah.my",
-   9
+   "Lazada",
+   7,
+   53
   ],
   [
-   "7112817210992772",
+   "4374355405075960",
    "BSN",
-   "Shopee",
-   9
-  ],
-  [
-   "944912917585",
-   "Bank Rakyat",
-   "PDRM Semakmule",
-   1
-  ],
-  [
-   "202141294684381",
-   "Alliance Bank",
-   "Shopee",
-   17
-  ],
-  [
-   "107958215386",
-   "Affin Bank",
-   "Carousell",
-   24
-  ],
-  [
-   "5252867402",
-   "UOB Malaysia",
-   "Instagram",
-   25
-  ],
-  [
-   "6016156156",
-   "OCBC Malaysia",
-   "User Report",
-   3
-  ],
-  [
-   "450962035695",
-   "Agrobank",
-   "Instagram",
-   17
-  ],
-  [
-   "78795463849059",
-   "Bank Muamalat",
-   "Mudah.my",
-   18
-  ],
-  [
-   "81735999478623",
-   "MBSB Bank",
-   "WhatsApp",
-   14
-  ],
-  [
-   "1330039820",
-   "GXBank",
-   "Telegram",
-   12
-  ],
-  [
-   "60976574867",
-   "Touch 'n Go eWallet",
-   "Telegram",
+   "TikTok Shop",
+   29,
    19
   ],
   [
-   "319243841164",
-   "Maybank",
-   "Telegram",
+   "433862093050",
+   "Bank Rakyat",
+   "User Report",
+   14,
+   63
+  ],
+  [
+   "694314894319252",
+   "Alliance Bank",
+   "Shopee",
+   13,
+   30
+  ],
+  [
+   "707048289466",
+   "Affin Bank",
+   "Pos Laju parcel scam",
+   25,
+   68
+  ],
+  [
+   "4280227255",
+   "UOB Malaysia",
+   "Mudah.my",
+   17,
+   27
+  ],
+  [
+   "5389077557",
+   "OCBC Malaysia",
+   "TikTok Shop",
+   24,
    18
   ],
   [
-   "3340254436",
-   "CIMB Bank",
+   "670894143590",
+   "Agrobank",
    "Instagram",
-   23
+   16,
+   46
   ],
   [
-   "13086162512804",
+   "56583475069261",
+   "Bank Muamalat",
+   "Mudah.my",
+   25,
+   49
+  ],
+  [
+   "54640428489926",
+   "MBSB Bank",
+   "Shopee",
+   20,
+   65
+  ],
+  [
+   "1979741372",
+   "GXBank",
+   "Pos Laju parcel scam",
+   29,
+   66
+  ],
+  [
+   "794633355261",
+   "AEON Bank",
+   "NSRC 997",
+   14,
+   22
+  ],
+  [
+   "19806507494",
+   "Boost Bank",
+   "Facebook Marketplace",
+   6,
+   46
+  ],
+  [
+   "44526914457",
+   "Touch 'n Go eWallet",
+   "Mudah.my",
+   9,
+   38
+  ],
+  [
+   "63079397734",
+   "GrabPay",
+   "TikTok Shop",
+   9,
+   46
+  ],
+  [
+   "761549763539",
+   "ShopeePay",
+   "Mudah.my",
+   10,
+   22
+  ],
+  [
+   "623961042028",
+   "Maybank",
+   "Pos Laju parcel scam",
+   11,
+   21
+  ],
+  [
+   "7351576405",
+   "CIMB Bank",
+   "WhatsApp",
+   3,
+   40
+  ],
+  [
+   "48878622175068",
+   "CIMB Bank",
+   "NSRC 997",
+   9,
+   7
+  ],
+  [
+   "9564871003",
+   "Public Bank",
+   "Love scam",
+   24,
+   7
+  ],
+  [
+   "56171329530007",
+   "RHB Bank",
+   "Pos Laju parcel scam",
+   31,
+   59
+  ],
+  [
+   "94250394785",
+   "Hong Leong Bank",
+   "Telegram",
+   18,
+   10
+  ],
+  [
+   "9172425703781",
+   "AmBank",
+   "Mudah.my",
+   30,
+   9
+  ],
+  [
+   "31959515566421",
+   "Bank Islam",
+   "TikTok Shop",
+   30,
+   50
+  ],
+  [
+   "9679051149924978",
+   "BSN",
+   "Pos Laju parcel scam",
+   15,
+   18
+  ],
+  [
+   "481582490162",
+   "Bank Rakyat",
+   "WhatsApp",
+   1,
+   10
+  ],
+  [
+   "542148369283231",
+   "Alliance Bank",
+   "Pos Laju parcel scam",
+   16,
+   46
+  ],
+  [
+   "476000834716",
+   "Affin Bank",
+   "Mudah.my",
+   5,
+   28
+  ],
+  [
+   "1624304749",
+   "UOB Malaysia",
+   "NSRC 997",
+   5,
+   35
+  ],
+  [
+   "9832207696",
+   "OCBC Malaysia",
+   "Facebook Marketplace",
+   31,
+   29
+  ],
+  [
+   "778005850704",
+   "Agrobank",
+   "Investment scam",
+   5,
+   13
+  ],
+  [
+   "82334286338868",
+   "Bank Muamalat",
+   "NSRC 997",
+   26,
+   50
+  ],
+  [
+   "27277145185896",
+   "MBSB Bank",
+   "Instagram",
+   4,
+   53
+  ],
+  [
+   "6118514496",
+   "GXBank",
+   "TikTok Shop",
+   25,
+   24
+  ],
+  [
+   "655827015966",
+   "AEON Bank",
+   "Shopee",
+   20,
+   51
+  ],
+  [
+   "79101999410",
+   "Boost Bank",
+   "User Report",
+   2,
+   51
+  ],
+  [
+   "51963802159",
+   "Touch 'n Go eWallet",
+   "User Report",
+   17,
+   53
+  ],
+  [
+   "66462770444",
+   "GrabPay",
+   "WhatsApp",
+   25,
+   53
+  ],
+  [
+   "903815774188",
+   "ShopeePay",
+   "Carousell",
+   23,
+   41
+  ],
+  [
+   "224645794130",
+   "Maybank",
+   "Pos Laju parcel scam",
+   21,
+   16
+  ],
+  [
+   "6751499016",
    "CIMB Bank",
    "PDRM Semakmule",
-   17
+   28,
+   36
   ],
   [
-   "2170355917",
+   "84776566297278",
+   "CIMB Bank",
+   "NSRC 997",
+   23,
+   9
+  ],
+  [
+   "8251876319",
    "Public Bank",
-   "Facebook Marketplace",
-   5
+   "Lazada",
+   18,
+   65
   ],
   [
-   "78586353987014",
+   "80330267820234",
    "RHB Bank",
-   "Mudah.my",
-   4
+   "Instagram",
+   3,
+   55
   ],
   [
-   "73294201086",
+   "39204957372",
    "Hong Leong Bank",
-   "User Report",
-   23
+   "Love scam",
+   11,
+   65
   ],
   [
-   "5066019360887",
-   "AmBank",
-   "User Report",
-   10
+   "60113194481",
+   "DuitNow phone",
+   "Pos Laju parcel scam",
+   4,
+   16
+  ],
+  [
+   "60130574748",
+   "DuitNow phone",
+   "Love scam",
+   6,
+   57
+  ],
+  [
+   "60176741401",
+   "DuitNow phone",
+   "Facebook Marketplace",
+   5,
+   63
+  ],
+  [
+   "60191206972",
+   "DuitNow phone",
+   "Telegram",
+   8,
+   63
+  ],
+  [
+   "60190803151",
+   "DuitNow phone",
+   "PDRM Semakmule",
+   18,
+   64
+  ],
+  [
+   "60123807871",
+   "DuitNow phone",
+   "Mudah.my",
+   3,
+   50
+  ],
+  [
+   "60176344901",
+   "DuitNow phone",
+   "Shopee",
+   17,
+   40
+  ],
+  [
+   "60123258687",
+   "DuitNow phone",
+   "Shopee",
+   16,
+   67
+  ],
+  [
+   "60191352039",
+   "DuitNow phone",
+   "Shopee",
+   7,
+   11
+  ],
+  [
+   "60174341160",
+   "DuitNow phone",
+   "Lazada",
+   8,
+   45
+  ],
+  [
+   "60142281051",
+   "DuitNow phone",
+   "Instagram",
+   6,
+   55
+  ],
+  [
+   "60187162099",
+   "DuitNow phone",
+   "TikTok Shop",
+   3,
+   59
+  ],
+  [
+   "60116144281",
+   "DuitNow phone",
+   "Lazada",
+   1,
+   69
   ]
  ],
  "scans": [
   {
-   "source": "dashboard",
-   "url": "https://www.rhbgroup.com/",
+   "source": "extension",
+   "url": "https://www.cimbclicks.com.my/",
    "verdict": "SAFE",
    "rule": null,
    "risk_score": 0.0,
    "bert_score": null,
-   "headline": "Official RHB Bank website",
-   "latency_ms": 576.25,
-   "origin": "public suite"
+   "headline": "Official CIMB Bank website",
+   "latency_ms": 0.7
   },
   {
    "source": "extension",
-   "url": "https://shopeejkt3567.blogspot.com/",
-   "verdict": "BLOCK_RENDER",
-   "rule": "R2_BRAND_IN_HOSTNAME",
-   "risk_score": 0.97,
-   "bert_score": 0.137761,
-   "headline": "Fake ShopeePay / Shopee website",
-   "latency_ms": 104.37,
-   "origin": "OpenPhish feed"
-  },
-  {
-   "source": "extension",
-   "url": "http://rumaisha02.github.io/Instaclone",
-   "verdict": "WARNING",
-   "rule": "H2_INSECURE_HTTP",
-   "risk_score": 0.55,
-   "bert_score": 0.927258,
-   "headline": "Not secure: unencrypted connection (HTTP)",
-   "latency_ms": 91.54,
-   "origin": "OpenPhish feed"
+   "url": "https://www.hlb.com.my/",
+   "verdict": "SAFE",
+   "rule": null,
+   "risk_score": 0.0,
+   "bert_score": null,
+   "headline": "Official Hong Leong Bank website",
+   "latency_ms": 0.68
   },
   {
    "source": "dashboard",
-   "url": "http://http.badssl.com/",
-   "verdict": "WARNING",
-   "rule": "H2_INSECURE_HTTP",
-   "risk_score": 0.55,
-   "bert_score": 0.996609,
-   "headline": "Not secure: unencrypted connection (HTTP)",
-   "latency_ms": 833.66,
-   "origin": "public suite"
-  },
-  {
-   "source": "extension",
-   "url": "http://overview-ledger-live-login-cdn.typedream.app/",
-   "verdict": "WARNING",
-   "rule": "H2_INSECURE_HTTP",
-   "risk_score": 0.55,
-   "bert_score": 0.999751,
-   "headline": "Not secure: unencrypted connection (HTTP)",
-   "latency_ms": 210.67,
-   "origin": "OpenPhish feed"
-  },
-  {
-   "source": "extension",
-   "url": "http://httpforever.com/",
-   "verdict": "WARNING",
-   "rule": "H2_INSECURE_HTTP",
-   "risk_score": 0.55,
-   "bert_score": 0.360478,
-   "headline": "Not secure: unencrypted connection (HTTP)",
-   "latency_ms": 634.67,
-   "origin": "public suite"
-  },
-  {
-   "source": "extension",
-   "url": "http://ifps62-6vu7k2yu9-arcadawebapps2.vercel.app/",
-   "verdict": "WARNING",
-   "rule": "H2_INSECURE_HTTP",
-   "risk_score": 0.55,
-   "bert_score": 0.995093,
-   "headline": "Not secure: unencrypted connection (HTTP)",
-   "latency_ms": 126.17,
-   "origin": "OpenPhish feed"
-  },
-  {
-   "source": "dashboard",
-   "url": "https://maybank2u.com.my@evil-login.top/login",
+   "url": "https://secure-bank-update.xyz/signin",
    "verdict": "BLOCK_RENDER",
    "rule": "R7_USERINFO_SPOOF",
    "risk_score": 0.96,
    "bert_score": 0.999864,
    "headline": "Disguised link hides the real website",
-   "latency_ms": 97.58,
-   "origin": "@ spoof"
+   "latency_ms": 129.25
   },
   {
    "source": "extension",
-   "url": "http://gamesrobloxstore.com/",
-   "verdict": "WARNING",
-   "rule": "H2_INSECURE_HTTP",
-   "risk_score": 0.55,
-   "bert_score": 0.003562,
-   "headline": "Not secure: unencrypted connection (HTTP)",
-   "latency_ms": 95.26,
-   "origin": "OpenPhish feed"
+   "url": "https://www.bnm.gov.my/",
+   "verdict": "SAFE",
+   "rule": null,
+   "risk_score": 0.0,
+   "bert_score": null,
+   "headline": "Official Bank Negara Malaysia website",
+   "latency_ms": 0.69
   },
   {
    "source": "extension",
-   "url": "http://us-usps.homes/DUVzTTavlOw/",
-   "verdict": "WARNING",
-   "rule": "H2_INSECURE_HTTP",
-   "risk_score": 0.55,
-   "bert_score": 0.038587,
-   "headline": "Not secure: unencrypted connection (HTTP)",
-   "latency_ms": 272.71,
-   "origin": "OpenPhish feed"
+   "url": "https://rnaybank2u.com.my/login",
+   "verdict": "BLOCK_RENDER",
+   "rule": "R3_LOOKALIKE_DOMAIN",
+   "risk_score": 0.95,
+   "bert_score": 0.996708,
+   "headline": "Look-alike of Maybank",
+   "latency_ms": 134.01
   },
   {
    "source": "dashboard",
-   "url": "http://neverssl.com/",
-   "verdict": "WARNING",
-   "rule": "H2_INSECURE_HTTP",
-   "risk_score": 0.55,
-   "bert_score": 0.006683,
-   "headline": "Not secure: unencrypted connection (HTTP)",
-   "latency_ms": 4861.84,
-   "origin": "public suite"
+   "url": "https://boost-style-rewards.example/login",
+   "verdict": "BLOCK_RENDER",
+   "rule": "R8_VISUAL_BRAND_MISMATCH",
+   "risk_score": 0.94,
+   "bert_score": 0.999152,
+   "headline": "Copy of the Boost Bank website",
+   "latency_ms": 172.23
+  },
+  {
+   "source": "extension",
+   "url": "https://evil-login.top/login",
+   "verdict": "BLOCK_RENDER",
+   "rule": "R7_USERINFO_SPOOF",
+   "risk_score": 0.96,
+   "bert_score": 0.999758,
+   "headline": "Disguised link hides the real website",
+   "latency_ms": 136.7
+  },
+  {
+   "source": "extension",
+   "url": "https://login-account-support.cc/",
+   "verdict": "BLOCK_RENDER",
+   "rule": "R4_BRAND_CLONE",
+   "risk_score": 0.93,
+   "bert_score": 0.999072,
+   "headline": "Fake Maybank log-in page",
+   "latency_ms": 147.77
+  },
+  {
+   "source": "dashboard",
+   "url": "https://rewards-portal-verify.example/login",
+   "verdict": "BLOCK_RENDER",
+   "rule": "R8_VISUAL_BRAND_MISMATCH",
+   "risk_score": 0.94,
+   "bert_score": 0.999728,
+   "headline": "Copy of the GXBank website",
+   "latency_ms": 1682.14
   },
   {
    "source": "extension",
@@ -403,162 +556,117 @@
    "risk_score": 0.0,
    "bert_score": null,
    "headline": "Official GXBank website",
-   "latency_ms": 338.06,
-   "origin": "public suite"
-  },
-  {
-   "source": "extension",
-   "url": "https://en.wikipedia.org/wiki/Phishing",
-   "verdict": "SAFE",
-   "rule": null,
-   "risk_score": 0.0,
-   "bert_score": null,
-   "headline": "Trusted website",
-   "latency_ms": 300.87,
-   "origin": "public suite"
-  },
-  {
-   "source": "extension",
-   "url": "http://www.apple-store-woad-delta.vercel.app/",
-   "verdict": "WARNING",
-   "rule": "H2_INSECURE_HTTP",
-   "risk_score": 0.55,
-   "bert_score": 0.994814,
-   "headline": "Not secure: unencrypted connection (HTTP)",
-   "latency_ms": 97.67,
-   "origin": "OpenPhish feed"
+   "latency_ms": 0.59
   },
   {
    "source": "dashboard",
-   "url": "https://www.dbs.com.sg/",
-   "verdict": "SAFE",
-   "rule": null,
-   "risk_score": 0.0,
-   "bert_score": null,
-   "headline": "Official DBS / POSB website",
-   "latency_ms": 853.89,
-   "origin": "public suite"
-  },
-  {
-   "source": "extension",
-   "url": "https://www.paypal.com/my/home",
-   "verdict": "SAFE",
-   "rule": null,
-   "risk_score": 0.0,
-   "bert_score": null,
-   "headline": "Official PayPal website",
-   "latency_ms": 736.04,
-   "origin": "public suite"
+   "url": "http://info.cern.ch/",
+   "verdict": "WARNING",
+   "rule": "H2_INSECURE_HTTP",
+   "risk_score": 0.55,
+   "bert_score": 0.003348,
+   "headline": "Not secure: unencrypted connection (HTTP)",
+   "latency_ms": 121.63
   },
   {
    "source": "dashboard",
-   "url": "https://www.cimbclicks.com.my/",
-   "verdict": "SAFE",
-   "rule": null,
-   "risk_score": 0.0,
-   "bert_score": null,
-   "headline": "Official CIMB Bank website",
-   "latency_ms": 410.94,
-   "origin": "public suite"
-  },
-  {
-   "source": "extension",
-   "url": "http://ddpay-webpage-vip-login.netlify.app/",
-   "verdict": "WARNING",
-   "rule": "H2_INSECURE_HTTP",
-   "risk_score": 0.55,
-   "bert_score": 0.999913,
-   "headline": "Not secure: unencrypted connection (HTTP)",
-   "latency_ms": 133.1,
-   "origin": "OpenPhish feed"
-  },
-  {
-   "source": "extension",
-   "url": "http://dc1crsorgi1govin.netlify.app/",
-   "verdict": "WARNING",
-   "rule": "H2_INSECURE_HTTP",
-   "risk_score": 0.55,
-   "bert_score": 0.999045,
-   "headline": "Not secure: unencrypted connection (HTTP)",
-   "latency_ms": 92.1,
-   "origin": "OpenPhish feed"
+   "url": "https://secure-account-review.example/login",
+   "verdict": "BLOCK_RENDER",
+   "rule": "R8_VISUAL_BRAND_MISMATCH",
+   "risk_score": 0.94,
+   "bert_score": 0.999729,
+   "headline": "Copy of the DBS website",
+   "latency_ms": 185.71
   },
   {
    "source": "dashboard",
-   "url": "https://www.python.org/",
-   "verdict": "SAFE",
-   "rule": null,
-   "risk_score": 0.0,
-   "bert_score": null,
-   "headline": "Trusted website",
-   "latency_ms": 319.33,
-   "origin": "public suite"
+   "url": "https://pos-laju-customs.top/pay",
+   "verdict": "BLOCK_RENDER",
+   "rule": "R4_BRAND_CLONE",
+   "risk_score": 0.93,
+   "bert_score": 0.999804,
+   "headline": "Fake Pos Malaysia log-in page",
+   "latency_ms": 129.03
   },
   {
    "source": "extension",
-   "url": "https://www.maybank2u.com.my/",
-   "verdict": "SAFE",
-   "rule": null,
-   "risk_score": 0.0,
-   "bert_score": null,
-   "headline": "Official Maybank website",
-   "latency_ms": 524.9,
-   "origin": "public suite"
-  },
-  {
-   "source": "extension",
-   "url": "http://sp25ct11-lazvani-biz-rumkelo.pages.dev/",
-   "verdict": "WARNING",
-   "rule": "H2_INSECURE_HTTP",
-   "risk_score": 0.55,
-   "bert_score": 0.938273,
-   "headline": "Not secure: unencrypted connection (HTTP)",
-   "latency_ms": 97.43,
-   "origin": "OpenPhish feed"
-  },
-  {
-   "source": "extension",
-   "url": "https://www.shopeeid899.blogspot.com/",
+   "url": "https://cimb-clicks-account.example/",
    "verdict": "BLOCK_RENDER",
    "rule": "R2_BRAND_IN_HOSTNAME",
    "risk_score": 0.97,
-   "bert_score": 0.047788,
-   "headline": "Fake ShopeePay / Shopee website",
-   "latency_ms": 96.5,
-   "origin": "OpenPhish feed"
+   "bert_score": 0.997622,
+   "headline": "Fake CIMB Bank website",
+   "latency_ms": 132.52
+  },
+  {
+   "source": "extension",
+   "url": "https://shopee-refund-claim.top/",
+   "verdict": "BLOCK_RENDER",
+   "rule": "R1_MULE_REGISTRY",
+   "risk_score": 0.99,
+   "bert_score": 0.999223,
+   "headline": "Known scam bank account on this page",
+   "latency_ms": 134.86
+  },
+  {
+   "source": "dashboard",
+   "url": "https://online-security-check.example/login",
+   "verdict": "BLOCK_RENDER",
+   "rule": "R8_VISUAL_BRAND_MISMATCH",
+   "risk_score": 0.94,
+   "bert_score": 0.999699,
+   "headline": "Copy of the Public Bank website",
+   "latency_ms": 177.05
+  },
+  {
+   "source": "dashboard",
+   "url": "https://secure-id-check-7781.top/",
+   "verdict": "BLOCK_RENDER",
+   "rule": "R6_EVASIVE_INFRASTRUCTURE",
+   "risk_score": 0.9,
+   "bert_score": 0.999798,
+   "headline": "Phishing page on evasive hosting",
+   "latency_ms": 131.94
+  },
+  {
+   "source": "qr",
+   "url": "https://gxbank-promo-claim.top/win",
+   "verdict": "BLOCK_RENDER",
+   "rule": "R2_BRAND_IN_HOSTNAME",
+   "risk_score": 0.97,
+   "bert_score": 0.999747,
+   "headline": "Fake GXBank website",
+   "latency_ms": 339.57
+  },
+  {
+   "source": "extension",
+   "url": "http://testphp.vulnweb.com/login.php",
+   "verdict": "BLOCK_RENDER",
+   "rule": "H1_HTTP_SENSITIVE_FORM",
+   "risk_score": 0.9,
+   "bert_score": 0.997215,
+   "headline": "Unencrypted page asking for passwords or payment",
+   "latency_ms": 119.59
+  },
+  {
+   "source": "dashboard",
+   "url": "https://carousell-buyer-protect.cc/pay",
+   "verdict": "BLOCK_RENDER",
+   "rule": "R1_MULE_REGISTRY",
+   "risk_score": 0.99,
+   "bert_score": 0.999623,
+   "headline": "Known scam bank account on this page",
+   "latency_ms": 130.18
   },
   {
    "source": "dashboard",
    "url": "https://example.com/",
    "verdict": "SAFE",
    "rule": null,
-   "risk_score": 0.0,
-   "bert_score": 0.000121,
+   "risk_score": 0.0001,
+   "bert_score": 0.00055,
    "headline": "No threats found",
-   "latency_ms": 539.37,
-   "origin": "public suite"
-  },
-  {
-   "source": "qr",
-   "url": "https://maybank2u.com.my@evil-login.top/secure",
-   "verdict": "BLOCK_RENDER",
-   "rule": "R7_USERINFO_SPOOF",
-   "risk_score": 0.96,
-   "bert_score": null,
-   "headline": "Disguised link hides the real website",
-   "latency_ms": 97.23,
-   "origin": "QR payload"
-  },
-  {
-   "source": "extension",
-   "url": "https://parcel-customs-pay.top/",
-   "verdict": "BLOCK_RENDER",
-   "rule": "R1_MULE_REGISTRY",
-   "risk_score": 0.99,
-   "bert_score": 0.999921,
-   "headline": "Known scam bank account on this page",
-   "latency_ms": 94.22,
-   "origin": "mule"
+   "latency_ms": 284.35
   },
   {
    "source": "extension",
@@ -568,43 +676,237 @@
    "risk_score": 0.0,
    "bert_score": null,
    "headline": "Official Public Bank website",
-   "latency_ms": 463.28,
-   "origin": "public suite"
+   "latency_ms": 0.6
   },
   {
    "source": "extension",
-   "url": "http://roclick.cc/",
+   "url": "https://wrong.host.badssl.com/",
    "verdict": "WARNING",
-   "rule": "H2_INSECURE_HTTP",
-   "risk_score": 0.55,
-   "bert_score": 0.386422,
-   "headline": "Not secure: unencrypted connection (HTTP)",
-   "latency_ms": 92.64,
-   "origin": "OpenPhish feed"
+   "rule": "W1_TLS_CERTIFICATE",
+   "risk_score": 0.6,
+   "bert_score": 0.982291,
+   "headline": "Security certificate could not be verified",
+   "latency_ms": 119.21
+  },
+  {
+   "source": "qr",
+   "url": "https://evil-login.top/secure",
+   "verdict": "BLOCK_RENDER",
+   "rule": "R7_USERINFO_SPOOF",
+   "risk_score": 0.96,
+   "bert_score": 0.999806,
+   "headline": "Disguised link hides the real website",
+   "latency_ms": 310.83
   },
   {
    "source": "extension",
-   "url": "http://www.gebyarundian-shopee2019.blogspot.com/",
+   "url": "https://maybank2u-secure-login.top/m2u/login",
    "verdict": "BLOCK_RENDER",
    "rule": "R2_BRAND_IN_HOSTNAME",
    "risk_score": 0.97,
-   "bert_score": 0.959381,
-   "headline": "Fake ShopeePay / Shopee website",
-   "latency_ms": 97.42,
-   "origin": "OpenPhish feed"
+   "bert_score": 0.999843,
+   "headline": "Fake Maybank website",
+   "latency_ms": 129.69
   },
   {
    "source": "extension",
-   "url": "http://insttagrammoyi.netlify.app/",
+   "url": "https://expired.badssl.com/",
+   "verdict": "WARNING",
+   "rule": "W1_TLS_CERTIFICATE",
+   "risk_score": 0.6,
+   "bert_score": 0.980822,
+   "headline": "Security certificate could not be verified",
+   "latency_ms": 116.11
+  },
+  {
+   "source": "extension",
+   "url": "https://identity-confirm-desk.cc/",
+   "verdict": "BLOCK_RENDER",
+   "rule": "R4_BRAND_CLONE",
+   "risk_score": 0.93,
+   "bert_score": 0.999359,
+   "headline": "Fake Public Bank log-in page",
+   "latency_ms": 133.3
+  },
+  {
+   "source": "dashboard",
+   "url": "https://self-signed.badssl.com/",
+   "verdict": "WARNING",
+   "rule": "W1_TLS_CERTIFICATE",
+   "risk_score": 0.6,
+   "bert_score": 0.892011,
+   "headline": "Security certificate could not be verified",
+   "latency_ms": 792.65
+  },
+  {
+   "source": "dashboard",
+   "url": "https://member-update-desk.example/login",
+   "verdict": "BLOCK_RENDER",
+   "rule": "R8_VISUAL_BRAND_MISMATCH",
+   "risk_score": 0.94,
+   "bert_score": 0.999719,
+   "headline": "Copy of the Affin Bank website",
+   "latency_ms": 177.7
+  },
+  {
+   "source": "extension",
+   "url": "https://signup-rewards-mart.netlify.app/",
+   "verdict": "BLOCK_RENDER",
+   "rule": "R9_FREE_HOSTING_CREDENTIAL_FORM",
+   "risk_score": 0.9,
+   "bert_score": 0.999095,
+   "headline": "Log-in form on a throw-away hosting site",
+   "latency_ms": 357.23
+  },
+  {
+   "source": "dashboard",
+   "url": "https://lhdn-refund-portal.top/",
+   "verdict": "BLOCK_RENDER",
+   "rule": "R2_BRAND_IN_HOSTNAME",
+   "risk_score": 0.97,
+   "bert_score": 0.999408,
+   "headline": "Fake LHDN website",
+   "latency_ms": 133.6
+  },
+  {
+   "source": "extension",
+   "url": "https://www.tngdigital.com.my/",
+   "verdict": "SAFE",
+   "rule": null,
+   "risk_score": 0.0,
+   "bert_score": null,
+   "headline": "Official Touch 'n Go eWallet website",
+   "latency_ms": 0.5
+  },
+  {
+   "source": "extension",
+   "url": "http://http.badssl.com/",
    "verdict": "WARNING",
    "rule": "H2_INSECURE_HTTP",
    "risk_score": 0.55,
-   "bert_score": 0.989697,
+   "bert_score": 0.961821,
    "headline": "Not secure: unencrypted connection (HTTP)",
-   "latency_ms": 96.23,
-   "origin": "OpenPhish feed"
+   "latency_ms": 120.65
+  },
+  {
+   "source": "extension",
+   "url": "https://untrusted-root.badssl.com/",
+   "verdict": "WARNING",
+   "rule": "W1_TLS_CERTIFICATE",
+   "risk_score": 0.6,
+   "bert_score": 0.976901,
+   "headline": "Security certificate could not be verified",
+   "latency_ms": 122.78
+  },
+  {
+   "source": "extension",
+   "url": "https://www.maybank2u.com.my/",
+   "verdict": "SAFE",
+   "rule": null,
+   "risk_score": 0.0,
+   "bert_score": null,
+   "headline": "Official Maybank website",
+   "latency_ms": 0.97
+  },
+  {
+   "source": "extension",
+   "url": "https://parcel-customs-pay.top/track",
+   "verdict": "BLOCK_RENDER",
+   "rule": "R1_MULE_REGISTRY",
+   "risk_score": 0.99,
+   "bert_score": 0.999546,
+   "headline": "Known scam bank account on this page",
+   "latency_ms": 164.66
+  },
+  {
+   "source": "qr",
+   "url": "https://www.maybank2u.com.my/home/m2u/common/login.do",
+   "verdict": "SAFE",
+   "rule": null,
+   "risk_score": 0.0,
+   "bert_score": null,
+   "headline": "Official Maybank website",
+   "latency_ms": 625.74
+  },
+  {
+   "source": "extension",
+   "url": "https://www.rhbgroup.com/",
+   "verdict": "SAFE",
+   "rule": null,
+   "risk_score": 0.0,
+   "bert_score": null,
+   "headline": "Official RHB Bank website",
+   "latency_ms": 0.71
+  },
+  {
+   "source": "dashboard",
+   "url": "https://tmrw-promo-center.example/signin",
+   "verdict": "BLOCK_RENDER",
+   "rule": "R8_VISUAL_BRAND_MISMATCH",
+   "risk_score": 0.94,
+   "bert_score": 0.9998,
+   "headline": "Copy of the UOB Malaysia website",
+   "latency_ms": 235.2
+  },
+  {
+   "source": "extension",
+   "url": "http://example.com/",
+   "verdict": "WARNING",
+   "rule": "H2_INSECURE_HTTP",
+   "risk_score": 0.55,
+   "bert_score": 0.00055,
+   "headline": "Not secure: unencrypted connection (HTTP)",
+   "latency_ms": 0.87
+  },
+  {
+   "source": "extension",
+   "url": "http://neverssl.com/",
+   "verdict": "WARNING",
+   "rule": "H2_INSECURE_HTTP",
+   "risk_score": 0.55,
+   "bert_score": 0.014433,
+   "headline": "Not secure: unencrypted connection (HTTP)",
+   "latency_ms": 118.72
+  },
+  {
+   "source": "dashboard",
+   "url": "http://httpforever.com/",
+   "verdict": "WARNING",
+   "rule": "H2_INSECURE_HTTP",
+   "risk_score": 0.55,
+   "bert_score": 0.157487,
+   "headline": "Not secure: unencrypted connection (HTTP)",
+   "latency_ms": 0.49
+  },
+  {
+   "source": "extension",
+   "url": "http://httpforever.com/",
+   "verdict": "WARNING",
+   "rule": "H2_INSECURE_HTTP",
+   "risk_score": 0.55,
+   "bert_score": 0.157487,
+   "headline": "Not secure: unencrypted connection (HTTP)",
+   "latency_ms": 119.55
+  },
+  {
+   "source": "qr",
+   "url": "https://maybank2u-verify-login.top/qr",
+   "verdict": "BLOCK_RENDER",
+   "rule": "R2_BRAND_IN_HOSTNAME",
+   "risk_score": 0.97,
+   "bert_score": 0.999845,
+   "headline": "Fake Maybank website",
+   "latency_ms": 345.52
+  },
+  {
+   "source": "extension",
+   "url": "https://verify-secure-portal.top/signin",
+   "verdict": "BLOCK_RENDER",
+   "rule": "R4_BRAND_CLONE",
+   "risk_score": 0.93,
+   "bert_score": 0.999852,
+   "headline": "Fake CIMB Bank log-in page",
+   "latency_ms": 146.96
   }
- ],
- "openphish_urls_analysed": 150,
- "openphish_blocked_from_url_alone": 3
+ ]
 }
