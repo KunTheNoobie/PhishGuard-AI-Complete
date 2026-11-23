@@ -7,7 +7,6 @@
   unchanged), checks the model's class IDs when loading, and matches DBS and POSB to their shared domains. New `class_map.json`, `best.metadata.json`,
   `tests/test_visual_bank29.py`, `VISUAL_IMAGE_SIZE` setting, and `setup.bat` / `start_local.bat` that reuse an existing environment.
 - 208 tests pass (145 for Module 1 plus 63 for the visual module).
-- **Hugging Face Space as the primary online host** (`app.py`, `packages.txt`, README front matter, `gradio` in `requirements.txt`); Render stays as a backup. The report covers Module 1 only (216 pages).
 
 ## v4.1.4 — 18 November 2026
 

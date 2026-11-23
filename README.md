@@ -1,15 +1,3 @@
----
-title: PhishGuard-AI
-emoji: 🛡️
-colorFrom: indigo
-colorTo: gray
-sdk: gradio
-python_version: '3.12'
-app_file: app.py
-pinned: false
-short_description: Phishing, quishing and mule-account protection
----
-
 # PhishGuard-AI Complete
 
 <div align="center">
@@ -162,14 +150,9 @@ with long random values for any real deployment:
 
 ---
 
-## Online deployment
+## Online deployment (Render, free HTTPS web service)
 
-**Primary: Hugging Face Space** — `https://kunthenoobie-phishguard-ai.hf.space` (`KunTheNoobie/phishguard-ai`, Gradio SDK, Python 3.12). `app.py` imports the FastAPI app, mounts a small Gradio status page at `/gradio` and serves on port 7860 with the BERT model and the YOLOv8n logo detector both enabled; `packages.txt` installs `libzbar0` and `libgl1`; the front matter at the top of this README is the Space card. Push `app.py`, `packages.txt`, `requirements.txt`, the application folders and the model weights (Git LFS) to the Space repository. The Space must use **CPU** hardware (the default for a new Gradio Space on some accounts is ZeroGPU, which fails with "No @spaces.GPU function detected").
-
-**Backup: Render** (free HTTPS web service, logo detector off to stay inside 512 MB).
-
-Live and verified on 17 November 2026: `https://phishguard-ai-backend-j74v.onrender.com` (`/health`, `/dashboard/`, `/docs`).
-
+Live and verified on 17 November 2026: `https://phishguard-ai-backend-j74v.onrender.com` (`/health`, `/dashboard/`, `/docs`). The free plan has 512 MB of memory, so the YOLOv8n logo detector is switched off there (`PHISHGUARD_ENABLE_VISUAL=false`); the full system, with BERT and the 29-bank logo detector, runs locally with **`start_local.bat`**.
 `render.yaml` defines a free Docker web service (`phishguard-ai-backend`, health check `/health`, admin key `12345678`). To publish:
 
 1. Sign in at render.com with GitHub, choose **New + → Blueprint**, and select this repository (`PhishGuard-AI-Complete`). Render reads `render.yaml`.
