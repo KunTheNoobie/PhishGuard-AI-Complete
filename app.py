@@ -1,16 +1,20 @@
 """
 Hugging Face Space entry point (SDK: gradio, app_file: app.py).
 
-The real service is the FastAPI app in main.py (extension API, SOC dashboard, /docs, /health).
-This file adds a small Gradio status page at /gradio and serves everything on port 7860, with the
-BERT URL model and the YOLOv8n logo detector both enabled.
-Run locally:  python app.py   (port 7860)   or   start_local.bat (port 8000)
+ZeroGPU Spaces start the Gradio launcher themselves and proxy it on port 7860, so a second Uvicorn server on that port
+collides with it. Instead this file lets Gradio create and launch its own web app, and injects PhishGuard-AI into it:
+our routes (/, /health, /docs, /openapi.json, /dashboard/, /api/v1/*), middleware, exception handlers and start-up
+lifespan (which loads BERT and the 29-bank YOLOv8n detector) are placed in front of Gradio's own routes, so Gradio's
+/config and /gradio_api keep working for the platform's health check.
+
+All inference runs on the CPU. Run locally with:  python app.py   (port 7860)  or  start_local.bat (port 8000).
 """
 
 from __future__ import annotations
 
 import logging
 import os
+from contextlib import asynccontextmanager
 
 # Must be set before main is imported: core.config reads these once at import time.
 os.environ.setdefault("CUDA_VISIBLE_DEVICES", "")  # CPU only: never touch a GPU, even on a ZeroGPU container
@@ -35,9 +39,10 @@ import torch  # noqa: E402
 torch.cuda.is_available = lambda: False  # ZeroGPU fakes a GPU; the models must stay on the CPU
 
 from core.config import APP_VERSION  # noqa: E402
-from main import app  # noqa: E402
+import main as phishguard  # noqa: E402
 
 logger = logging.getLogger("phishguard.space")
+app = phishguard.app  # the PhishGuard FastAPI application (also what `uvicorn main:app` serves)
 
 
 def _status() -> str:
@@ -52,7 +57,25 @@ def _status() -> str:
     )
 
 
-try:  # the Gradio page is optional: the API and dashboard work without it
+def _inject_phishguard(gradio_app) -> None:
+    """Put PhishGuard-AI in front of the web app that Gradio created."""
+    gradio_app.router.routes[0:0] = list(app.routes)                  # our routes first, Gradio's catch-alls after
+    gradio_app.user_middleware[0:0] = list(app.user_middleware)       # our middleware (CORS, headers, logging)
+    gradio_app.exception_handlers.update(app.exception_handlers)      # e.g. rate-limit responses
+    gradio_app.state.limiter = phishguard.limiter                     # SlowAPI reads request.app.state.limiter
+
+    gradio_lifespan = gradio_app.router.lifespan_context
+
+    @asynccontextmanager
+    async def combined_lifespan(application):
+        async with gradio_lifespan(application):
+            async with phishguard.lifespan(application):               # loads BERT + YOLO, opens the database
+                yield
+
+    gradio_app.router.lifespan_context = combined_lifespan
+
+
+try:
     import gradio as gr
 
     with gr.Blocks(title="PhishGuard-AI status") as demo:
@@ -60,11 +83,24 @@ try:  # the Gradio page is optional: the API and dashboard work without it
         card = gr.Markdown(_status())
         gr.Button("Refresh").click(lambda: _status(), outputs=card)
         demo.load(lambda: _status(), outputs=card)
-    app = gr.mount_gradio_app(app, demo, path="/gradio")
+
+    # Gradio builds its web app inside launch(); wrap App.create_app so that app gets PhishGuard-AI injected.
+    _create_app = gr.routes.App.create_app
+
+    def _create_app_with_phishguard(*args, **kwargs):
+        gradio_app = _create_app(*args, **kwargs)
+        _inject_phishguard(gradio_app)
+        return gradio_app
+
+    gr.routes.App.create_app = staticmethod(_create_app_with_phishguard)
 except Exception as exc:  # noqa: BLE001
-    logger.warning("Gradio status page disabled: %s", exc)
+    demo = None
+    logger.warning("Gradio is not available (%s): serving PhishGuard-AI on its own.", exc)
 
 if __name__ == "__main__":
-    import uvicorn
+    if demo is not None:
+        demo.launch(server_name="0.0.0.0", server_port=7860)
+    else:  # local run without Gradio
+        import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=7860, proxy_headers=True, forwarded_allow_ips="*")
+        uvicorn.run(app, host="0.0.0.0", port=7860, proxy_headers=True, forwarded_allow_ips="*")
