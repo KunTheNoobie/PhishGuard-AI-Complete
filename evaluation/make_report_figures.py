@@ -121,7 +121,7 @@ def tradeoff(path):
          base["pipeline"]["overall"]["f1"], base["pipeline"]["overall"]["false_positive_rate"], AMBER),
         ("Deterministic rules, no model", abl["latency_ms"]["all_requests"]["mean"], abl["pipeline"]["overall"]["f1"],
          abl["pipeline"]["overall"]["false_positive_rate"], TEAL),
-        ("Corroborated hybrid (v4.1)", fin["latency_ms"]["all_requests"]["mean"], fin["pipeline"]["overall"]["f1"],
+        ("Corroborated hybrid (v4.2)", fin["latency_ms"]["all_requests"]["mean"], fin["pipeline"]["overall"]["f1"],
          fin["pipeline"]["overall"]["false_positive_rate"], NAVY),
     ]
     fig, (ax, ax2) = plt.subplots(1, 2, figsize=(6.5, 3.0), gridspec_kw={"width_ratios": [1.6, 1]})
