@@ -6,7 +6,7 @@
   <p>A Manifest V3 browser extension and a FastAPI backend that combine a fine-tuned BERT URL classifier, URL canonicalisation, brand-impersonation profiling, page analysis, the connection's HTTPS status, DuitNow QR decoding and a Malaysian mule-account registry — and explain every verdict in plain language.</p>
 
   [![CI/CD Test Pipeline](https://github.com/KunTheNoobie/PhishGuard-AI-Complete/actions/workflows/test.yml/badge.svg)](https://github.com/KunTheNoobie/PhishGuard-AI-Complete/actions)
-  [![Tests: 208 Passed](https://img.shields.io/badge/Tests-208%20Passed-brightgreen)](https://github.com/KunTheNoobie/PhishGuard-AI-Complete)
+  [![Tests: 206 passed + 2 optional](https://img.shields.io/badge/Tests-206%20passed%20%2B%202%20optional-brightgreen)](https://github.com/KunTheNoobie/PhishGuard-AI-Complete)
   [![Version](https://img.shields.io/badge/Version-v4.2.0-009688.svg?logo=fastapi&logoColor=white)](CHANGELOG.md)
   [![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue.svg?logo=python&logoColor=white)](https://python.org)
   [![Manifest V3](https://img.shields.io/badge/Chrome%20Extension-Manifest%20V3-4285F4?logo=googlechrome&logoColor=white)](https://developer.chrome.com/docs/extensions/mv3/intro/)
@@ -45,7 +45,8 @@ Baselines (F1 / false-positive)    padlock 0.775 / 0%   lexical 0.581 / 1.7%   B
 HTTPS scam pages (22)              PhishGuard 91% caught   padlock 0%
 Public URL suite (30 cases)        28 passed (2 hosts unreachable from the test network)
 Latency (CPU)                      BERT path p50 116 ms, p95 139 ms; trusted sites about 1 ms
-Automated tests                    208 passed, 85% statement + branch coverage
+Automated tests                    208 (206 pass; 2 real-model tests run when a screenshot is supplied), 82% coverage
+Module 1 suite                     145 passed, 81% statement + branch coverage
 BERT hold-out (109,870 URLs)       accuracy 98.76%, F1 97.80%
 ```
 
@@ -153,6 +154,8 @@ with long random values for any real deployment:
 ## Online deployment (Render, free HTTPS web service)
 
 Live and verified on 17 November 2026: `https://phishguard-ai-backend-j74v.onrender.com` (`/health`, `/dashboard/`, `/docs`). The free plan has 512 MB of memory, so the YOLOv8n logo detector is switched off there (`PHISHGUARD_ENABLE_VISUAL=false`); the full system, with BERT and the 29-bank logo detector, runs locally with **`start_local.bat`**.
+
+Both Render and a fresh local database load the same demonstration data on start-up: **45 scans** (25 blocked, 10 warnings, 10 safe), **83 mule-registry accounts** (18 core + 65 curated) and **6 pending reports**. To reset the local copy, stop the server, delete `phishguard.db*` and run `start_local.bat` again.
 `render.yaml` defines a free Docker web service (`phishguard-ai-backend`, health check `/health`, admin key `12345678`). To publish:
 
 1. Sign in at render.com with GitHub, choose **New + → Blueprint**, and select this repository (`PhishGuard-AI-Complete`). Render reads `render.yaml`.
@@ -171,7 +174,7 @@ The free tier sleeps after 15 minutes without traffic (the first request wakes i
 
 ```bash
 pip install -r requirements-dev.txt
-python -m pytest --cov --cov-branch                        # 208 tests
+python -m pytest --cov --cov-branch                        # 208 tests (2 need PHISHGUARD_VISUAL_SMOKE_IMAGE)
 python -m evaluation.evaluate_pipeline --tag final_v4.0.0  # 120-page Malaysian benchmark (real BERT)
 python -m evaluation.compare_baselines --tag final_v4.0.0  # padlock, lexical, BERT-alone baselines and ROC
 python -m evaluation.run_public_suite                      # 30 public URLs and scam patterns (live)
